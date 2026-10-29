@@ -29,10 +29,10 @@ A mobile-first web app where Sergio logs their gym workouts and sees their progr
   (the pantry's sandbox model): they can browse everything and try logging without touching
   Sergio's data. Sergio logs in as owner with a 6-digit passcode.
 - **Every screen size, phone first** (Sergio, 2026-10-29). Sergio logs on the phone, so the
-  phone is the primary design target. But visitors and reviewers will often open it on a
-  computer, so the app must also look good on tablets and desktops: wider screens get a side
-  navigation and a **dashboard layout** (Progress as a grid of charts and stats, History with
-  list and detail side by side). Unlike the pantry, there is no "made for your phone" QR
+  phone is the primary design target, and Sergio likes the phone layout with bottom tabs. But
+  visitors and reviewers will often open it on a computer, and there Sergio wants a
+  **completely different experience, not the phone layout stretched**: a desktop dashboard
+  designed on its own (stage 4c). Unlike the pantry, there is no "made for your phone" QR
   popup: desktop is a first-class way to view the app.
 - **Exercise notes and photos:** Sergio photographs exercises and writes notes on how to do
   them and what they keep learning (cues, setup, machine settings). The chat contains these.
@@ -186,14 +186,13 @@ cd frontend && npm test && npm run build
 
 ## 7. UI conventions and gotchas
 
-- **Phone first, every size good.** Design for 390x844, then make it work at tablet and
-  desktop with Tailwind breakpoints (`md:` 768px, `lg:` 1024px). Plan:
-  - Phone: bottom tab bar, single column, sheets from the bottom.
-  - `md:` and up: side navigation instead of the bottom bar; content widens (no `max-w-lg` cap
-    on dashboard screens); sheets become centered dialogs.
-  - `lg:` and up: Progress is a dashboard grid (stat tiles on top, charts in 2-3 columns);
-    History is list + detail side by side; an exercise page shows charts next to its notes.
-  - Logging (Train) stays a focused single column at every size.
+- **Phone first; desktop is its own design.** Every screen is designed for 390x844 with the
+  bottom tabs. Until stage 4c, wider screens show that same phone layout, centered (fine for
+  testing, not the final desktop). Stage 4c builds a separate desktop experience from `lg:`
+  (1024px) up, designed from scratch for visitors and reviewers looking at progress: its own
+  navigation and page structure, a dashboard home, charts with room to breathe. Tablets
+  (768-1023px) keep the phone layout, comfortably widened. Keep data logic in `src/lib/` and
+  hooks so both layouts share it and only the views differ.
 - Inputs are 16px on touch screens (`index.css`) so iOS doesn't zoom. Big tap targets: this is
   used between sets with sweaty hands. Hover states are only extras (touch has none).
 - **Dark mode** mirrors the Tailwind palette with CSS variables in `index.css` (copied from the
