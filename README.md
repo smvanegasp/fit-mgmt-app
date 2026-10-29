@@ -1,11 +1,14 @@
 # Gym tracker
 
-A mobile-first web app for logging gym workouts and seeing progress over time: a built-in
-stopwatch, structured sets (weight x reps, pre-filled from last time), and charts for
-consistency, strength per exercise, volume, and how the routine has evolved. Years of training
-history logged in a WhatsApp chat are imported with their real dates.
+A web app for logging gym workouts and seeing progress over time: a built-in stopwatch,
+structured sets (weight x reps, pre-filled from last time), a technique log of notes and photos
+per exercise, and charts for consistency, strength per exercise, volume, and how the routine
+has evolved. Years of training history logged in a WhatsApp chat are imported with their real
+dates.
 
-Visitors can open it as a guest and explore a private, temporary copy of the real training log.
+Designed phone first (that's where workouts get logged), and laid out as a dashboard on tablets
+and computers, where visitors can open it as a guest and explore a private, temporary copy of
+the real training log.
 
 Built in stages alongside its sibling project, the
 [pantry app](https://github.com/smvanegasp/pantry-mgmt-app), and shares its architecture.
