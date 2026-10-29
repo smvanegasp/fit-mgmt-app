@@ -49,7 +49,9 @@ services:
       VITE_USE_POLLING: "1"
     ports:
       - "5180:5173"
-    command: sh -c "npm ci && npm run dev"
+    # --host on the command line survives Vite restarting itself when vite.config.ts changes
+    # (e.g. on a git checkout); server.host in the config alone is lost on that restart.
+    command: sh -c "npm ci && npm run dev -- --host"
     depends_on:
       - api
 

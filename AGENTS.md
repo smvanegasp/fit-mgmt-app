@@ -28,6 +28,17 @@ A mobile-first web app where Sergio logs their gym workouts and sees their progr
 - **Visitors** from sergiovanegas.com get a **private 24h guest copy** of Sergio's real training
   (the pantry's sandbox model): they can browse everything and try logging without touching
   Sergio's data. Sergio logs in as owner with a 6-digit passcode.
+- **Every screen size, phone first** (Sergio, 2026-10-29). Sergio logs on the phone, so the
+  phone is the primary design target, and Sergio likes the phone layout with bottom tabs. But
+  visitors and reviewers will often open it on a computer, and there Sergio wants a
+  **completely different experience, not the phone layout stretched**: a desktop dashboard
+  designed on its own (stage 4c). Unlike the pantry, there is no "made for your phone" QR
+  popup: desktop is a first-class way to view the app.
+- **Exercise notes and photos:** Sergio photographs exercises and writes notes on how to do
+  them and what they keep learning (cues, setup, machine settings). The chat contains these.
+  Each exercise keeps a dated list of notes and photos (its "technique log"), shown on the
+  exercise's page; a workout can also have notes and photos. Notes and photos are part of what
+  guests see.
 - **Units:** pounds (lb). No AI in the app.
 - **Owner:** Sergio (GitHub `smvanegasp`). Repo <https://github.com/smvanegasp/fit-mgmt-app>
   (**public**). Target URL `https://gym.sergiovanegas.com`. Sergio develops on Windows 11 (Git
@@ -35,8 +46,9 @@ A mobile-first web app where Sergio logs their gym workouts and sees their progr
 
 ## 2. How we work (follow this)
 
-- **Small stages, each ending at a gate:** tests pass, the agent checks the UI in a phone-sized
-  browser (390x844, light and dark), Sergio tests on their phone through ngrok, then a PR. **Don't
+- **Small stages, each ending at a gate:** tests pass, the agent checks the UI in light and
+  dark at **phone 390x844** (the main target), **tablet 820x1180** and **desktop 1440x900**,
+  Sergio tests on their phone through ngrok, then a PR. **Don't
   start the next stage until Sergio is happy.** From stage 6b, merging deploys to production.
 - **Plan first, then build:** for each new request, read the relevant code, propose the approach
   with a recommendation (ask with options only for real product choices), put it in
@@ -56,18 +68,19 @@ A mobile-first web app where Sergio logs their gym workouts and sees their progr
 
 | Stage | What | PR |
 |---|---|---|
-| 0 | Skeleton: FastAPI + React/Vite, Docker Compose, CI (tests, build, Docker, secret scan), deploy workflow (off until 6b), Dependabot, docs | open |
+| 0 | Skeleton: FastAPI + React/Vite, Docker Compose, CI (tests, build, Docker, secret scan), deploy workflow (off until 6b), Dependabot, docs | #1 |
 
-Next: **stage 1, WhatsApp import** (needs the chat export in `private/`). Full plan in
+Next: **stage 1, WhatsApp import** (needs the chat export, with media, in `private/`). Full plan in
 [docs/BACKLOG.md](docs/BACKLOG.md).
 
 ## 4. Architecture
 
 ```
 Phone ─ HTTPS ─▶ (local) ngrok ─▶ Vite dev server :5180 ─ /api proxy ─▶ FastAPI :8090
-                                                                        └─ DynamoDB Local :8010
+                                                                        ├─ DynamoDB Local :8010
+                                                                        └─ S3Mock (photos, from stage 1)
 (AWS, stage 6) CloudFront ─┬─ /*     → S3 (built frontend)
-                           └─ /api/* → API Gateway → Lambda (same Docker image) → DynamoDB
+                           └─ /api/* → API Gateway → Lambda (same Docker image) → DynamoDB, S3
                                        (+ X-Origin-Verify)               secrets from SSM /fit/*
 ```
 
@@ -111,10 +124,13 @@ frontend/
 
 - `pk = SPACE#main` is Sergio's log; `SPACE#sb-<unixExpiry>-<hex>` is a guest sandbox (stage 5a;
   rows carry `ttl`).
-- `sk`: `EXERCISE#<id>` (name, muscle group, type, chat aliases) · `WORKOUT#<yyyy-mm-dd>#<id>`
-  (start/end, day label, notes, entries with sets `{weightLb, reps}` or `{seconds}`, source
+- `sk`: `EXERCISE#<id>` (name, muscle group, type, chat aliases) · `NOTE#<exerciseId>#<date>#<id>`
+  (technique log: text and/or photo keys, dated) · `WORKOUT#<yyyy-mm-dd>#<id>` (start/end, day
+  label, notes, photo keys, entries with sets `{weightLb, reps}` or `{seconds}`, source
   `whatsapp`/`app`) · `ROUTINE#<id>` (split, from/to dates) · `ACTIVE` (workout in progress,
   server-side `startedAt`) · `SETTINGS`.
+- Photos in S3 (S3Mock locally), resized on the device like the pantry (`lib/images.ts`,
+  `storage.py`, `Photo.tsx` to copy): `<space>/<id>.img` plus a thumbnail.
 - Numbers: `db.py` stores floats as Decimals and returns whole numbers as ints, others as floats
   (22.5 lb).
 
@@ -136,6 +152,10 @@ cd frontend && npm test && npm run build
 - Hot reload works through file polling (Docker on Windows doesn't forward file events).
   Rebuild the API after backend dependency changes (`docker compose up -d --build api`), restart
   `web` after frontend dependency changes.
+- If ngrok returns 503 or localhost:5180 doesn't answer, check `docker compose logs web`: Vite
+  restarts itself when `vite.config.ts` changes (e.g. on `git checkout`), and without
+  `--host` on its command line it then stops listening outside the container. Compose passes
+  `--host`; `docker compose restart web` fixes an old container.
 - **ngrok:** the agent starts the tunnel itself (`ngrok http 5180` in the background) and reads
   the URL from `http://127.0.0.1:4040/api/tunnels`; Sergio's account has a static domain
   (`thrower-diary-savanna.ngrok-free.dev`), shared with the pantry, so only one of the two
@@ -166,8 +186,15 @@ cd frontend && npm test && npm run build
 
 ## 7. UI conventions and gotchas
 
-- **Mobile first**, 390x844 reference. Inputs are 16px on touch screens (`index.css`) so iOS
-  doesn't zoom. Big tap targets: this is used between sets with sweaty hands.
+- **Phone first; desktop is its own design.** Every screen is designed for 390x844 with the
+  bottom tabs. Until stage 4c, wider screens show that same phone layout, centered (fine for
+  testing, not the final desktop). Stage 4c builds a separate desktop experience from `lg:`
+  (1024px) up, designed from scratch for visitors and reviewers looking at progress: its own
+  navigation and page structure, a dashboard home, charts with room to breathe. Tablets
+  (768-1023px) keep the phone layout, comfortably widened. Keep data logic in `src/lib/` and
+  hooks so both layouts share it and only the views differ.
+- Inputs are 16px on touch screens (`index.css`) so iOS doesn't zoom. Big tap targets: this is
+  used between sets with sweaty hands. Hover states are only extras (touch has none).
 - **Dark mode** mirrors the Tailwind palette with CSS variables in `index.css` (copied from the
   pantry); it applies before first paint (inline script in `index.html`, localStorage key
   `gym.theme`). Use stone/emerald/amber/sky/red classes and dark mode comes for free.
