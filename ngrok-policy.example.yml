@@ -1,0 +1,11 @@
+# Password-protects the ngrok tunnel to the local stack (which can hold real data).
+# Copy to ngrok-policy.yml (git-ignored), set your own user and password (8+ characters),
+# then:  ngrok http 5173 --traffic-policy-file ngrok-policy.yml
+# The phone asks for the user and password once per browser session.
+on_http_request:
+  - actions:
+      - type: basic-auth
+        config:
+          realm: gym-dev
+          credentials:
+            - "sergio:change-me-to-a-long-password"
