@@ -1,0 +1,42 @@
+# Python
+.venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+
+# Node
+node_modules/
+dist/
+
+# Secrets / local config
+.env
+.env.*
+!.env.example
+
+# Terraform
+.terraform/
+*.tfstate
+*.tfstate.*
+*.tfplan
+
+# Editors / OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+*.tsbuildinfo
+
+# Playwright MCP scratch output
+.playwright-mcp/
+
+
+# Other coding tools' local settings
+.codex/
+.claude/settings.local.json
+
+# ngrok tunnel password (copy ngrok-policy.example.yml); Terraform values like the alert email
+ngrok-policy.yml
+*.tfvars
+
+# Personal data: the WhatsApp chat export and anything parsed from it. Never commit.
+private/
