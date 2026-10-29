@@ -90,7 +90,6 @@ docker-compose.yml          api (FastAPI), dynamodb (DynamoDB Local), web (node:
                             repo variable DEPLOY_ENABLED=true; off until stage 6b)
 .github/dependabot.yml      weekly grouped updates
 .mcp.json                   Playwright, AWS docs, Terraform MCP servers
-ngrok-policy.example.yml    copy to ngrok-policy.yml (git-ignored) for a password on the tunnel
 scripts/upload_frontend.sh  frontend/dist -> S3 + CloudFront invalidation
 private/                    git-ignored: the WhatsApp export and anything parsed from it
 backend/
@@ -129,7 +128,7 @@ frontend/
 
 ```sh
 docker compose up -d --build          # app at http://localhost:5180 (API docs :8090/api/docs)
-ngrok http 5180 --traffic-policy-file ngrok-policy.yml   # phone URL, password-protected
+ngrok http 5180                       # phone URL (no password, by choice; see 6)
 cd backend && uv run pytest -q
 cd frontend && npm test && npm run build
 ```
@@ -137,6 +136,10 @@ cd frontend && npm test && npm run build
 - Hot reload works through file polling (Docker on Windows doesn't forward file events).
   Rebuild the API after backend dependency changes (`docker compose up -d --build api`), restart
   `web` after frontend dependency changes.
+- **ngrok:** the agent starts the tunnel itself (`ngrok http 5180` in the background) and reads
+  the URL from `http://127.0.0.1:4040/api/tunnels`; Sergio's account has a static domain
+  (`thrower-diary-savanna.ngrok-free.dev`), shared with the pantry, so only one of the two
+  stacks can be tunneled at a time.
 - Phone-sized screenshots without the MCP server: a small Node script can load Playwright from
   the pantry's `frontend/node_modules` (`createRequire`) and shoot 390x844 in both color schemes.
 
@@ -150,10 +153,13 @@ cd frontend && npm test && npm run build
   straight into DynamoDB, never into a seed file in git.
 - `backend/.env` (git-ignored) will hold `PASSCODE_HASH` and `SESSION_SECRET` (stage 5a). **Never
   print, cat or paste secrets.** Never ask Sergio to paste a key or passcode into chat; they run
-  the scripts or edits `.env` themself. On AWS they are SSM SecureStrings under `/fit/`.
+  the scripts or edit `.env` themself. On AWS they are SSM SecureStrings under `/fit/`.
 - AWS access: profile **`gym`** (IAM user `gym-deployer`, AdministratorAccess, same account
   816940506502 as the pantry but a fully separate stack). Sergio created its keys themself;
   they live only in `~/.aws/credentials`. GitHub Actions never gets AWS keys (OIDC role).
+- **The ngrok tunnel has no password** (Sergio's choice, 2026-10-29: the password prompt was
+  annoying). Anyone with the URL can use the local app, and before stage 5a it has no login.
+  Stop the tunnel when not testing, especially once the local database holds the real history.
 - **Never touch the pantry's AWS resources** (profile `pantry`, anything named `pantry-*`).
 - Once their real history is in production (stage 7), **never change or delete `SPACE#main`**
   without Sergio's explicit OK. Test in sample guest sandboxes.

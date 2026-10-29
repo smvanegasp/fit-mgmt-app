@@ -46,9 +46,7 @@ Requires Docker Desktop. Host ports are chosen so this stack can run next to the
 docker compose up -d --build     # app: http://localhost:5180   API docs: http://localhost:8090/api/docs
 ```
 
-Test on a phone through a password-protected tunnel: copy `ngrok-policy.example.yml` to
-`ngrok-policy.yml` (git-ignored), set a password, then
-`ngrok http 5180 --traffic-policy-file ngrok-policy.yml`.
+Test on a phone through a tunnel: `ngrok http 5180`.
 
 ## Tests
 
