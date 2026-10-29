@@ -152,6 +152,10 @@ cd frontend && npm test && npm run build
 - Hot reload works through file polling (Docker on Windows doesn't forward file events).
   Rebuild the API after backend dependency changes (`docker compose up -d --build api`), restart
   `web` after frontend dependency changes.
+- If ngrok returns 503 or localhost:5180 doesn't answer, check `docker compose logs web`: Vite
+  restarts itself when `vite.config.ts` changes (e.g. on `git checkout`), and without
+  `--host` on its command line it then stops listening outside the container. Compose passes
+  `--host`; `docker compose restart web` fixes an old container.
 - **ngrok:** the agent starts the tunnel itself (`ngrok http 5180` in the background) and reads
   the URL from `http://127.0.0.1:4040/api/tunnels`; Sergio's account has a static domain
   (`thrower-diary-savanna.ngrok-free.dev`), shared with the pantry, so only one of the two
