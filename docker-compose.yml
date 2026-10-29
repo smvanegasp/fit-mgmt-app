@@ -1,0 +1,58 @@
+# Local development stack. Open http://localhost:5180 (or tunnel it with ngrok).
+# Host ports differ from the pantry app's (5173/8080/8000) so both stacks can run at once.
+name: gym
+services:
+  api:
+    build:
+      context: ./backend
+      target: app
+    ports:
+      - "8090:8080"
+    volumes:
+      - ./backend/app:/app/app
+    # Local secrets (stage 5a: PASSCODE_HASH, SESSION_SECRET), git-ignored.
+    env_file:
+      - path: ./backend/.env
+        required: false
+    environment:
+      DYNAMODB_ENDPOINT: http://dynamodb:8000
+      TABLE_NAME: fit
+      AUTO_CREATE_TABLE: "1"
+      AWS_REGION: us-east-1
+      # DynamoDB Local accepts any credentials; these are not real keys.
+      AWS_ACCESS_KEY_ID: local
+      AWS_SECRET_ACCESS_KEY: local
+      # Docker on Windows doesn't forward file-change events; poll for --reload.
+      WATCHFILES_FORCE_POLLING: "true"
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8080 --reload
+    depends_on:
+      - dynamodb
+
+  dynamodb:
+    image: amazon/dynamodb-local:latest
+    # Root so it can write to the named volume.
+    user: root
+    command: -jar DynamoDBLocal.jar -sharedDb -dbPath /data
+    volumes:
+      - dynamodb_data:/data
+    ports:
+      - "8010:8000"
+
+  web:
+    image: node:22-alpine
+    working_dir: /web
+    volumes:
+      - ./frontend:/web
+      - web_node_modules:/web/node_modules
+    environment:
+      API_URL: http://api:8080
+      VITE_USE_POLLING: "1"
+    ports:
+      - "5180:5173"
+    command: sh -c "npm ci && npm run dev"
+    depends_on:
+      - api
+
+volumes:
+  dynamodb_data:
+  web_node_modules:

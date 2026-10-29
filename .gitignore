@@ -34,7 +34,7 @@ Thumbs.db
 .codex/
 .claude/settings.local.json
 
-# ngrok tunnel password (copy ngrok-policy.example.yml); Terraform values like the alert email
+# Optional ngrok traffic policy (unused); Terraform values like the alert email
 ngrok-policy.yml
 *.tfvars
 

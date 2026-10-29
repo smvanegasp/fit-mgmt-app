@@ -1,0 +1,95 @@
+name: Deploy
+
+# After CI passes on main (that is, after a merge), deploy the code to AWS. Infrastructure is
+# not applied here: run `terraform apply` locally before merging code that needs it (AGENTS.md §8).
+#
+# Off until stage 6b: the job only runs once the repository variable DEPLOY_ENABLED is "true"
+# (GitHub > Settings > Secrets and variables > Actions > Variables), together with
+# DISTRIBUTION_ID and SITE_URL from `terraform output`. No AWS keys are stored in GitHub; the
+# workflow assumes an IAM role through OIDC.
+on:
+  workflow_run:
+    workflows: [CI]
+    types: [completed]
+    branches: [main]
+  workflow_dispatch:
+
+# One deploy at a time, in order.
+concurrency:
+  group: deploy
+  cancel-in-progress: false
+
+permissions:
+  id-token: write
+  contents: read
+
+env:
+  AWS_REGION: us-east-1
+  # Created by infra/github.tf (stage 6b); only workflows on main may assume it.
+  ROLE_ARN: arn:aws:iam::816940506502:role/fit-github-deploy
+  FUNCTION: fit-api
+  REPOSITORY: fit-api
+  WEB_BUCKET: fit-web-816940506502
+  DISTRIBUTION_ID: ${{ vars.DISTRIBUTION_ID }}
+  SITE_URL: ${{ vars.SITE_URL }}
+
+jobs:
+  deploy:
+    if: >-
+      vars.DEPLOY_ENABLED == 'true' && (
+        github.event_name == 'workflow_dispatch' ||
+        (github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.event == 'push')
+      )
+    runs-on: ubuntu-latest
+    env:
+      SHA: ${{ github.event.workflow_run.head_sha || github.sha }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ env.SHA }}
+
+      - uses: aws-actions/configure-aws-credentials@v6
+        with:
+          role-to-assume: ${{ env.ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - id: ecr
+        uses: aws-actions/amazon-ecr-login@v2
+      # Logged-in pulls of the Lambda Web Adapter image avoid public ECR's anonymous rate limit.
+      - uses: aws-actions/amazon-ecr-login@v2
+        with:
+          registry-type: public
+
+      - name: Build and push the API image
+        env:
+          IMAGE: ${{ steps.ecr.outputs.registry }}/fit-api
+        run: |
+          # Lambda wants a plain single-platform image (no provenance/SBOM attestations).
+          docker build --platform linux/amd64 --provenance=false --sbom=false --target lambda \
+            -t "$IMAGE:latest" -t "$IMAGE:$SHA" backend
+          docker push --all-tags "$IMAGE"
+
+      - name: Roll Lambda to the new image
+        env:
+          IMAGE: ${{ steps.ecr.outputs.registry }}/fit-api
+        run: |
+          # Same digest Terraform reads from ":latest", so Terraform stays in sync.
+          digest=$(aws ecr describe-images --repository-name "$REPOSITORY" \
+            --image-ids imageTag=latest --query 'imageDetails[0].imageDigest' --output text)
+          aws lambda update-function-code --function-name "$FUNCTION" \
+            --image-uri "$IMAGE@$digest" --query LastUpdateStatus --output text
+          aws lambda wait function-updated-v2 --function-name "$FUNCTION"
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - name: Build the frontend
+        working-directory: frontend
+        run: npm ci --no-audit --no-fund && npm run build
+      - name: Upload the frontend
+        run: scripts/upload_frontend.sh "$WEB_BUCKET" "$DISTRIBUTION_ID"
+
+      - name: Check the API answers through CloudFront
+        run: curl -fsS --retry 5 --retry-all-errors --retry-delay 3 "$SITE_URL/api/health"
