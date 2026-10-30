@@ -11,7 +11,7 @@ Sergio merges.
 | Stage | Branch | What | Gate |
 |---|---|---|---|
 | 0 | `stage-0-skeleton` | Skeleton, Compose, CI/CD, docs | `docker compose up` works, CI green |
-| 1 | `stage-1-import` | **WhatsApp analysis:** read the export in `private/`, report every exercise and its spellings, routine eras, formats, **technique notes and photos**, oddities. Sergio approves the exercise list and schema. `scripts/import_whatsapp.py` (code only): parse workouts, exercise notes and photos (matched to exercises by message and time), dry-run report, idempotent (deterministic ids). Photos go to S3 (S3Mock locally, added to Compose). Load into **local** DynamoDB. Tests use synthetic chat lines. | Sergio confirms a sample of parsed sessions and notes matches the chat |
+| 1 | `stage-1-import` | **WhatsApp import:** read the export in `private/`, report every exercise and its spellings, routine eras, formats, **technique notes and photos**, oddities. Sergio approves the exercise list and schema. `scripts/import_whatsapp.py` (code only): parse workouts, exercise notes and photos (matched to exercises by message and time), dry-run report, idempotent (deterministic ids). Photos go to S3 (S3Mock locally, added to Compose). Load into **local** DynamoDB. Tests use synthetic chat lines. | Sergio confirms a sample of parsed sessions and notes matches the chat |
 | 2 | `stage-2-train` | **Logging:** start workout (stopwatch), pick or create exercises, add sets with quick taps pre-filled from last time, rest timer, add a note or photo to an exercise or the workout, finish (duration saved); edit or delete a workout. | Tests, phone test at the gym |
 | 3 | `stage-3-history` | History grouped by week, workout detail, filter by exercise. **Exercise page:** technique log (dated notes and photos, add/edit), last sessions, catalog with merge and rename. | Same |
 | 4a | `stage-4a-progress` | Consistency calendar heatmap, streaks, sessions per week; strength chart per exercise with PRs (Recharts). | Same |
@@ -26,7 +26,36 @@ Sergio merges.
 
 ## Now
 
-Stage 0 merged (#1). The export (with media) is in `private/` (2026-10-29). Next: stage 1.
+Stage 1 PR open: the WhatsApp history parses into 179 sessions (2025-09-05 to 2026-10-29),
+450 exercise entries, 1,783 sets, 51 technique cues, 15 photos, 3 routine eras, loaded into the
+local stack. Sergio confirmed the guesses below (2026-10-29); next is stage 2.
+
+### Stage 1: interpretations Sergio confirmed
+
+- Dip and chin-up drop sets are always 90-70-45-25-0 lb; the other line is the reps. The
+  2026-01-02 one reads 6-2-2-2-3.
+- 2026-09-07 squats "50 lbs" is 150. 2026-05-11 "Bench press 40 lbs 5x8" was dumbbells (40 each).
+- "Pull up muscle up intercaladas N": alternating muscle-up, pull-up, muscle-up, pull-up (N
+  muscle-ups).
+- "Bar dips" = "Wide bar dips"; "Close ups" = close-grip chin-ups; Smith machine bar = 45 lb.
+- "Psychosis Dope" is a song Sergio paces sets to: a set, rest during the second scream, a set.
+  Kept as a chin-up cue.
+- Typos are standardized through `textFixes` in the private corrections (Sergio's OK).
+- Imported session times run from the first to the last message (warm-up not included).
+- 2025-11-11 "Chin ups 1x5 45 lbs" sent the day after the pull session: kept on 2025-11-11.
+
+## Stage 2 notes (from the import)
+
+- **Technique cues while training (Sergio, 2026-10-29):** the technique log is a checklist of
+  things that make the exercise go better ("asegurar bien las manos en el agarre"), built up over
+  time. When Sergio starts an exercise, show its cues right there, **super concise** (one line
+  each, a few at a time, expandable), and let him add a new cue in a tap, edit or hide old ones.
+  Imported cues: 51, already trimmed (grown cues keep their longest version; duplicates and
+  superseded ones left out via `notTechnique`).
+- Show the **target** and how many times it was hit ("5x5 @ 170, 2 of 3") when picking an
+  exercise; that's how Sergio decides to add weight.
+- Drop-set ladders (dips, chin-ups) need a quick way to log 4-5 descending weights.
+- Bouldering: grade, color, sent / attempts. Treadmill: speed steps or just distance + time.
 
 ## Needs Sergio
 
@@ -43,6 +72,10 @@ None yet; add as they come up.
 
 ## Done
 
+- 2026-10-29: Stage 1 decisions: bar = plates + 45 lb; weighted dips/chin-ups track added weight
+  only; English exercise names; bouldering and treadmill included.
+- 2026-10-29: Plan updates: phone first with a separate desktop design in stage 4c, exercise
+  notes and photos (#3).
 - 2026-10-29: Stage 0 skeleton, local stack, CI/CD and docs (#1). The ngrok tunnel has no
   password, by Sergio's choice.
 - 2026-10-29: AWS profile `gym` (IAM user `gym-deployer`) created by Sergio; public repo

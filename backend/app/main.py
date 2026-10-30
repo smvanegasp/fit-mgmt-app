@@ -5,7 +5,7 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse
 
-from app import db, ssm
+from app import db, ssm, storage
 from app.config import on_aws, origin_secret
 
 
@@ -14,6 +14,7 @@ async def lifespan(_: FastAPI):
     ssm.load_parameters()
     if os.environ.get("AUTO_CREATE_TABLE") == "1":
         db.create_table_if_missing()
+        storage.create_bucket_if_missing()
     yield
 
 

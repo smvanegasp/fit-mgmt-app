@@ -38,8 +38,14 @@ A mobile-first web app where Sergio logs their gym workouts and sees their progr
   them and what they keep learning (cues, setup, machine settings). The chat contains these.
   Each exercise keeps a dated list of notes and photos (its "technique log"), shown on the
   exercise's page; a workout can also have notes and photos. Notes and photos are part of what
-  guests see.
-- **Units:** pounds (lb). No AI in the app.
+  guests see. **The log's main job is a concise checklist shown when Sergio starts that exercise
+  while training**: the things that, if he does them, make the lift go better. Keep it short
+  (one line per cue, newest wording only).
+- **Units:** pounds (lb). No AI in the app. Decisions from stage 1 (2026-10-29): barbell weights
+  are written as plates and the app adds a 45 lb bar for totals; weighted dips and chin-ups track
+  only the added weight; exercise names are English (Spanish spellings are aliases; notes stay
+  as written, mostly Spanish); **bouldering and treadmill runs are part of the app** alongside
+  lifting.
 - **Owner:** Sergio (GitHub `smvanegasp`). Repo <https://github.com/smvanegasp/fit-mgmt-app>
   (**public**). Target URL `https://gym.sergiovanegas.com`. Sergio develops on Windows 11 (Git
   Bash, VS Code, Node 24, uv, Docker Desktop, Terraform, ngrok).
@@ -69,16 +75,16 @@ A mobile-first web app where Sergio logs their gym workouts and sees their progr
 | Stage | What | PR |
 |---|---|---|
 | 0 | Skeleton: FastAPI + React/Vite, Docker Compose, CI (tests, build, Docker, secret scan), deploy workflow (off until 6b), Dependabot, docs | #1 |
+| 1 | WhatsApp import: exercise catalog, chat parser, private corrections, review page, loader into DynamoDB + S3 (local), S3Mock in Compose | open |
 
-Next: **stage 1, WhatsApp import** (needs the chat export, with media, in `private/`). Full plan in
-[docs/BACKLOG.md](docs/BACKLOG.md).
+Next: **stage 2, logging** (Train tab). Full plan in [docs/BACKLOG.md](docs/BACKLOG.md).
 
 ## 4. Architecture
 
 ```
 Phone ─ HTTPS ─▶ (local) ngrok ─▶ Vite dev server :5180 ─ /api proxy ─▶ FastAPI :8090
                                                                         ├─ DynamoDB Local :8010
-                                                                        └─ S3Mock (photos, from stage 1)
+                                                                        └─ S3Mock :9190 (photos)
 (AWS, stage 6) CloudFront ─┬─ /*     → S3 (built frontend)
                            └─ /api/* → API Gateway → Lambda (same Docker image) → DynamoDB, S3
                                        (+ X-Origin-Verify)               secrets from SSM /fit/*
@@ -97,21 +103,28 @@ Phone ─ HTTPS ─▶ (local) ngrok ─▶ Vite dev server :5180 ─ /api proxy
 
 ```
 AGENTS.md, CLAUDE.md, docs/BACKLOG.md, README.md
-docker-compose.yml          api (FastAPI), dynamodb (DynamoDB Local), web (node:22 Vite)
+docker-compose.yml          api (FastAPI), dynamodb (DynamoDB Local), s3 (S3Mock), web (node:22 Vite)
 .github/workflows/ci.yml    pytest, vitest + build, docker build --target app, gitleaks
 .github/workflows/deploy.yml  after CI on main: image -> ECR, Lambda, frontend -> S3 (needs
                             repo variable DEPLOY_ENABLED=true; off until stage 6b)
 .github/dependabot.yml      weekly grouped updates
 .mcp.json                   Playwright, AWS docs, Terraform MCP servers
 scripts/upload_frontend.sh  frontend/dist -> S3 + CloudFront invalidation
-private/                    git-ignored: the WhatsApp export and anything parsed from it
+scripts/import_whatsapp.py  WhatsApp import CLI: `parse` (-> private/import/) and `load`
+private/                    git-ignored: export/ (chat + photos), corrections.json,
+                            import/parsed.json + review.html
 backend/
   app/main.py               app, /api/health, CloudFront-only middleware on AWS, creates the
-                            table locally (AUTO_CREATE_TABLE=1)
+                            table and bucket locally (AUTO_CREATE_TABLE=1)
   app/config.py             env config
   app/ssm.py                SSM /fit/* -> environment variables at startup (SSM_PREFIX)
-  app/db.py                 DynamoDB single table: put/get/query/delete; Decimal <-> int/float
-  tests/                    pytest with moto (in-memory AWS)
+  app/db.py                 DynamoDB single table: put/get/query/delete, batches; Decimal <-> int/float
+  app/storage.py            S3 photos (copied from the pantry)
+  app/catalog.py            built-in exercise catalog: English names, group, load type, bar
+                            weight, aliases (Spanish, shorthand, typos)
+  app/importer/             chat.py (export -> messages), parse.py (messages -> workouts, notes,
+                            body weight; corrections), load.py (-> DynamoDB + S3, idempotent)
+  tests/                    pytest with moto (in-memory AWS); import tests use made-up chat lines
 frontend/
   src/App.tsx               tabs Train / History / Progress / Settings
   src/api.ts, hooks.ts      API client and TanStack Query hooks
@@ -120,19 +133,53 @@ frontend/
   src/lib/                  pure logic + tests: duration (stopwatch text), theme
 ```
 
-### Data model (DynamoDB, one table `fit`, `pk`/`sk`; draft, finalized in stage 1)
+### Data model (DynamoDB, one table `fit`, `pk`/`sk`)
 
 - `pk = SPACE#main` is Sergio's log; `SPACE#sb-<unixExpiry>-<hex>` is a guest sandbox (stage 5a;
   rows carry `ttl`).
-- `sk`: `EXERCISE#<id>` (name, muscle group, type, chat aliases) · `NOTE#<exerciseId>#<date>#<id>`
-  (technique log: text and/or photo keys, dated) · `WORKOUT#<yyyy-mm-dd>#<id>` (start/end, day
-  label, notes, photo keys, entries with sets `{weightLb, reps}` or `{seconds}`, source
-  `whatsapp`/`app`) · `ROUTINE#<id>` (split, from/to dates) · `ACTIVE` (workout in progress,
-  server-side `startedAt`) · `SETTINGS`.
-- Photos in S3 (S3Mock locally), resized on the device like the pantry (`lib/images.ts`,
-  `storage.py`, `Photo.tsx` to copy): `<space>/<id>.img` plus a thumbnail.
+- **`EXERCISE#<id>`**: `name` (English), `group` (push, pull, legs, posterior, core, skill,
+  cardio, climbing), `load`, `measure` (reps, seconds, run, climb), `barLb`, `aliases`, `source`
+  (`catalog` from `app/catalog.py`, later `app` for ones Sergio creates).
+- **`WORKOUT#<yyyy-mm-dd>#<id>`**: one session. `id` (`<date>-<n>`), `startedAt`/`endedAt` (local
+  time, no zone), `durationEstimated` (true for imports: first to last message), `label` ("Push",
+  "Squat + Climb"...), `notes`, `photos` `[{key, caption}]`, `source` (`whatsapp` / `app`), and
+  `entries` in order, each `{exerciseId, sets?, targets?, notes?, photos?, problems?, segments?,
+  distanceMi?}`:
+  - **set** `{reps?, weightLb?, each?, seconds?, drop?, detail?}`. `weightLb` is **as written**:
+    plates for `barbell` exercises (total = `weightLb + barLb`, the 45 lb bar), per hand when
+    `each`, and the **added** weight for `added` exercises (weighted dips and chin-ups; Sergio
+    tracks only the added weight). `drop` marks drop-set ladders (90-70-45-25-0); `detail`
+    describes complexes ("3 pull + 3 muscle + 3 dip + 3 pull") and ladders.
+  - **targets** `[{text, times?, kind?}]`: the previous goal Sergio writes in parentheses,
+    "(5x5 185 lbs 2 veces)" = hit twice so far. This is his progression system: repeat a target
+    until hit a few times, then add weight. Stage 2 should show "target, hit N times" while logging.
+  - **problems** (bouldering) `[{grade, color?, result: sent|attempted, count?, attempts?, note?}]`;
+    **segments** (treadmill) `[{mph, minutes}]` plus `distanceMi`.
+- **`NOTE#<exerciseId>#<date>#<id>`**: the technique log. `text`, `date` (first written),
+  `lastSeen`, `sessions` (how many workouts repeat it). Imported cues are the ones written in 2+
+  sessions plus hand-picked ones; per-session comments stay on the workout entry.
+- **`BODY#<date>`** `{weightLb}` · **`ROUTINE#<from>#<id>`** `{name, from, to, days[], notes,
+  photos}` (the routine eras, for the evolution timeline) · later `ACTIVE` (workout in progress,
+  server-side `startedAt`) and `SETTINGS`.
+- Photos in S3 (S3Mock locally): `<space>/<id>.img` plus `<space>/<id>-thumb.img` (1600 and
+  400 px JPEG). Imported photos are `main/wa-<chat file number>`. App uploads (stage 2) will be
+  resized on the device like the pantry (`lib/images.ts`, `Photo.tsx` to copy).
 - Numbers: `db.py` stores floats as Decimals and returns whole numbers as ints, others as floats
   (22.5 lb).
+
+### WhatsApp import (stage 1)
+
+- Source: Sergio's self-chat "Mi grupo", exported with media (iPhone zip), unzipped to
+  `private/export/`. Training starts 2025-09-05; ~180 sessions, ~1,800 sets, 14 months.
+- `parse` applies `private/corrections.json` (git-ignored): `start`, per-message rewrites keyed by
+  `"YYYY-MM-DD HH:MM:SS"` (string = new text, `null` = drop, `{entries: [...]}` = given
+  directly), `photos` (drop / attach), `textFixes` (typo fixes applied to every message first), `technique` (extra cues), `notTechnique` (repeated
+  comments that aren't cues), `routines` (the eras, written by the agent from the chat and the
+  2-week rotation photo). Fix parser rules for patterns, corrections for one-offs.
+- Check `private/import/review.html` (chat next to result) after any parser change.
+- Writing to production (stage 7) is `load --profile gym --table fit --bucket <photos bucket>`;
+  it asks for "yes". Re-running replaces earlier `source: whatsapp` rows and never touches
+  `source: app` rows.
 
 ### API (all under `/api`)
 
@@ -147,6 +194,8 @@ docker compose up -d --build          # app at http://localhost:5180 (API docs :
 ngrok http 5180                       # phone URL (no password, by choice; see 6)
 cd backend && uv run pytest -q
 cd frontend && npm test && npm run build
+cd backend && uv run python ../scripts/import_whatsapp.py parse        # -> private/import/
+cd backend && uv run python ../scripts/import_whatsapp.py load --local # stack must be up
 ```
 
 - Hot reload works through file polling (Docker on Windows doesn't forward file events).
@@ -168,9 +217,12 @@ cd frontend && npm test && npm run build
 - **The repo is public.** Never commit keys, tokens, passwords, `.env` files, Terraform state or
   `*.tfvars`. `.gitignore` covers them; CI runs **gitleaks** on every push and PR. Always check
   `git status` and the staged diff before committing, and never commit files you didn't create.
-- **`private/` holds Sergio's WhatsApp export and must never be committed** (git-ignored). Only
-  code (the import script and tests with synthetic lines) goes in the repo; parsed workouts go
-  straight into DynamoDB, never into a seed file in git.
+- **`private/` holds Sergio's WhatsApp export and must never be committed** (git-ignored),
+  together with everything derived from it: `corrections.json`, `import/parsed.json` and
+  `import/review.html` (which quotes the chat). Only code goes in the repo (the importer, and
+  tests with made-up lines); parsed workouts go straight into DynamoDB, never into a seed file in
+  git. The chat also has non-training messages (to-do lists, links, a birthday list): the
+  importer drops them, and they must never be quoted in commits, PRs or docs.
 - `backend/.env` (git-ignored) will hold `PASSCODE_HASH` and `SESSION_SECRET` (stage 5a). **Never
   print, cat or paste secrets.** Never ask Sergio to paste a key or passcode into chat; they run
   the scripts or edit `.env` themself. On AWS they are SSM SecureStrings under `/fit/`.
