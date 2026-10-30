@@ -582,6 +582,30 @@ def _cues(text: str) -> list[str]:
     return [p.strip(" .") for p in parts if len(normalize(p)) >= 8]
 
 
+def _merge_grown_cues(notes: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    """Cues grow: "Fuerza con confianza" later becomes "Fuerza con confianza y aprieta el
+    cuerpo antes de levantar". Keep only the longest version, dated from the first one, so the
+    checklist shown while training stays short."""
+    by_exercise: dict[str, list[dict[str, Any]]] = defaultdict(list)
+    for note in notes:
+        by_exercise[note["exerciseId"]].append(note)
+    merged: list[dict[str, Any]] = []
+    for group in by_exercise.values():
+        group.sort(key=lambda n: -len(normalize(n["text"])))
+        kept: list[dict[str, Any]] = []
+        for note in group:
+            short = normalize(note["text"])
+            longer = next((k for k in kept if normalize(k["text"]).startswith(short + " ")), None)
+            if longer:
+                longer["date"] = min(longer["date"], note["date"])
+                longer["lastSeen"] = max(longer["lastSeen"], note["lastSeen"])
+                longer["sessions"] = max(longer["sessions"], note["sessions"])
+            else:
+                kept.append(note)
+        merged.extend(kept)
+    return merged
+
+
 def _note_id(exercise_id: str, text: str) -> str:
     return hashlib.sha1(f"{exercise_id}|{normalize(text)}".encode()).hexdigest()[:12]
 
@@ -682,6 +706,7 @@ def parse_messages(messages: list[Message], corrections: dict[str, Any] | None =
     for (exercise_id, norm), text in picked.items():
         if (exercise_id, norm) not in cue_log:
             flags.append(f"technique cue not found in the chat for {exercise_id}: {text!r}")
+    notes = _merge_grown_cues(notes)
     notes.sort(key=lambda n: (n["exerciseId"], n["date"]))
 
     return {

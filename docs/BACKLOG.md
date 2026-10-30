@@ -27,7 +27,7 @@ Sergio merges.
 ## Now
 
 Stage 1 PR open: the WhatsApp history parses into 179 sessions (2025-09-05 to 2026-10-29),
-450 exercise entries, 1,783 sets, 61 technique cues, 15 photos, 3 routine eras, loaded into the
+450 exercise entries, 1,783 sets, 51 technique cues, 15 photos, 3 routine eras, loaded into the
 local stack. Sergio confirmed the guesses below (2026-10-29); next is stage 2.
 
 ### Stage 1: interpretations Sergio confirmed
@@ -46,6 +46,12 @@ local stack. Sergio confirmed the guesses below (2026-10-29); next is stage 2.
 
 ## Stage 2 notes (from the import)
 
+- **Technique cues while training (Sergio, 2026-10-29):** the technique log is a checklist of
+  things that make the exercise go better ("asegurar bien las manos en el agarre"), built up over
+  time. When Sergio starts an exercise, show its cues right there, **super concise** (one line
+  each, a few at a time, expandable), and let him add a new cue in a tap, edit or hide old ones.
+  Imported cues: 51, already trimmed (grown cues keep their longest version; duplicates and
+  superseded ones left out via `notTechnique`).
 - Show the **target** and how many times it was hit ("5x5 @ 170, 2 of 3") when picking an
   exercise; that's how Sergio decides to add weight.
 - Drop-set ladders (dips, chin-ups) need a quick way to log 4-5 descending weights.

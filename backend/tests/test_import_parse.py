@@ -205,6 +205,17 @@ def test_technique_log_keeps_repeated_cues_and_picked_ones() -> None:
     ]
 
 
+def test_a_cue_that_grows_keeps_only_its_longest_version() -> None:
+    result = parse(
+        "4/23/26 6:25:19 PM | Deadlift regular 5x3 185 lbs. Fuerza con confianza.",
+        "5/6/26 4:44:02 PM | Deadlift regular 3x5 185 lbs. Fuerza con confianza.",
+        "6/12/26 6:48:27 PM | Deadlift regular 3x5 185 lbs. Fuerza con confianza y aprieta el cuerpo.",
+        "6/23/26 7:16:29 PM | Deadlift regular 4x5 185 lbs. Fuerza con confianza y aprieta el cuerpo.",
+    )
+    assert [(n["text"], n["date"], n["lastSeen"]) for n in result["notes"]] == [
+        ("Fuerza con confianza y aprieta el cuerpo", "2026-04-23", "2026-06-23")]
+
+
 def test_body_weight() -> None:
     result = parse(
         "10/25/25 12:38:10 PM | 5x5 Squats. 150 lbs + bar",

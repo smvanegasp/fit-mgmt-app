@@ -38,7 +38,9 @@ A mobile-first web app where Sergio logs their gym workouts and sees their progr
   them and what they keep learning (cues, setup, machine settings). The chat contains these.
   Each exercise keeps a dated list of notes and photos (its "technique log"), shown on the
   exercise's page; a workout can also have notes and photos. Notes and photos are part of what
-  guests see.
+  guests see. **The log's main job is a concise checklist shown when Sergio starts that exercise
+  while training**: the things that, if he does them, make the lift go better. Keep it short
+  (one line per cue, newest wording only).
 - **Units:** pounds (lb). No AI in the app. Decisions from stage 1 (2026-10-29): barbell weights
   are written as plates and the app adds a 45 lb bar for totals; weighted dips and chin-ups track
   only the added weight; exercise names are English (Spanish spellings are aliases; notes stay
