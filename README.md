@@ -6,13 +6,13 @@ per exercise, and charts for consistency, strength per exercise, volume, and how
 has evolved. Years of training history logged in a WhatsApp chat are imported with their real
 dates.
 
-Designed phone first (that's where workouts get logged), and laid out as a dashboard on tablets
-and computers, where visitors can open it as a guest and explore a private, temporary copy of
-the real training log.
+Designed phone first (that's where workouts get logged), and laid out as a dashboard on
+computers, where visitors can open it as a guest and explore a private, temporary copy of the
+real training log.
 
 Built in stages alongside its sibling project, the
 [pantry app](https://github.com/smvanegasp/pantry-mgmt-app), and shares its architecture.
-**Status:** logging, history and the first progress charts are built (stages 0-4a); it runs
+**Status:** logging, history, progress and the desktop dashboard are built (stages 0-4c); it runs
 locally until the AWS stages. The full plan is in [docs/BACKLOG.md](docs/BACKLOG.md).
 
 ## Stack

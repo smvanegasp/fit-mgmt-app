@@ -3,6 +3,7 @@ import { useState } from "react";
 
 import { NavContext, type Tab } from "./components/Nav";
 import { ScreensProvider } from "./components/Screens";
+import { DESKTOP } from "./hooks";
 import { HistoryPage } from "./pages/HistoryPage";
 import { ProgressPage } from "./pages/ProgressPage";
 import { SettingsPage } from "./pages/SettingsPage";
@@ -22,33 +23,44 @@ const PAGES: Record<Tab, () => React.JSX.Element | null> = {
   settings: SettingsPage,
 };
 
+// On a computer, History and Progress use the width; Train and Settings stay one column.
+const WIDE: Record<Tab, string> = {
+  train: "lg:max-w-lg",
+  history: "lg:max-w-5xl",
+  progress: "lg:max-w-6xl",
+  settings: "lg:max-w-lg",
+};
+
 export function App() {
-  const [tab, setTab] = useState<Tab>("train");
+  // Phones open on Train (logging); computers on Progress (what visitors come to see).
+  const [tab, setTab] = useState<Tab>(() => (window.matchMedia(DESKTOP).matches ? "progress" : "train"));
   const current = TABS.find((t) => t.id === tab)!;
   const Page = PAGES[tab];
 
   return (
     <NavContext.Provider value={setTab}>
       <ScreensProvider>
-        <div className="mx-auto min-h-dvh max-w-lg">
-          <main className="px-4 pt-[max(1rem,env(safe-area-inset-top))]">
+        <div className="min-h-dvh lg:pl-56">
+          <main className={`mx-auto max-w-lg px-4 pt-[max(1rem,env(safe-area-inset-top))] lg:px-10 lg:pt-8 ${WIDE[tab]}`}>
             {/* The tab bar shows where you are; the heading is for screen readers. */}
             <h1 className="sr-only">{current.label}</h1>
             <Page />
           </main>
-    
-          <nav className="fixed inset-x-0 bottom-0 z-30 border-t border-stone-200 bg-white pb-[env(safe-area-inset-bottom)]">
-            <div className="mx-auto grid max-w-lg grid-cols-4">
+
+          {/* Bottom tabs on phones and tablets; a sidebar on computers. */}
+          <nav className="fixed inset-x-0 bottom-0 z-30 border-t border-stone-200 bg-white pb-[env(safe-area-inset-bottom)] lg:inset-y-0 lg:right-auto lg:w-56 lg:border-t-0 lg:border-r lg:pb-0">
+            <div className="hidden px-6 pt-8 pb-6 text-lg font-semibold lg:block">Gym tracker</div>
+            <div className="mx-auto grid max-w-lg grid-cols-4 lg:mx-0 lg:flex lg:max-w-none lg:flex-col lg:gap-1 lg:px-3">
               {TABS.map((t) => (
                 <button
                   key={t.id}
                   onClick={() => setTab(t.id)}
                   aria-current={tab === t.id ? "page" : undefined}
-                  className={`flex flex-col items-center py-2 text-xs font-medium ${
-                    tab === t.id ? "text-blue-700" : "text-stone-500"
+                  className={`flex flex-col items-center py-2 text-xs font-medium lg:flex-row lg:gap-3 lg:rounded-xl lg:px-3 lg:py-2.5 lg:text-sm ${
+                    tab === t.id ? "text-blue-700 lg:bg-blue-50" : "text-stone-500 lg:hover:bg-stone-100"
                   }`}
                 >
-                  <t.icon size={24} weight="fill" aria-hidden />
+                  <t.icon size={24} weight="fill" aria-hidden className="lg:size-5" />
                   {t.label}
                 </button>
               ))}
