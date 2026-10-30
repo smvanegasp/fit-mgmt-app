@@ -228,3 +228,14 @@ def test_body_weight() -> None:
     )
     assert result["body"] == [{"date": "2025-10-25", "weightLb": 149.5, "raw": "67.8 kg"}]
     assert result["workouts"][0]["notes"] == []
+
+
+def test_cue_order_places_cues_in_sections_by_importance() -> None:
+    result = parse(
+        "1/1/26 1:00:00 PM | RDL. 4x8. 150 lbs + barra. First rep cuenta. Pegadita a la pantorrilla",
+        "1/8/26 1:00:00 PM | RDL. 4x8. 150 lbs + barra. First rep cuenta. Pegadita a la pantorrilla",
+        corrections={"cueOrder": {"rdl": {"setup": ["Pegadita a la pantorrilla"], "lift": ["First rep cuenta", "Not a cue"]}}},
+    )
+    placed = {n["text"]: (n.get("section"), n.get("rank")) for n in result["notes"]}
+    assert placed == {"First rep cuenta": ("lift", 1), "Pegadita a la pantorrilla": ("setup", 1)}
+    assert "cueOrder: no cue 'Not a cue' for rdl" in result["flags"]

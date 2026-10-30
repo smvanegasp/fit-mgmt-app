@@ -43,7 +43,10 @@ A mobile-first web app where Sergio logs their gym workouts and sees their progr
   (one line per cue, newest wording only).
 - **Everything in English** (Sergio insists): imported notes go through `private/note_translations.json`
   and cues through `cueTranslations`; never show Spanish in the UI (originals are stored, not shown).
-- **Units:** pounds (lb). No AI in the app. Decisions from stage 1 (2026-10-29): barbell weights
+- **Units:** pounds (lb). **One AI feature** (Sergio, 2026-10-30): the cue check. When a note is
+  written on an exercise, gpt-oss-120b on Groq (`app/cue_check.py`) suggests adding a cue or
+  rewording one, using only Sergio's words; nothing changes until they accept. It's off without
+  `GROQ_API_KEY`. Decisions from stage 1 (2026-10-29): barbell weights
   are written as plates and the app adds a 45 lb bar for totals; weighted dips and chin-ups track
   only the added weight; exercise names are English (Spanish spellings are aliases; notes stay
   as written, mostly Spanish); **bouldering and treadmill runs are part of the app** alongside
@@ -88,16 +91,24 @@ A mobile-first web app where Sergio logs their gym workouts and sees their progr
 | 1 | WhatsApp import: exercise catalog, chat parser, private corrections, review page, loader into DynamoDB + S3 (local), S3Mock in Compose | #4 |
 | 2 | Train tab: day type + stopwatch with laps (a set ends a lap), picker (usual exercises for the day, category chips), English bullet cues, last time, target game (3 in a row, a miss takes one away), setup photos, "Last time" with sets and drop set apart, best drop set, set logger, drop sets, climbing and runs, notes and photos, finish / discard (no rest timer: Sergio times rest with laps), edit or delete past workouts | #5 |
 | 3 | History: one workout per day, grouped by week with day-type filters; workout detail (read, then edit) with estimated times; exercise pages (target, best set, best drop, cues, photos, every session); rename and merge exercises; everything in English | #6 |
+| 4a | Progress: one consistency view (weeks as rows of days colored by day type, count per week, streak of weeks with 3+), the five main lifts as progression ladders (set glyphs: columns = sets, squares = reps); full ladder on every exercise page; one home per piece of information, linked from the rest | open |
 
-**Where things stand (2026-10-30):** stages 0-3 are merged; no open PRs. The app runs **only
+**Where things stand (2026-10-30):** stages 0-3 are merged; stage 4a (Progress) is in review on `stage-4a-progress`. The app runs **only
 locally** (Docker + ngrok); nothing is on AWS yet (stages 6a-6c), so the WhatsApp history is only in
 the local DynamoDB (`load --local`), and anything logged in the app now stays local. Sergio tests on
 their phone through the ngrok URL and may be using the local app while the agent works.
 
-**Next: stage 4a, Progress plots** (consistency calendar heatmap + streaks + workouts per week;
-strength line per exercise with PRs; target-game dots). The agreed plot plan is in
-[docs/BACKLOG.md](docs/BACKLOG.md) ("Stage 4: plot plan"). Load the `dataviz` skill before writing
-chart code. Recharts is the planned library (not installed yet).
+**Next: Sergio's feedback on 4a, then stage 4b** (volume, drop sets, climbing, routine timeline,
+time; see "Stage 4: plot plan" in [docs/BACKLOG.md](docs/BACKLOG.md)). Load the `dataviz` skill
+before writing chart code. Visuals are plain SVG/HTML in `components/Progression.tsx` (no chart
+library). Day-type colors are CSS variables in `index.css` (`--chart-push/legs/pull/cardio`),
+checked with the dataviz palette validator in both modes.
+
+**One home per thing (Sergio, 2026-10-30: "don't repeat yourself").** Each piece of information
+lives in one place and the others link to it: an exercise's progression, cues, photos and sessions
+live on its **exercise page** (the workout card and Progress link there); consistency lives on
+**Progress** (Train shows "This week: 2 of 3 · streak" linking there via `useGoTo()`); workouts
+live in **History** (Train shows only the last one). Prefer a link or a fold-out over a second copy.
 
 ## 4. Architecture
 
@@ -112,7 +123,7 @@ Phone ─ HTTPS ─▶ (local) ngrok ─▶ Vite dev server :5180 ─ /api proxy
 
 - **Backend:** Python 3.12, FastAPI, boto3. `backend/app/`.
 - **Frontend:** React 19 + TypeScript 7 + Vite 8, Tailwind v4, TanStack Query, Phosphor icons;
-  Recharts joins in stage 4. `frontend/src/`. Same-origin `/api`, so no CORS; auth (stage 5a)
+  charts in plain SVG. `frontend/src/`. Same-origin `/api`, so no CORS; auth (stage 5a)
   uses an httpOnly cookie.
 - **One Docker image** for local and Lambda: `backend/Dockerfile` has an `app` stage (compose
   and CI) and a final `lambda` stage with the AWS Lambda Web Adapter (built at deploy time).
@@ -141,11 +152,16 @@ backend/
   app/db.py                 DynamoDB single table: put/get/query/delete, batches; Decimal <-> int/float
   app/storage.py            S3 photos (copied from the pantry)
   app/models.py             Pydantic shapes: SetData, Entry, Problem, Segment, WorkoutBody, Workout,
-                            Exercise, Note, Scheme/Streak, ExerciseSummary
-  app/history.py            last session per exercise, main-set scheme, streak, usage counts
+                            Exercise, Note, Scheme/Streak, ExerciseSummary, Progress/Lift/Step
+  app/history.py            last session per exercise, main-set scheme, the target game (replay yields
+                            each session's result), usage counts
+  app/cue_check.py          the cue check: a note -> add / reword a cue (gpt-oss-120b on Groq)
+  app/progress.py           Progress tab: training days with day type; each exercise's progression
+                            ladder (one step per target, from the target-game replay; MAIN_LIFTS)
   app/labels.py             session labels ("Push", "Squat + Climb"); shared with the importer
   app/space.py              current_space(): "main" until stage 5a (then the pantry version)
-  app/routers/              exercises (list, create, summary, cues), workouts (saved + ACTIVE), photos
+  app/routers/              exercises (list, create, summary, cues, progress), workouts (saved + ACTIVE),
+                            photos, progress
   app/catalog.py            built-in exercise catalog: English names, group, load type, bar
                             weight, aliases (Spanish, shorthand, typos)
   app/importer/             chat.py (export -> messages), parse.py (messages -> workouts, notes,
@@ -155,14 +171,18 @@ frontend/
   src/App.tsx               tabs Train / History / Progress / Settings
   src/api.ts, hooks.ts      API client and TanStack Query hooks
   src/pages/                TrainPage (idle: day type, start, last workouts; active workout),
-                            HistoryPage (Workouts by week + filters / Exercises), ProgressPage, SettingsPage
+                            HistoryPage (Workouts by week + filters / Exercises), ProgressPage (consistency
+                            weeks + streak, lift ladders), SettingsPage
   src/components/           Screens (stack of full-screen pages: useScreens().openWorkout / openExercise),
                             Screen, WorkoutDetail, ExercisePage, EditWorkout, WorkoutCard,
                             WorkoutEditor, EntryCard (set logger, drop sets, climbing, run, notes),
                             Cues (checklist + manage sheet), ExercisePicker, Stepper,
-                            Photos, BottomSheet, InfoTip (both from the pantry), ComingSoon
+                            Photos, BottomSheet, InfoTip (both from the pantry), ComingSoon,
+                            Progression (SetGlyph, GameDots, ProgressionLadder, LiftCard, day-type
+                            colors), Nav (useGoTo: switch tabs from a page)
   src/lib/                  pure logic + tests: sets (summaries, next set, ladder, volume, next up),
-                            time (local ISO), weeks (week grouping, long dates), laps, duration, search (fuzzy), images, theme
+                            time (local ISO), weeks (week grouping, long dates), laps, duration, search (fuzzy), images, theme,
+                            progress (week rows and counts, streaks, step dates), cues (sections and order)
 ```
 
 ### Data model (DynamoDB, one table `fit`, `pk`/`sk`)
@@ -203,8 +223,11 @@ frontend/
     **segments** (treadmill) `[{mph, minutes}]` plus `distanceMi`.
 - **`NOTE#<exerciseId>#<date>#<id>`**: the technique log. `text` (English), `original` (what
   Sergio wrote, when translated), `date` (first written),
-  `lastSeen`, `sessions` (how many workouts repeat it). Imported cues are the ones written in 2+
-  sessions plus hand-picked ones; per-session comments stay on the workout entry.
+  `lastSeen`, `sessions` (how many workouts repeat it), `section` (`setup`, `brace`, `lift`: the
+  order they matter while training) and `rank` (importance within it; placed by the agent from
+  Sergio's own cues, kept in the corrections' `cueOrder`). Imported cues are the ones written in 2+
+  sessions plus hand-picked ones; per-session comments stay on the workout entry. Re-importing keeps
+  `hidden`, `section` and `rank` set in the app.
 - **`BODY#<date>`** `{weightLb}` · **`ROUTINE#<from>#<id>`** `{name, from, to, days[], notes,
   photos}` (the routine eras, for the evolution timeline) · later `ACTIVE` (workout in progress,
   server-side `startedAt`) and `SETTINGS`.
@@ -221,7 +244,7 @@ frontend/
 - `parse` translates every shown text (notes, captions, climbing notes) to English with
   `private/note_translations.json`, and applies `private/corrections.json` (git-ignored): `start`, per-message rewrites keyed by
   `"YYYY-MM-DD HH:MM:SS"` (string = new text, `null` = drop, `{entries: [...]}` = given
-  directly), `photos` (drop / attach), `textFixes` (typo fixes applied to every message first), `technique` (extra cues), `notTechnique` (repeated
+  directly), `photos` (drop / attach), `textFixes` (typo fixes applied to every message first), `technique` (extra cues), `cueOrder` (cue sections and order by English text), `notTechnique` (repeated
   comments that aren't cues), `routines` (the eras, written by the agent from the chat and the
   2-week rotation photo). Fix parser rules for patterns, corrections for one-offs.
 - Check `private/import/review.html` (chat next to result) after any parser change.
@@ -234,10 +257,11 @@ frontend/
 | Area | Endpoints |
 |---|---|
 | Health | `GET /health` |
+| Progress | `GET /progress` (days with day type; the main lifts' progression ladders) · `GET /exercises/{id}/progress` (one exercise's ladder: `steps` of `{scheme, sessions, times}`, oldest first) |
 | Day types | `GET /session-types` (label, usual exercises in order, last date, sessions) |
 | Exercise page | `GET /exercises/{id}/history` (sessions newest first, all photos, best set) · `PATCH /exercises/{id} {name?, group?}` (old name stays an alias) · `POST /exercises/{id}/merge {into}` (sessions and cues move; the duplicate is hidden) |
 | Exercises | `GET /exercises` (catalog + custom, with `lastDone`, `timesDone`) · `POST /exercises` · `GET /exercises/{id}/summary[?exclude=workoutId]` (cues, last, streak = target game, photos, bestDrop) |
-| Cues | `POST /exercises/{id}/notes {text, date}` · `PATCH /exercises/{id}/notes/{noteId} {text?, hidden?}` · `DELETE` (same path) |
+| Cues | `POST /exercises/{id}/notes {text, date, section?}` · `PATCH /exercises/{id}/notes/{noteId} {text?, hidden?, section?, rank?}` · `DELETE` (same path) · `POST /exercises/{id}/cue-check {note}` (suggestion `{action: add|update|none, noteId?, text?, section?}`; 503 without `GROQ_API_KEY`) |
 | Workouts | `GET /workouts?limit=` (newest first) · `GET/PUT/DELETE /workouts/{id}` (PUT keeps id, date, source; label recomputed) |
 | In progress | `GET /active` · `POST /active {startedAt}` (keeps an existing one) · `PUT /active` (autosave; startedAt fixed) · `POST /active/finish {endedAt}` · `DELETE /active` |
 | Photos | `POST /photos` (multipart photo + thumb, resized on the phone) · `GET /photos/{space}/{id}[?size=thumb]` |
@@ -280,7 +304,9 @@ cd backend && uv run python ../scripts/import_whatsapp.py load --local # stack m
   tests with made-up lines); parsed workouts go straight into DynamoDB, never into a seed file in
   git. The chat also has non-training messages (to-do lists, links, a birthday list): the
   importer drops them, and they must never be quoted in commits, PRs or docs.
-- `backend/.env` (git-ignored) will hold `PASSCODE_HASH` and `SESSION_SECRET` (stage 5a). **Never
+- `backend/.env` (git-ignored) holds `GROQ_API_KEY` (the cue check; Compose reads it when the `api`
+  container is created, so run `docker compose up -d api` after adding it) and will hold
+  `PASSCODE_HASH` and `SESSION_SECRET` (stage 5a). **Never
   print, cat or paste secrets.** Never ask Sergio to paste a key or passcode into chat; they run
   the scripts or edit `.env` themself. On AWS they are SSM SecureStrings under `/fit/`.
 - AWS access: profile **`gym`** (IAM user `gym-deployer`, AdministratorAccess, same account

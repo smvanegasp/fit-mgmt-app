@@ -1,9 +1,10 @@
-import { CaretDown, CheckCircle, Flag, Play, Timer } from "@phosphor-icons/react";
+import { CaretDown, CaretRight, CheckCircle, Flag, Play, Timer } from "@phosphor-icons/react";
 import { useEffect, useRef, useState } from "react";
 
 import { api, type Workout, type WorkoutBody } from "../api";
 import { BottomSheet } from "../components/BottomSheet";
 import { InfoTip } from "../components/InfoTip";
+import { useGoTo } from "../components/Nav";
 import { WorkoutCard } from "../components/WorkoutCard";
 import { useScreens } from "../components/Screens";
 import { WorkoutEditor } from "../components/WorkoutEditor";
@@ -12,6 +13,7 @@ import {
   useAutosave,
   useDiscardWorkout,
   useFinishWorkout,
+  useProgress,
   useSaveActive,
   useSessionTypes,
   useStartWorkout,
@@ -19,8 +21,10 @@ import {
 } from "../hooks";
 import { formatDuration } from "../lib/duration";
 import { currentLap, lapRows } from "../lib/laps";
-import { heavyNext, nextUp, setCount } from "../lib/sets";
-import { localIso, secondsBetween } from "../lib/time";
+import { WEEKLY_GOAL, streaks, weekCounts } from "../lib/progress";
+import { dayType, heavyNext, nextUp, setCount } from "../lib/sets";
+import { friendlyDate, localIso, secondsBetween } from "../lib/time";
+import { weekStart } from "../lib/weeks";
 
 export function TrainPage() {
   const active = useActive();
@@ -52,7 +56,7 @@ function Idle({ onOpen }: { onOpen: (w: Workout) => void }) {
   const [picked, setPicked] = useState<string | null>(null);
   const plan = picked ?? suggestion?.label ?? null;
   const heavy = workouts.data ? heavyNext(workouts.data) : null;
-  const last = (workouts.data ?? []).slice(0, 5);
+  const last = (workouts.data ?? []).slice(0, 2);
 
   return (
     <div className="pb-28">
@@ -105,19 +109,33 @@ function Idle({ onOpen }: { onOpen: (w: Workout) => void }) {
       </section>
 
       {last.length > 0 && (
-        <section className="mt-10">
-          <h2 className="text-lg font-semibold">Last workouts</h2>
-          <p className="mb-3 text-sm text-stone-500">Tap one to see it. Everything is in History.</p>
-          <ul className="space-y-2">
-            {last.map((w) => (
-              <li key={w.id}>
-                <WorkoutCard workout={w} onClick={() => onOpen(w)} />
-              </li>
-            ))}
-          </ul>
+        <section className="mt-10 space-y-2">
+          <WeekLink today={today} />
+          <h2 className="pt-2 text-sm font-semibold tracking-wide text-stone-500 uppercase">Last workouts</h2>
+          {last.map((w) => <WorkoutCard key={w.id} workout={w} onClick={() => onOpen(w)} />)}
         </section>
       )}
     </div>
+  );
+}
+
+/** This week against the goal and the streak, linking to Progress (where the detail lives). */
+function WeekLink({ today }: { today: string }) {
+  const progress = useProgress();
+  const goTo = useGoTo();
+  const days = progress.data?.days;
+  if (!days) return null;
+  const thisWeek = weekCounts(days).get(weekStart(today)) ?? 0;
+  const streak = streaks(days, today).current;
+  return (
+    <button type="button" onClick={() => goTo("progress")}
+      className="flex w-full items-center gap-3 rounded-2xl border border-stone-200 bg-white px-4 py-3 text-left">
+      <span className="min-w-0 flex-1">
+        <span className="block font-semibold">This week: {thisWeek} of {WEEKLY_GOAL}</span>
+        <span className="text-sm text-stone-500">{streak}-week streak</span>
+      </span>
+      <CaretRight size={16} className="shrink-0 text-stone-400" aria-hidden />
+    </button>
   );
 }
 
@@ -223,7 +241,7 @@ function ActiveWorkout({ initial }: { initial: WorkoutBody }) {
         {lapsOpen && <LapList body={body} />}
       </header>
 
-      {body.plan && <p className="mb-2 text-sm font-medium text-stone-500">{body.plan} day</p>}
+      {body.plan && <LastOfType plan={body.plan} />}
       <WorkoutEditor
         body={body}
         onChange={change}
@@ -240,6 +258,25 @@ function ActiveWorkout({ initial }: { initial: WorkoutBody }) {
           }}
         />
       )}
+    </div>
+  );
+}
+
+/** "Push day" with the last Push workout one tap away (folded), to see what was done last time. */
+function LastOfType({ plan }: { plan: string }) {
+  const workouts = useWorkouts(30);
+  const screens = useScreens();
+  const [open, setOpen] = useState(false);
+  const last = (workouts.data ?? []).find((w) => dayType(w.label) === plan);
+  if (!last) return <p className="mb-2 text-sm font-medium text-stone-500">{plan} day</p>;
+  return (
+    <div className="mb-3">
+      <button type="button" onClick={() => setOpen(!open)} aria-expanded={open}
+        className="flex w-full items-center gap-1.5 py-1 text-left text-sm font-medium text-stone-500">
+        {plan} day · last one {friendlyDate(last.date)}
+        <CaretDown size={14} className={`ml-auto ${open ? "rotate-180" : ""}`} aria-hidden />
+      </button>
+      {open && <div className="mt-1"><WorkoutCard workout={last} onClick={() => screens.openWorkout(last.id)} /></div>}
     </div>
   );
 }

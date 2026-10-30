@@ -7,7 +7,7 @@ from fastapi.responses import JSONResponse
 
 from app import db, ssm, storage
 from app.config import on_aws, origin_secret
-from app.routers import exercises, photos, workouts
+from app.routers import exercises, photos, progress, workouts
 
 
 @asynccontextmanager
@@ -44,6 +44,7 @@ app.include_router(exercises.router)
 app.include_router(exercises.session_types_router)
 app.include_router(workouts.router)
 app.include_router(photos.router)
+app.include_router(progress.router)
 
 
 @app.get("/api/health")

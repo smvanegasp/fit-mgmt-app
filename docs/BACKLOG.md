@@ -26,10 +26,26 @@ Sergio merges.
 
 ## Now
 
-Stages 0-3 merged (#1, #3, #4, #5, #6); no open PRs. Next: **stage 4a, Progress plots**, following
-the plot plan below (consistency calendar + streaks + workouts per week; strength per exercise with
-PRs; target-game dots). Then 4b (volume, drop sets, climbing, routine timeline, time), 4c (separate
+Stages 0-3 merged (#1, #3, #4, #5, #6, #7). **Stage 4a (Progress) is in review** on
+`stage-4a-progress`: Sergio tests it on their phone. Then 4b (volume, drop sets, climbing, routine timeline, time), 4c (separate
 desktop design), 5a guests and passcode, 5b welcome page, 6a-6c AWS, 7 production import.
+
+## Stage 4a: what's in it
+
+- **Consistency** (one view): the streak in weeks (a week counts with 3+ workouts; this week
+  doesn't break it while it's going; `WEEKLY_GOAL` in `lib/progress.ts`, Sergio to confirm), then
+  the last 12 weeks as rows of 7 days colored by day type (Push blue, Legs orange, Pull aqua,
+  Cardio gray; tap a day to open it) with the count and a check per week; "Show earlier weeks".
+- **Strength:** squat, deadlift, bench, dips, chin-ups as **progression ladders**: each target is a
+  set glyph (columns = sets, squares = reps, weight under it), so more sets, more reps and more
+  weight all show. Tap a lift for its page.
+- **Exercise page:** a summary line (sessions, since, best set), the full ladder (current target on
+  top with its count; past targets with dates, one dot per session that opens it, "3 of 3"), drop
+  set, cues, photos, the last 5 sessions (show all).
+- **Elsewhere:** Train shows "This week: N of 3 · streak" (opens Progress) and only the last
+  workout; the workout card's exercise name opens its page; its photos fold away; the target there
+  uses the same set glyph and dots.
+- Plain SVG/HTML, no chart library.
 
 ## Stage 3: what's in it
 
@@ -76,6 +92,8 @@ desktop design), 5a guests and passcode, 5b welcome page, 6a-6c AWS, 7 productio
   media** (the photos are part of the technique log); put the `.zip` (or the `.txt` plus media
   files) in `private/` at the repo root. Android caps exports with media at the most recent
   ~10,000 messages; if the chat is longer, also export **Without media** for the full text.
+- Now: a **Groq API key** in `backend/.env` as `GROQ_API_KEY=...` (Sergio adds it; then
+  `docker compose up -d api`). Without it the cue check stays off.
 - Later: alert email (6a), passcode via `set_passcode.py` (5a), Hostinger access (6c), welcome
   note text and photo (5b).
 
@@ -116,6 +134,27 @@ desktop design), 5a guests and passcode, 5b welcome page, 6a-6c AWS, 7 productio
 | Red isn't good; try blue | Blue accent (light and dark), red only for errors and delete |
 | Notes weren't translated, and editing showed a mismatch | All 171 imported texts translated (notes, captions, climbing notes) via a private table; editing a past workout now shows its target and "last time" as of that date |
 
+## Feedback round 2 on stage 4a (Sergio, 2026-10-30)
+
+| What Sergio said | Done |
+|---|---|
+| Show the last two workouts on the first page | Train: "Last workouts" with the two newest |
+| When a workout starts, see the last one of the same type (a toggle) | "Push day · last one Oct 23" under the stopwatch opens the last workout of that day type |
+| Notes and photos too prominent; a toggle or buttons | One quiet row under the sets: Note, Photo, Setup photos (folded) |
+| History: toggle categories to scroll faster | Exercises: categories fold (with counts); searching opens them |
+| Keep in mind: subtler colors, at the bottom | Gray, at the bottom of each exercise card |
+| Remove workout notes and photos | Gone from the editor; old ones still show on the workout |
+| An LLM (gpt-oss-120b on Groq) to see if a note should update the cues | The cue check: after a note, a suggestion to add or reword a cue (accept / no thanks); needs `GROQ_API_KEY` |
+| Group the cues and order them by importance, only with the cues they have | Sections Setup, Brace & breathe, Lift; ranked by the agent (50 cues, none new or reworded); the key cue of each section shows, the rest on tap |
+| Light mode too light, hard to read; dark is great | Light-mode grays a step darker (muted labels 4.8:1, secondary text ~7:1 on white; borders and empty days visible), past targets less faded; dark unchanged |
+
+## Feedback round 1 on stage 4a (Sergio, 2026-10-30)
+
+| What Sergio said | Done |
+|---|---|
+| Charts are too complex; progress in sets and reps doesn't show | Line charts replaced by progression ladders: each target as a set glyph (columns = sets, squares = reps) |
+| The same information in several places; link instead, keep it simple, don't repeat | One home per thing: exercise page (progression, cues, photos, sessions), Progress (consistency), History (workouts); Train and the workout card link there. Calendar, weekly bars, tiles and range chips merged into one weeks view |
+
 ## Feedback round 1 on stage 3 (Sergio, 2026-10-30)
 
 | What Sergio said | Done |
@@ -143,7 +182,8 @@ desktop design), 5a guests and passcode, 5b welcome page, 6a-6c AWS, 7 productio
 
 ## Ideas and improvements
 
-None yet; add as they come up.
+- Stage 5a: turn the cue check off for guest sandboxes (it costs per call and guests could spam it),
+  or rate-limit it. Stage 6a: `GROQ_API_KEY` as SSM `/fit/GROQ_API_KEY`.
 
 ## Done
 

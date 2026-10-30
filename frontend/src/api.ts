@@ -104,6 +104,22 @@ export interface Note {
   source: "whatsapp" | "app";
   /** What Sergio wrote, when `text` is a translation. */
   original?: string;
+  /** Where it fits while training, and its importance there (1 = most important). */
+  section?: CueSection;
+  rank?: number;
+}
+
+/** Setup (warm-up, equipment, position), then brace and breathe, then the lift itself. */
+export type CueSection = "setup" | "brace" | "lift";
+
+export type NotePatch = { text?: string; hidden?: boolean; section?: CueSection; rank?: number };
+
+/** The cue check's proposal for a note written today; nothing changes until it's accepted. */
+export interface CueSuggestion {
+  action: "add" | "update" | "none";
+  noteId?: string | null;
+  text?: string | null;
+  section?: CueSection | null;
 }
 
 /** A target: reps (or seconds) of each working set at one weight, e.g. [4, 4, 4, 3] @ 90. */
@@ -154,6 +170,38 @@ export interface ExerciseHistory {
   best?: { date: string; set: SetData };
 }
 
+/** A training day for the consistency calendar; `type` is today's day type (Push, Legs, Pull, Cardio). */
+export interface ProgressDay {
+  date: string;
+  workoutId: string;
+  label: string;
+  type: string;
+}
+
+/** One rung of an exercise's progression ladder: a target and the sessions spent on it ("new" is
+ * the session that set it). Light days aren't listed. */
+export interface Step {
+  scheme: Scheme;
+  sessions: { date: string; workoutId: string; result: "new" | "reached" | "missed" }[];
+  /** The count when the step ended (or now, for the current one); 3 = done. */
+  times: number;
+}
+
+export interface Lift {
+  exerciseId: string;
+  name: string;
+  load: Load;
+  /** The bar for barbell lifts: weights are plates as written. */
+  barLb: number;
+  /** Oldest first; the last one is the current target. */
+  steps: Step[];
+}
+
+export interface Progress {
+  days: ProgressDay[];
+  lifts: Lift[];
+}
+
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
   // FormData bodies set their own multipart Content-Type.
   const isForm = init?.body instanceof FormData;
@@ -192,14 +240,19 @@ export const api = {
   exerciseHistory: (id: string) => request<ExerciseHistory>(`/exercises/${id}/history`),
   exerciseSummary: (id: string, exclude?: string) =>
     request<ExerciseSummary>(`/exercises/${id}/summary${exclude ? `?exclude=${encodeURIComponent(exclude)}` : ""}`),
-  addNote: (exerciseId: string, text: string, date: string) =>
-    request<Note>(`/exercises/${exerciseId}/notes`, json("POST", { text, date })),
-  updateNote: (exerciseId: string, noteId: string, patch: { text?: string; hidden?: boolean }) =>
+  addNote: (exerciseId: string, text: string, date: string, section?: CueSection) =>
+    request<Note>(`/exercises/${exerciseId}/notes`, json("POST", { text, date, section })),
+  updateNote: (exerciseId: string, noteId: string, patch: NotePatch) =>
     request<Note>(`/exercises/${exerciseId}/notes/${noteId}`, json("PATCH", patch)),
   deleteNote: (exerciseId: string, noteId: string) =>
     request<void>(`/exercises/${exerciseId}/notes/${noteId}`, { method: "DELETE" }),
+  checkCue: (exerciseId: string, note: string) =>
+    request<CueSuggestion>(`/exercises/${exerciseId}/cue-check`, json("POST", { note })),
 
   sessionTypes: () => request<SessionType[]>("/session-types"),
+
+  progress: () => request<Progress>("/progress"),
+  exerciseProgress: (id: string) => request<Lift>(`/exercises/${id}/progress`),
 
   listWorkouts: (limit = 20) => request<Workout[]>(`/workouts?limit=${limit}`),
   getWorkout: (id: string) => request<Workout>(`/workouts/${id}`),

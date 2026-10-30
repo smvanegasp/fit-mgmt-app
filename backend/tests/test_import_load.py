@@ -66,3 +66,19 @@ def test_loading_again_replaces_the_import_but_keeps_app_workouts(tmp_path: Path
     workouts = {w["id"]: w for w in db.query("main", "WORKOUT#")}
     assert set(workouts) == {"2025-11-12-1", "app-1"}  # the stale import row is gone
     assert len(workouts["2025-11-12-1"]["entries"][0]["sets"]) == 3
+
+
+def test_loading_again_keeps_cue_choices_made_in_the_app(tmp_path: Path) -> None:
+    folder = photos_dir(tmp_path)
+    load(parsed(), "main", folder)
+    sk = "NOTE#bench-press#2025-11-12#abc"
+    db.put("main", sk, {**db.get("main", sk), "hidden": True, "section": "lift", "rank": 2})
+    load(parsed(), "main", folder)
+    row = db.get("main", sk)
+    assert (row["hidden"], row["section"], row["rank"]) == (True, "lift", 2)
+    # A placement in the corrections wins.
+    data = parsed()
+    data["notes"][0] |= {"section": "setup", "rank": 1}
+    load(data, "main", folder)
+    row = db.get("main", sk)
+    assert (row["hidden"], row["section"], row["rank"]) == (True, "setup", 1)

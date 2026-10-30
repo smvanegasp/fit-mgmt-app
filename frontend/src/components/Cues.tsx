@@ -1,56 +1,52 @@
 import { CaretDown, EyeSlash, Eye, Lightbulb, PencilSimple, Plus, Trash } from "@phosphor-icons/react";
 import { useState, type FormEvent } from "react";
 
-import type { Note } from "../api";
+import type { CueSection, Note } from "../api";
 import { useAddNote, useDeleteNote, useUpdateNote } from "../hooks";
 import { friendlyDate, localIso } from "../lib/time";
+import { SECTIONS, groupCues, orderCues } from "../lib/cues";
 import { BottomSheet } from "./BottomSheet";
 
-const SHOWN = 3;
-
-/** Most useful first: cues repeated in many sessions, then the newest. */
-export function orderCues(cues: Note[]): Note[] {
-  return [...cues].sort((a, b) => b.sessions - a.sessions || (b.lastSeen ?? b.date).localeCompare(a.lastSeen ?? a.date));
-}
-
 /**
- * The technique checklist shown when an exercise is added: one line per cue, the top three,
- * the rest one tap away. Add a cue right here; edit or hide in the sheet.
+ * The technique checklist on an exercise while training, quiet at the bottom of the card: the
+ * most important cue of each section, the rest one tap away. Add a cue here; edit in the sheet.
  */
 export function CueList({ exerciseId, exerciseName, cues }: { exerciseId: string; exerciseName: string; cues: Note[] }) {
   const [expanded, setExpanded] = useState(false);
   const [managing, setManaging] = useState(false);
   const [adding, setAdding] = useState(false);
-  const visible = orderCues(cues.filter((c) => !c.hidden));
-  const shown = expanded ? visible : visible.slice(0, SHOWN);
+  const groups = groupCues(cues.filter((c) => !c.hidden));
+  const total = groups.reduce((n, g) => n + g.cues.length, 0);
+  const shown = expanded ? groups : groups.map((g) => ({ ...g, cues: g.cues.slice(0, 1) }));
 
   return (
-    <div className="mt-2 rounded-xl bg-amber-50 px-3 py-2">
-      <div className="flex items-center gap-1.5 text-xs font-semibold tracking-wide text-amber-800 uppercase">
+    <div className="mt-3 border-t border-stone-100 pt-2">
+      <div className="flex items-center gap-1.5 text-xs font-medium tracking-wide text-stone-400 uppercase">
         <Lightbulb size={14} weight="fill" aria-hidden />
         Keep in mind
-        <button type="button" onClick={() => setManaging(true)} className="ml-auto rounded p-1 text-amber-800" aria-label={`Edit cues for ${exerciseName}`}>
+        <button type="button" onClick={() => setManaging(true)} className="ml-auto rounded p-1 text-stone-400" aria-label={`Edit cues for ${exerciseName}`}>
           <PencilSimple size={16} weight="fill" aria-hidden />
         </button>
       </div>
-      {shown.length === 0 && !adding && <p className="py-1 text-sm text-amber-900/70">No cues yet. Add what helps you lift better.</p>}
-      <ul className="list-disc space-y-1 py-1 pl-5 marker:text-amber-600">
-        {shown.map((cue) => (
-          <li key={cue.id} className="text-sm leading-snug text-amber-950">
-            {cue.text}
-          </li>
-        ))}
-      </ul>
-      <div className="flex items-center gap-3 pb-1">
-        {visible.length > SHOWN && (
-          <button type="button" onClick={() => setExpanded(!expanded)} className="flex items-center gap-1 text-sm font-medium text-amber-800">
-            <CaretDown size={14} weight="bold" className={expanded ? "rotate-180" : ""} aria-hidden />
-            {expanded ? "Less" : `${visible.length - SHOWN} more`}
+      {total === 0 && !adding && <p className="py-1 text-sm text-stone-500">No cues yet. Add what helps you lift better.</p>}
+      {shown.map((g) => (
+        <div key={g.label ?? "all"} className="mt-1">
+          {g.label && <div className="text-[11px] font-medium text-stone-400">{g.label}</div>}
+          <ul className="list-disc space-y-0.5 pl-5 marker:text-stone-300">
+            {g.cues.map((cue) => <li key={cue.id} className="text-sm leading-snug text-stone-600">{cue.text}</li>)}
+          </ul>
+        </div>
+      ))}
+      <div className="mt-1 flex items-center gap-3">
+        {total > shown.reduce((n, g) => n + g.cues.length, 0) || expanded ? (
+          <button type="button" onClick={() => setExpanded(!expanded)} className="flex items-center gap-1 py-1 text-xs font-medium text-stone-500">
+            <CaretDown size={12} weight="bold" className={expanded ? "rotate-180" : ""} aria-hidden />
+            {expanded ? "Only the key ones" : `All ${total}`}
           </button>
-        )}
+        ) : null}
         {!adding && (
-          <button type="button" onClick={() => setAdding(true)} className="flex items-center gap-1 text-sm font-medium text-amber-800">
-            <Plus size={14} weight="bold" aria-hidden /> Add cue
+          <button type="button" onClick={() => setAdding(true)} className="flex items-center gap-1 py-1 text-xs font-medium text-stone-500">
+            <Plus size={12} weight="bold" aria-hidden /> Add cue
           </button>
         )}
       </div>
@@ -60,27 +56,38 @@ export function CueList({ exerciseId, exerciseName, cues }: { exerciseId: string
   );
 }
 
+function SectionSelect({ value, onChange }: { value: CueSection | undefined; onChange: (s: CueSection) => void }) {
+  return (
+    <select aria-label="Section" value={value ?? "lift"} onChange={(e) => onChange(e.target.value as CueSection)}
+      className="rounded-lg border border-stone-200 bg-white px-2 py-2 text-sm">
+      {SECTIONS.map((s) => <option key={s.id} value={s.id}>{s.label}</option>)}
+    </select>
+  );
+}
+
 function AddCue({ exerciseId, onDone }: { exerciseId: string; onDone: () => void }) {
   const add = useAddNote();
   const [text, setText] = useState("");
+  const [section, setSection] = useState<CueSection>("lift");
 
   async function submit(e: FormEvent) {
     e.preventDefault();
-    if (text.trim()) await add.mutateAsync({ exerciseId, text: text.trim(), date: localIso().slice(0, 10) });
+    if (text.trim()) await add.mutateAsync({ exerciseId, text: text.trim(), date: localIso().slice(0, 10), section });
     onDone();
   }
 
   return (
-    <form onSubmit={submit} className="flex gap-2 pb-1">
+    <form onSubmit={submit} className="mt-1 flex flex-wrap gap-2 pb-1">
       <input
         aria-label="New cue"
         placeholder="e.g. Hands firm on the grip"
         maxLength={300}
         value={text}
         onChange={(e) => setText(e.target.value)}
-        className="min-w-0 flex-1 rounded-lg border border-amber-200 bg-white px-3 py-2 text-sm"
+        className="min-w-0 flex-1 basis-40 rounded-lg border border-stone-200 bg-white px-3 py-2 text-sm"
       />
-      <button disabled={add.isPending} className="rounded-lg bg-amber-600 px-3 text-sm font-medium text-white">Save</button>
+      <SectionSelect value={section} onChange={setSection} />
+      <button disabled={add.isPending} className="rounded-lg bg-blue-600 px-3 text-sm font-medium text-white">Save</button>
     </form>
   );
 }
@@ -93,17 +100,23 @@ function CueSheet({ exerciseName, exerciseId, cues, onClose }: { exerciseName: s
   );
 }
 
-/** Every cue with edit / hide / delete, and a box to add one. */
+/** Every cue by section with edit / hide / delete, and a box to add one. */
 export function CueManager({ exerciseId, cues }: { exerciseId: string; cues: Note[] }) {
   return (
     <>
       <p className="mb-2 text-sm text-stone-500">
-        Hidden cues stay in the log but don't show while training. The most repeated come first.
+        In the order they matter while training, most important first. Hidden cues stay in the log but don't show while
+        training.
       </p>
       {cues.length === 0 && <p className="py-2 text-sm text-stone-500">No cues yet.</p>}
-      <ul className="divide-y divide-stone-100">
-        {orderCues(cues).map((cue) => <CueRow key={cue.id} cue={cue} />)}
-      </ul>
+      {groupCues(cues).map((g) => (
+        <section key={g.label ?? "all"}>
+          {g.label && <h3 className="mt-2 text-xs font-semibold tracking-wide text-stone-500 uppercase">{g.label}</h3>}
+          <ul className="divide-y divide-stone-100">
+            {g.cues.map((cue) => <CueRow key={cue.id} cue={cue} />)}
+          </ul>
+        </section>
+      ))}
       <div className="mt-3">
         <AddCue exerciseId={exerciseId} onDone={() => undefined} />
       </div>
@@ -116,6 +129,7 @@ function CueRow({ cue }: { cue: Note }) {
   const remove = useDeleteNote();
   const [editing, setEditing] = useState(false);
   const [text, setText] = useState(cue.text);
+  const [section, setSection] = useState<CueSection>(cue.section ?? "lift");
 
   if (editing) {
     return (
@@ -123,13 +137,18 @@ function CueRow({ cue }: { cue: Note }) {
         <form
           onSubmit={async (e) => {
             e.preventDefault();
-            if (text.trim() && text.trim() !== cue.text) await update.mutateAsync({ note: cue, patch: { text: text.trim() } });
+            const patch = {
+              ...(text.trim() && text.trim() !== cue.text ? { text: text.trim() } : {}),
+              ...(section !== cue.section ? { section } : {}),
+            };
+            if (Object.keys(patch).length) await update.mutateAsync({ note: cue, patch });
             setEditing(false);
           }}
-          className="flex gap-2"
+          className="flex flex-wrap gap-2"
         >
           <input aria-label="Cue" value={text} onChange={(e) => setText(e.target.value)} maxLength={300}
-            className="min-w-0 flex-1 rounded-lg border border-stone-200 px-3 py-2 text-sm" />
+            className="min-w-0 flex-1 basis-40 rounded-lg border border-stone-200 px-3 py-2 text-sm" />
+          <SectionSelect value={section} onChange={setSection} />
           <button className="rounded-lg bg-blue-600 px-3 text-sm font-medium text-white">Save</button>
         </form>
       </li>

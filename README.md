@@ -12,13 +12,14 @@ the real training log.
 
 Built in stages alongside its sibling project, the
 [pantry app](https://github.com/smvanegasp/pantry-mgmt-app), and shares its architecture.
-**Status:** stage 0 (skeleton). The full plan is in [docs/BACKLOG.md](docs/BACKLOG.md).
+**Status:** logging, history and the first progress charts are built (stages 0-4a); it runs
+locally until the AWS stages. The full plan is in [docs/BACKLOG.md](docs/BACKLOG.md).
 
 ## Stack
 
 | Layer | Choice |
 |---|---|
-| Frontend | React 19, TypeScript, Vite, Tailwind CSS v4, TanStack Query, Phosphor icons |
+| Frontend | React 19, TypeScript, Vite, Tailwind CSS v4, TanStack Query, Phosphor icons; charts in plain SVG |
 | Backend | Python 3.12, FastAPI, boto3 (managed with uv) |
 | Data | DynamoDB, single table, partitioned by space (owner log or guest sandbox) |
 | Local dev | Docker Compose: API, DynamoDB Local, Vite dev server |
@@ -66,6 +67,10 @@ cd frontend && npm test && npm run build
   the repo; parsed workouts are written straight to the database.
 - On AWS, secrets live in SSM Parameter Store (SecureString) and the API only accepts requests
   that come through CloudFront.
+- One optional AI feature: when a note is written on an exercise, the API sends that note and the
+  exercise's current cues to gpt-oss-120b on Groq, which suggests adding or rewording a cue. The
+  owner accepts or ignores the suggestion; nothing changes on its own. Without `GROQ_API_KEY` it
+  is off.
 
 ## Repo map
 

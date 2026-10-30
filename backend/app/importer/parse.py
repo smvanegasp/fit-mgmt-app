@@ -14,6 +14,7 @@ wrong is fixed in a corrections file (kept in private/, never in git) keyed by m
 
       "photos": {"00000333-PHOTO-...jpg": "drop" | "workout" | "<exerciseId>"},
       "technique": {"<exerciseId>": ["cue written once but worth keeping", ...]},
+      "cueOrder": {"<exerciseId>": {"setup": ["English cue", ...], "brace": [...], "lift": [...]}},
       "routines": [...]
     }
 
@@ -708,6 +709,17 @@ def parse_messages(messages: list[Message], corrections: dict[str, Any] | None =
                 flags.append(f"cue without a translation ({note['exerciseId']}): {note['text']!r}")
             elif english != note["text"]:
                 note["original"], note["text"] = note["text"], english
+    # Where each cue goes while training and its importance there, by its English text.
+    order = {
+        (exercise_id, text): (section, rank)
+        for exercise_id, sections in corrections.get("cueOrder", {}).items()
+        for section, texts in sections.items()
+        for rank, text in enumerate(texts, start=1)
+    }
+    for note in notes:
+        if (note["exerciseId"], note["text"]) in order:
+            note["section"], note["rank"] = order.pop((note["exerciseId"], note["text"]))
+    flags += [f"cueOrder: no cue {text!r} for {exercise_id}" for exercise_id, text in order]
 
     return {
         "workouts": workouts,

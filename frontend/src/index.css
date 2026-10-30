@@ -19,6 +19,38 @@ body {
   font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
 }
 
+/* Chart colors, one per day type (Push, Legs, Pull; Cardio is a neutral gray). Checked for color
+   blindness against the card surface in both modes with the dataviz palette validator. */
+:root {
+  --chart-push: #2a78d6;
+  --chart-legs: #eb6834;
+  --chart-pull: #1baf7a;
+  --chart-cardio: #8a847e;
+  /* Past targets in the progression ladders, behind the current one. */
+  --glyph-faded: 0.65;
+}
+
+/* Light mode, higher contrast (Sergio, 2026-10-30: too light to read): every gray a step darker
+   than Tailwind's, so muted labels and icons (400) reach 4.8:1 on white, secondary text (500)
+   about 7:1, and borders (200) and empty cells (100) show. Dark mode redefines these below. */
+:root {
+  --color-stone-100: oklch(93.5% 0.002 106.424);
+  --color-stone-200: oklch(86% 0.004 48.717);
+  --color-stone-300: oklch(66% 0.008 56.366);
+  --color-stone-400: oklch(55% 0.012 56.259);
+  --color-stone-500: oklch(45% 0.012 58.071);
+  --color-stone-600: oklch(38% 0.011 73.639);
+  --color-stone-700: oklch(32% 0.01 67.558);
+}
+
+:root.dark {
+  --chart-push: #3987e5;
+  --chart-legs: #d95926;
+  --chart-pull: #199e70;
+  --chart-cardio: #8a8a8a;
+  --glyph-faded: 0.45;
+}
+
 /* Dark mode: colors are mirrored (50 <-> 950, 100 <-> 900, ...), so every screen flips
    automatically. Grays come from Tailwind's neutral palette (true black and charcoal), with a few
    adjusted steps noted below. Generated from tailwindcss/theme.css; the "dark" class is set from
