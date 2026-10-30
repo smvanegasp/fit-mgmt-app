@@ -39,7 +39,7 @@ A mobile-first web app where Sergio logs their gym workouts and sees their progr
   Each exercise keeps a dated list of notes and photos (its "technique log"), shown on the
   exercise's page; a workout can also have notes and photos. Notes and photos are part of what
   guests see. **The log's main job is a concise checklist shown when Sergio starts that exercise
-  while training**: the things that, if he does them, make the lift go better. Keep it short
+  while training**: the things that, if they do them, make the lift go better. Keep it short
   (one line per cue, newest wording only).
 - **Everything in English** (Sergio insists): imported notes go through `private/note_translations.json`
   and cues through `cueTranslations`; never show Spanish in the UI (originals are stored, not shown).
@@ -72,6 +72,13 @@ A mobile-first web app where Sergio logs their gym workouts and sees their progr
   mode. Blue accent (Tailwind blue, mirrored in `index.css` for dark mode; Sergio, 2026-10-30, after
   trying red), so it looks different from the pantry. Red is only for errors and delete.
 - **Python** with **uv** (`uv sync`, `uv run pytest`, `uv add`). **Node 22+** (Vite 8).
+- **Testing against the local stack:** it holds Sergio's real history, and they may be using it from their
+  phone. Browser checks that write (start/finish/discard a workout, rename, merge) can collide with
+  them: check `GET /api/active` is null first, keep write flows short and discard what you start, or
+  stick to read-only checks (and count write requests). Never discard a workout you didn't start.
+  Use exact Playwright selectors: a loose `/Push/` once matched "Start Push workout".
+- **Feedback rounds:** Sergio reviews on their phone and sends lists of changes; small ones go on the
+  open PR branch, logged in the backlog as "Feedback round N" tables.
 
 ## 3. Status
 
@@ -80,9 +87,17 @@ A mobile-first web app where Sergio logs their gym workouts and sees their progr
 | 0 | Skeleton: FastAPI + React/Vite, Docker Compose, CI (tests, build, Docker, secret scan), deploy workflow (off until 6b), Dependabot, docs | #1 |
 | 1 | WhatsApp import: exercise catalog, chat parser, private corrections, review page, loader into DynamoDB + S3 (local), S3Mock in Compose | #4 |
 | 2 | Train tab: day type + stopwatch with laps (a set ends a lap), picker (usual exercises for the day, category chips), English bullet cues, last time, target game (3 in a row, a miss takes one away), setup photos, "Last time" with sets and drop set apart, best drop set, set logger, drop sets, climbing and runs, notes and photos, finish / discard (no rest timer: Sergio times rest with laps), edit or delete past workouts | #5 |
-| 3 | History: workouts by week with day-type and exercise filters, workout detail (read, then edit), exercise pages (target, best set, best drop, cues, photos, every session), rename and merge exercises | open |
+| 3 | History: one workout per day, grouped by week with day-type filters; workout detail (read, then edit) with estimated times; exercise pages (target, best set, best drop, cues, photos, every session); rename and merge exercises; everything in English | #6 |
 
-Next: **stage 4a, Progress** (consistency calendar, streaks, strength charts). Full plan in [docs/BACKLOG.md](docs/BACKLOG.md).
+**Where things stand (2026-10-30):** stages 0-3 are merged; no open PRs. The app runs **only
+locally** (Docker + ngrok); nothing is on AWS yet (stages 6a-6c), so the WhatsApp history is only in
+the local DynamoDB (`load --local`), and anything logged in the app now stays local. Sergio tests on
+their phone through the ngrok URL and may be using the local app while the agent works.
+
+**Next: stage 4a, Progress plots** (consistency calendar heatmap + streaks + workouts per week;
+strength line per exercise with PRs; target-game dots). The agreed plot plan is in
+[docs/BACKLOG.md](docs/BACKLOG.md) ("Stage 4: plot plan"). Load the `dataviz` skill before writing
+chart code. Recharts is the planned library (not installed yet).
 
 ## 4. Architecture
 
@@ -158,8 +173,8 @@ frontend/
   theirs (Squat, Deadlift, Front lever, Climb, Run) and map to today's types via `day_type`.
 - `pk = SPACE#main` is Sergio's log; `SPACE#sb-<unixExpiry>-<hex>` is a guest sandbox (stage 5a;
   rows carry `ttl`).
-- **`EXERCISE#<id>`**: `name` (English), `group` (push, pull, legs, posterior, core, skill,
-  cardio, climbing), `load`, `measure` (reps, seconds, run, climb), `barLb`, `aliases`, `source`
+- **`EXERCISE#<id>`**: `name` (English), `group` (push, pull, legs, core, cardio, climbing; the old
+  `posterior` and `skill` values still exist in the type and display as Legs and Core), `load`, `measure` (reps, seconds, run, climb), `barLb`, `aliases`, `source`
   (`catalog` from `app/catalog.py`, later `app` for ones Sergio creates).
 - **`WORKOUT#<yyyy-mm-dd>#<id>`**: **one per day** (Sergio, 2026-10-30): a second session the same day
   joins the first (`POST /active/finish` merges; the import groups by day). `durationMin` = training
@@ -183,7 +198,7 @@ frontend/
     one, a miss takes one away (not a reset); 3 means go up. More weight or a small deload starts a
     new target; a session >10% lighter is a light or comeback day and doesn't count (for up to 60
     days); after 3, more reps at the same weight is the next target. Replayed over the whole
-    history; where the log has his written target for that weight, it syncs to his count first.
+    history; where the log has their written target for that weight, it syncs to their count first.
   - **problems** (bouldering) `[{grade, color?, result: sent|attempted, count?, attempts?, note?}]`;
     **segments** (treadmill) `[{mph, minutes}]` plus `distanceMi`.
 - **`NOTE#<exerciseId>#<date>#<id>`**: the technique log. `text` (English), `original` (what
@@ -292,6 +307,9 @@ cd backend && uv run python ../scripts/import_whatsapp.py load --local # stack m
 - **Dark mode** mirrors the Tailwind palette with CSS variables in `index.css` (copied from the
   pantry); it applies before first paint (inline script in `index.html`, localStorage key
   `gym.theme`). Use stone/emerald/amber/sky/red classes and dark mode comes for free.
+- **Shell gotchas in the agent's Bash tool:** heredocs or `node -e` scripts containing apostrophes or
+  backticks often fail to parse ("unexpected EOF"). Write multi-line scripts to the scratchpad with the
+  file tool, then run them. `sed` patterns with backslashes (regexes) get mangled the same way.
 - **Shell gotchas (Windows, Git Bash):** `sed` breaks when the replacement contains `#`; use the
   edit tool. With `MSYS_NO_PATHCONV=1` (needed for AWS CLI paths like `/fit/`), native Windows
   tools need `C:/...` paths.
