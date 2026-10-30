@@ -1,6 +1,6 @@
 """The target game: +1 for a session that reaches the target, -1 for a miss, 3 means go up."""
 
-from app.history import progression, written_target
+from app.history import best_drop, progression, written_target
 from app.models import Entry
 
 
@@ -64,3 +64,13 @@ def test_reading_written_targets() -> None:
     assert (scheme.sets, times, weight) == ([4, 4, 4, 3], 1, 90)
     assert written_target("3x7 vez") is None  # "7 vez" is the reps, not a count
     assert written_target("antes 3x4") is None
+
+
+def test_best_drop_set_is_the_most_total_reps() -> None:
+    def ladder(*reps: int) -> Entry:
+        return Entry(exerciseId="dips", sets=[{"reps": 4, "weightLb": 115}] + [
+            {"reps": r, "weightLb": w, "drop": True} for r, w in zip(reps, [90, 70, 45, 25, 0])])
+    best = best_drop([("2026-10-08", ladder(4, 5, 4, 7, 10)), ("2026-10-22", ladder(4, 5, 8, 8, 18)),
+                      ("2026-10-29", ladder(4, 4, 5, 6, 11))])
+    assert best.date == "2026-10-22" and [s.reps for s in best.sets] == [4, 5, 8, 8, 18]
+    assert best_drop([("2026-10-01", Entry(exerciseId="squat", sets=[{"reps": 5, "weightLb": 170}]))]) is None

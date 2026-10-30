@@ -76,7 +76,7 @@ A mobile-first web app where Sergio logs their gym workouts and sees their progr
 |---|---|---|
 | 0 | Skeleton: FastAPI + React/Vite, Docker Compose, CI (tests, build, Docker, secret scan), deploy workflow (off until 6b), Dependabot, docs | #1 |
 | 1 | WhatsApp import: exercise catalog, chat parser, private corrections, review page, loader into DynamoDB + S3 (local), S3Mock in Compose | #4 |
-| 2 | Train tab: day type + stopwatch with laps (a set ends a lap), picker (usual exercises for the day, category chips), English bullet cues, last time, target game (3 in a row, a miss takes one away), setup photos, set logger, drop sets, climbing and runs, notes and photos, 5-min rest timer, finish / discard, edit or delete past workouts | open |
+| 2 | Train tab: day type + stopwatch with laps (a set ends a lap), picker (usual exercises for the day, category chips), English bullet cues, last time, target game (3 in a row, a miss takes one away), setup photos, "Last time" with sets and drop set apart, best drop set, set logger, drop sets, climbing and runs, notes and photos, finish / discard (no rest timer: Sergio times rest with laps), edit or delete past workouts | open |
 
 Next: **stage 3, History** (list by week, workout detail, exercise pages). Full plan in [docs/BACKLOG.md](docs/BACKLOG.md).
 
@@ -138,10 +138,10 @@ frontend/
   src/pages/                TrainPage (idle: next up, start, recent; active workout; edit saved),
                             HistoryPage, ProgressPage, SettingsPage
   src/components/           WorkoutEditor, EntryCard (set logger, drop sets, climbing, run, notes),
-                            Cues (checklist + manage sheet), ExercisePicker, Stepper, RestBar,
+                            Cues (checklist + manage sheet), ExercisePicker, Stepper,
                             Photos, BottomSheet, InfoTip (both from the pantry), ComingSoon
   src/lib/                  pure logic + tests: sets (summaries, next set, ladder, volume, next up),
-                            time (local ISO), restTimer, duration, search (fuzzy), images, theme
+                            time (local ISO), laps, duration, search (fuzzy), images, theme
 ```
 
 ### Data model (DynamoDB, one table `fit`, `pk`/`sk`)
@@ -206,7 +206,7 @@ frontend/
 |---|---|
 | Health | `GET /health` |
 | Day types | `GET /session-types` (label, usual exercises in order, last date, sessions) |
-| Exercises | `GET /exercises` (catalog + custom, with `lastDone`, `timesDone`) · `POST /exercises` · `GET /exercises/{id}/summary[?exclude=workoutId]` (cues, last, streak = target game, photos) |
+| Exercises | `GET /exercises` (catalog + custom, with `lastDone`, `timesDone`) · `POST /exercises` · `GET /exercises/{id}/summary[?exclude=workoutId]` (cues, last, streak = target game, photos, bestDrop) |
 | Cues | `POST /exercises/{id}/notes {text, date}` · `PATCH /exercises/{id}/notes/{noteId} {text?, hidden?}` · `DELETE` (same path) |
 | Workouts | `GET /workouts?limit=` (newest first) · `GET/PUT/DELETE /workouts/{id}` (PUT keeps id, date, source; label recomputed) |
 | In progress | `GET /active` · `POST /active {startedAt}` (keeps an existing one) · `PUT /active` (autosave; startedAt fixed) · `POST /active/finish {endedAt}` · `DELETE /active` |

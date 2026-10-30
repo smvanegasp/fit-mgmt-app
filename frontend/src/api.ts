@@ -132,6 +132,8 @@ export interface ExerciseSummary {
   streak?: Streak;
   /** Photos taken for this exercise (setups), newest first. */
   photos: (Photo & { date: string })[];
+  /** The drop-set ladder with the most total reps so far. */
+  bestDrop?: { date: string; sets: SetData[] };
 }
 
 async function request<T>(path: string, init?: RequestInit): Promise<T> {

@@ -199,6 +199,11 @@ class DatedPhoto(Photo):
     date: str
 
 
+class DatedSets(BaseModel):
+    date: str
+    sets: list[SetData]
+
+
 class ExerciseSummary(BaseModel):
     exercise: Exercise
     cues: list[Note]
@@ -206,6 +211,8 @@ class ExerciseSummary(BaseModel):
     streak: Streak | None
     # Photos taken for this exercise (machine and rack setups), newest first.
     photos: list[DatedPhoto] = Field(default_factory=list)
+    # The drop-set ladder with the most total reps so far (dips, chin-ups).
+    bestDrop: DatedSets | None = None
 
 
 class SessionType(BaseModel):

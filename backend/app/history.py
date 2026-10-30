@@ -13,7 +13,7 @@ from datetime import date, timedelta
 from typing import Any
 
 from app import db
-from app.models import DatedPhoto, Entry, LastTime, Scheme, SessionType, Streak
+from app.models import DatedPhoto, DatedSets, Entry, LastTime, Scheme, SessionType, Streak
 
 GOAL = 3
 
@@ -130,18 +130,32 @@ def progression(sessions: list[tuple[str, Entry]]) -> Streak | None:
     return Streak(scheme=target, times=times, goal=GOAL) if target else None
 
 
-def summary(space: str, exercise_id: str, exclude: str | None = None) -> tuple[LastTime | None, Streak | None, list[DatedPhoto]]:
-    """Last session, target game and photos for an exercise, ignoring the workout being edited."""
+def best_drop(sessions: list[tuple[str, Entry]]) -> DatedSets | None:
+    """The drop-set ladder with the most total reps (ties go to the most recent)."""
+    best: DatedSets | None = None
+    best_reps = 0.0
+    for day, entry in sessions:
+        ladder = [s for s in entry.sets if s.drop]
+        reps = sum(s.reps or 0 for s in ladder)
+        if ladder and reps >= best_reps:
+            best, best_reps = DatedSets(date=day, sets=ladder), reps
+    return best
+
+
+def summary(space: str, exercise_id: str, exclude: str | None = None) -> tuple[LastTime | None, Streak | None, list[DatedPhoto], DatedSets | None]:
+    """Last session, target game, photos and best drop set for an exercise, ignoring the workout
+    being edited."""
     done = [
         (w, e) for w in workouts(space)
         if w.get("id") != exclude and (e := merged_entry(w, exercise_id)) is not None
     ]
     if not done:
-        return None, None, []
+        return None, None, [], None
     workout, entry = done[-1]
     last = LastTime(workoutId=workout["id"], date=workout["date"], entry=entry)
     photos = [DatedPhoto(**p.model_dump(), date=w["date"]) for w, e in reversed(done) for p in e.photos][:12]
-    return last, progression([(w["date"], e) for w, e in done]), photos
+    sessions = [(w["date"], e) for w, e in done]
+    return last, progression(sessions), photos, best_drop(sessions)
 
 
 def usage(space: str) -> dict[str, tuple[str, int]]:

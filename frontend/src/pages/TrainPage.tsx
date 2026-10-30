@@ -1,11 +1,10 @@
-import { ArrowLeft, CheckCircle, Flag, Play, Timer, Trash } from "@phosphor-icons/react";
+import { ArrowLeft, CaretDown, CheckCircle, Flag, Play, Timer, Trash } from "@phosphor-icons/react";
 import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 
 import { api, type Entry, type Exercise, type Workout, type WorkoutBody } from "../api";
 import { BottomSheet } from "../components/BottomSheet";
 import { InfoTip } from "../components/InfoTip";
-import { RestBar } from "../components/RestBar";
 import { WorkoutEditor } from "../components/WorkoutEditor";
 import {
   useActive,
@@ -22,7 +21,6 @@ import {
 } from "../hooks";
 import { formatDuration } from "../lib/duration";
 import { currentLap, lapRows } from "../lib/laps";
-import { useRestTimer } from "../lib/restTimer";
 import { nextUp, setCount, summarizeSets } from "../lib/sets";
 import { friendlyDate, localIso, secondsBetween } from "../lib/time";
 
@@ -175,8 +173,10 @@ function useTick() {
   }, []);
 }
 
-/** Total time, the running lap, and a Lap button, like the phone's stopwatch. */
-function Stopwatch({ body, onLap, onShowLaps }: { body: WorkoutBody; onLap: () => void; onShowLaps: () => void }) {
+/** Total time, the running lap (tap to open the lap list), and a Lap button, like the phone's stopwatch. */
+function Stopwatch({ body, onLap, lapsOpen, onToggleLaps }: {
+  body: WorkoutBody; onLap: () => void; lapsOpen: boolean; onToggleLaps: () => void;
+}) {
   useTick();
   const laps = body.laps ?? [];
   return (
@@ -185,8 +185,14 @@ function Stopwatch({ body, onLap, onShowLaps }: { body: WorkoutBody; onLap: () =
         <div className="text-3xl font-semibold tabular-nums" aria-label="Elapsed time">
           {formatDuration(secondsBetween(body.startedAt))}
         </div>
-        <button type="button" onClick={onShowLaps} className="text-sm text-stone-600 tabular-nums underline-offset-2 hover:underline">
+        <button
+          type="button"
+          onClick={onToggleLaps}
+          aria-expanded={lapsOpen}
+          className="-ml-1 flex items-center gap-1 rounded-md px-1 text-sm font-medium text-stone-700 tabular-nums"
+        >
           Lap {laps.length + 1} · {formatDuration(currentLap(body.startedAt, laps))}
+          <CaretDown size={14} weight="bold" className={lapsOpen ? "rotate-180" : ""} aria-hidden />
         </button>
       </div>
       <button type="button" onClick={onLap} className="flex items-center gap-1.5 rounded-xl bg-white px-4 py-3 font-semibold text-stone-800 ring-1 ring-stone-300">
@@ -196,12 +202,12 @@ function Stopwatch({ body, onLap, onShowLaps }: { body: WorkoutBody; onLap: () =
   );
 }
 
-function LapSheet({ body, onClose }: { body: WorkoutBody; onClose: () => void }) {
+/** The laps, newest first, opened from the stopwatch: each set starts a lap, so the running lap is the rest. */
+function LapList({ body }: { body: WorkoutBody }) {
   useTick();
   const laps = body.laps ?? [];
   return (
-    <BottomSheet title="Laps" onClose={onClose}>
-      <p className="mb-2 text-sm text-stone-500">Logging a set starts a new lap, so these are your work and rest times.</p>
+    <div className="mt-2 max-h-64 overflow-y-auto rounded-xl bg-white px-3 ring-1 ring-stone-200">
       <ol className="divide-y divide-stone-100 tabular-nums">
         <li className="flex items-center gap-3 py-2.5 font-semibold text-emerald-700">
           <span className="w-14">Lap {laps.length + 1}</span>
@@ -216,7 +222,8 @@ function LapSheet({ body, onClose }: { body: WorkoutBody; onClose: () => void })
           </li>
         ))}
       </ol>
-    </BottomSheet>
+      {laps.length === 0 && <p className="pb-2.5 text-sm text-stone-500">Logging a set (or tapping Lap) starts a new lap.</p>}
+    </div>
   );
 }
 
@@ -224,10 +231,12 @@ function ActiveWorkout({ initial }: { initial: WorkoutBody }) {
   const [body, setBody] = useState(initial);
   // The latest version, so a set and its lap logged in the same tap build on each other.
   const latest = useRef(initial);
-  const autosave = useAutosave(useSaveActive());
-  const rest = useRestTimer();
+  // Once finishing or discarding starts, a late autosave must not recreate the workout.
+  const ending = useRef(false);
+  const saveActive = useSaveActive();
+  const autosave = useAutosave((next) => (ending.current ? Promise.resolve() : saveActive(next)));
   const [finishing, setFinishing] = useState(false);
-  const [showLaps, setShowLaps] = useState(false);
+  const [lapsOpen, setLapsOpen] = useState(false);
 
   const change = (next: WorkoutBody) => {
     latest.current = next;
@@ -241,37 +250,35 @@ function ActiveWorkout({ initial }: { initial: WorkoutBody }) {
   };
 
   return (
-    <div className="pb-44">
-      <header className="sticky top-0 z-10 -mx-4 mb-3 flex items-center gap-2 border-b border-stone-200 bg-stone-50/95 px-4 pt-[max(0.75rem,env(safe-area-inset-top))] pb-3 backdrop-blur">
-        <Stopwatch body={body} onLap={() => lap()} onShowLaps={() => setShowLaps(true)} />
-        <button
-          type="button"
-          onClick={() => setFinishing(true)}
-          className="flex items-center gap-1.5 rounded-xl bg-stone-900 px-4 py-3 font-semibold text-white"
-        >
-          <Flag size={20} weight="fill" aria-hidden /> Finish
-        </button>
+    <div className="pb-28">
+      <header className="sticky top-0 z-10 -mx-4 mb-3 border-b border-stone-200 bg-stone-50/95 px-4 pt-[max(0.75rem,env(safe-area-inset-top))] pb-3 backdrop-blur">
+        <div className="flex items-center gap-2">
+          <Stopwatch body={body} onLap={() => lap()} lapsOpen={lapsOpen} onToggleLaps={() => setLapsOpen(!lapsOpen)} />
+          <button
+            type="button"
+            onClick={() => setFinishing(true)}
+            className="flex items-center gap-1.5 rounded-xl bg-stone-900 px-4 py-3 font-semibold text-white"
+          >
+            <Flag size={20} weight="fill" aria-hidden /> Finish
+          </button>
+        </div>
+        {lapsOpen && <LapList body={body} />}
       </header>
 
       {body.plan && <p className="mb-2 text-sm font-medium text-stone-500">{body.plan} day</p>}
       <WorkoutEditor
         body={body}
         onChange={change}
-        onSetLogged={(label) => {
-          lap(label);
-          rest.start();
-        }}
+        onSetLogged={(label) => lap(label)}
       />
-      <RestBar timer={rest} />
-      {showLaps && <LapSheet body={body} onClose={() => setShowLaps(false)} />}
       {finishing && (
         <FinishSheet
           body={body}
           onClose={() => setFinishing(false)}
-          onDone={() => rest.stop()}
-          // Make sure the last edit reached the server before finishing.
-          beforeFinish={async () => {
-            await api.saveActive(latest.current);
+          // Save the last edit, then stop autosaving before the workout is finished or discarded.
+          onEnding={async (keep) => {
+            if (keep) await api.saveActive(latest.current);
+            ending.current = true;
           }}
         />
       )}
@@ -279,8 +286,8 @@ function ActiveWorkout({ initial }: { initial: WorkoutBody }) {
   );
 }
 
-function FinishSheet({ body, onClose, onDone, beforeFinish }: {
-  body: WorkoutBody; onClose: () => void; onDone: () => void; beforeFinish: () => Promise<void>;
+function FinishSheet({ body, onClose, onEnding }: {
+  body: WorkoutBody; onClose: () => void; onEnding: (keep: boolean) => Promise<void>;
 }) {
   const finish = useFinishWorkout();
   const discard = useDiscardWorkout();
@@ -300,9 +307,8 @@ function FinishSheet({ body, onClose, onDone, beforeFinish }: {
         type="button"
         disabled={finish.isPending || entries.length === 0}
         onClick={async () => {
-          await beforeFinish();
+          await onEnding(true);
           await finish.mutateAsync(localIso());
-          onDone();
         }}
         className="mt-4 flex w-full items-center justify-center gap-2 rounded-xl bg-emerald-600 py-3.5 text-lg font-semibold text-white disabled:opacity-50"
       >
@@ -313,7 +319,7 @@ function FinishSheet({ body, onClose, onDone, beforeFinish }: {
         Keep training
       </button>
       {confirmDiscard ? (
-        <button type="button" onClick={async () => { await discard.mutateAsync(); onDone(); }}
+        <button type="button" onClick={async () => { await onEnding(false); await discard.mutateAsync(); }}
           className="mt-2 w-full rounded-xl bg-red-600 py-3 font-medium text-white">
           Yes, discard this workout
         </button>

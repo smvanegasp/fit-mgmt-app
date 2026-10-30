@@ -55,7 +55,7 @@ stage 3 (History). Stage 1 is merged (#4): 179 imported sessions (2025-09-05 to 
   sessions in a row reached it), set logger with big steppers pre-filled from the last set or
   last session, drop-set ladder (last time's weights and reps filled in), notes and photos.
 - Bouldering (grade, hold color, sent / tried, count) and treadmill (distance, minutes).
-- Rest timer after each set (length remembered, buzzes when over), autosave, finish or discard.
+- Autosave, finish or discard. Rest is timed with laps (no rest timer, Sergio's choice).
 - Not in this stage: History tab, exercise pages, charts (stages 3 and 4).
 
 ## Needs Sergio
@@ -78,6 +78,15 @@ stage 3 (History). Stage 1 is merged (#4): 179 imported sessions (2025-09-05 to 
 | Adding exercises is too complex; better categories | Picker opens on "Usual on <day> days" in usual order; chips: Recent, Push, Pull, Legs, Hips & hamstrings, Core, Skills, Climb & run |
 | See the photos taken for an exercise (setups) | "Your photos" on each exercise card |
 | Rest: keep the countdown, up to 5 min, default 5 min | Choices 1-5 min, default 5:00 |
+
+## Feedback round 2 on stage 2 (Sergio, 2026-10-30)
+
+| What Sergio said | Done |
+|---|---|
+| Laps in a toggle, to see how much he rested | Tap the running lap under the stopwatch: the lap list opens in place, newest first |
+| Remove the rest timer; he manages rest with laps | Removed |
+| "Last" doesn't separate the target sets from the drop set | "Last time" box: Sets and Drop set rows; ladders as weight×reps chips |
+| See the best drop set so far | Best drop (most total reps) on the card and in the drop-set sheet, with the running total and "new best" |
 
 ## Ideas and improvements
 

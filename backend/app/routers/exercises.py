@@ -62,8 +62,9 @@ def create_exercise(body: ExerciseCreate, space: str = Depends(current_space)) -
 def exercise_summary(exercise_id: str, exclude: str | None = None, space: str = Depends(current_space)) -> ExerciseSummary:
     """What the Train screen shows when an exercise is added: cues, last time, the streak."""
     exercise = get_exercise(space, exercise_id)
-    last, streak, photos = history.summary(space, exercise_id, exclude=exclude)
-    return ExerciseSummary(exercise=exercise, cues=cues(space, exercise_id), last=last, streak=streak, photos=photos)
+    last, streak, photos, best = history.summary(space, exercise_id, exclude=exclude)
+    return ExerciseSummary(exercise=exercise, cues=cues(space, exercise_id), last=last, streak=streak, photos=photos,
+                           bestDrop=best)
 
 
 @router.post("/{exercise_id}/notes", status_code=status.HTTP_201_CREATED)

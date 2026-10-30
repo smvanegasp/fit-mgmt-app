@@ -18,7 +18,7 @@ interface Props {
   excludeWorkoutId?: string;
   onChange: (entry: Entry) => void;
   onRemove: () => void;
-  /** A set was logged ("Set 2 · Weighted dips"): new lap, rest timer. */
+  /** A set was logged ("Set 2 · Weighted dips"): starts a new lap. */
   onSetLogged: (label: string) => void;
 }
 
@@ -49,10 +49,7 @@ export function EntryCard({ entry, exercise, excludeWorkoutId, onChange, onRemov
       {summary.data && <CueList exerciseId={exercise.id} exerciseName={exercise.name} cues={summary.data.cues} />}
 
       {last && exercise.measure !== "climb" && exercise.measure !== "run" && (
-        <p className="mt-2 text-sm text-stone-600">
-          <span className="font-medium text-stone-500">Last ({friendlyDate(last.date)}):</span>{" "}
-          {summarizeSets(last.entry.sets ?? [], exercise.load) || "no sets"}
-        </p>
+        <LastTime date={last.date} sets={last.entry.sets ?? []} load={exercise.load} best={summary.data?.bestDrop} />
       )}
       {streak && <TargetGame streak={streak} load={exercise.load} today={entry.sets ?? []} />}
       {summary.data && summary.data.photos.length > 0 && (
@@ -69,11 +66,57 @@ export function EntryCard({ entry, exercise, excludeWorkoutId, onChange, onRemov
       ) : exercise.measure === "run" ? (
         <RunLog entry={entry} onChange={onChange} />
       ) : (
-        <SetLog entry={entry} exercise={exercise} lastSets={last?.entry.sets} onChange={onChange} onSetLogged={onSetLogged} />
+        <SetLog entry={entry} exercise={exercise} lastSets={last?.entry.sets} bestDrop={summary.data?.bestDrop}
+          onChange={onChange} onSetLogged={onSetLogged} />
       )}
 
       <EntryNotes entry={entry} onChange={onChange} />
     </article>
+  );
+}
+
+// ------------------------------------------------------------------ last time and drop sets
+
+/** A drop ladder as weight×reps steps: 90×4 · 70×5 · 45×8 · 25×8 · BW×18. */
+export function Ladder({ sets }: { sets: SetData[] }) {
+  return (
+    <span className="inline-flex flex-wrap gap-1">
+      {sets.map((s, i) => (
+        <span key={i} className="rounded bg-sky-100 px-1.5 py-0.5 text-xs font-medium text-sky-900 tabular-nums">
+          {s.weightLb ? s.weightLb : "BW"}×{s.reps ?? 0}
+        </span>
+      ))}
+    </span>
+  );
+}
+
+/** Last session, with the working sets and the drop set on separate rows, and the best drop set so far. */
+function LastTime({ date, sets, load, best }: { date: string; sets: SetData[]; load: Exercise["load"]; best?: { date: string; sets: SetData[] } }) {
+  const work = sets.filter((s) => !s.drop);
+  const drop = sets.filter((s) => s.drop);
+  const lastIsBest = best !== undefined && best.date === date;
+  return (
+    <div className="mt-2 rounded-xl bg-stone-50 px-3 py-2 text-sm">
+      <div className="text-xs font-semibold tracking-wide text-stone-500 uppercase">Last time · {friendlyDate(date)}</div>
+      <dl className="mt-1 grid grid-cols-[4.5rem_1fr] gap-x-2 gap-y-1">
+        <dt className="text-stone-500">Sets</dt>
+        <dd className="text-stone-800">{summarizeSets(work, load) || "none"}</dd>
+        {drop.length > 0 && (
+          <>
+            <dt className="text-stone-500">Drop set</dt>
+            <dd><Ladder sets={drop} />{lastIsBest && <span className="ml-1 text-xs font-semibold text-sky-800">best</span>}</dd>
+          </>
+        )}
+        {best && !lastIsBest && (
+          <>
+            <dt className="text-stone-500">Best drop</dt>
+            <dd>
+              <Ladder sets={best.sets} /> <span className="text-xs text-stone-500">{friendlyDate(best.date)}</span>
+            </dd>
+          </>
+        )}
+      </dl>
+    </div>
   );
 }
 
@@ -114,8 +157,9 @@ function TargetGame({ streak, load, today }: { streak: Streak; load: Exercise["l
 // ------------------------------------------------------------------ lifting
 
 
-function SetLog({ entry, exercise, lastSets, onChange, onSetLogged }: {
-  entry: Entry; exercise: Exercise; lastSets?: SetData[]; onChange: (e: Entry) => void; onSetLogged: (label: string) => void;
+function SetLog({ entry, exercise, lastSets, bestDrop, onChange, onSetLogged }: {
+  entry: Entry; exercise: Exercise; lastSets?: SetData[]; bestDrop?: { date: string; sets: SetData[] };
+  onChange: (e: Entry) => void; onSetLogged: (label: string) => void;
 }) {
   const sets = entry.sets ?? [];
   const [editing, setEditing] = useState<number | null>(null);
@@ -228,6 +272,7 @@ function SetLog({ entry, exercise, lastSets, onChange, onSetLogged }: {
         <DropSetSheet
           weights={ladderWeights(lastSets)}
           lastReps={(lastSets ?? []).filter((s) => s.drop).map((s) => s.reps ?? 0)}
+          best={bestDrop}
           onClose={() => setDropOpen(false)}
           onLog={(ladder) => {
             onChange({ ...entry, sets: [...sets, ...ladder] });
@@ -240,13 +285,23 @@ function SetLog({ entry, exercise, lastSets, onChange, onSetLogged }: {
   );
 }
 
-function DropSetSheet({ weights: initial, lastReps, onClose, onLog }: {
-  weights: number[]; lastReps: number[]; onClose: () => void; onLog: (sets: SetData[]) => void;
+function DropSetSheet({ weights: initial, lastReps, best, onClose, onLog }: {
+  weights: number[]; lastReps: number[]; best?: { date: string; sets: SetData[] }; onClose: () => void; onLog: (sets: SetData[]) => void;
 }) {
   const [steps, setSteps] = useState(() => initial.map((weightLb, i) => ({ weightLb, reps: lastReps[i] ?? 0 })));
+  const total = steps.reduce((sum, s) => sum + s.reps, 0);
+  const bestTotal = best ? best.sets.reduce((sum, s) => sum + (s.reps ?? 0), 0) : 0;
   return (
     <BottomSheet title="Drop set" onClose={onClose}>
-      <p className="mb-3 text-sm text-stone-500">No rest between steps. Reps at each weight{lastReps.length ? "; last time's are filled in" : ""}.</p>
+      <p className="mb-2 text-sm text-stone-500">No rest between steps. Reps at each weight{lastReps.length ? "; last time's are filled in" : ""}.</p>
+      {best && (
+        <div className="mb-3 rounded-xl bg-sky-50 px-3 py-2 text-sm">
+          <div className="text-xs font-semibold tracking-wide text-sky-800 uppercase">
+            Best so far · {friendlyDate(best.date)} · {bestTotal} reps
+          </div>
+          <div className="mt-1"><Ladder sets={best.sets} /></div>
+        </div>
+      )}
       <ul className="space-y-3">
         {steps.map((step, i) => (
           <li key={i} className="flex items-center gap-3">
@@ -268,7 +323,7 @@ function DropSetSheet({ weights: initial, lastReps, onClose, onLog }: {
         onClick={() => onLog(steps.filter((s) => s.reps > 0).map((s) => ({ ...s, drop: true })))}
         className="mt-4 w-full rounded-xl bg-emerald-600 py-3.5 text-lg font-semibold text-white"
       >
-        Log drop set
+        Log drop set{best ? ` · ${total} reps${total > bestTotal ? " (new best)" : ""}` : ""}
       </button>
     </BottomSheet>
   );
