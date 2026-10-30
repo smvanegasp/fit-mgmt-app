@@ -77,7 +77,7 @@ function Idle({ onEdit }: { onEdit: (w: Workout) => void }) {
                 role="radio"
                 aria-checked={plan === label}
                 onClick={() => setPicked(label)}
-                className={`rounded-full px-4 py-2 font-medium ${plan === label ? "bg-red-600 text-white" : "bg-white text-stone-700 ring-1 ring-stone-200"}`}
+                className={`rounded-full px-4 py-2 font-medium ${plan === label ? "bg-blue-600 text-white" : "bg-white text-stone-700 ring-1 ring-stone-200"}`}
               >
                 {label}
                 {suggestion?.label === label && <span className="ml-1.5 text-xs opacity-80">next up</span>}
@@ -99,7 +99,7 @@ function Idle({ onEdit }: { onEdit: (w: Workout) => void }) {
           type="button"
           onClick={() => start.mutate({ startedAt: localIso(), plan: plan ?? undefined })}
           disabled={start.isPending}
-          className="mt-5 inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-red-600 py-5 text-xl font-semibold text-white shadow-sm active:bg-red-700"
+          className="mt-5 inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-blue-600 py-5 text-xl font-semibold text-white shadow-sm active:bg-blue-700"
         >
           <Play size={26} weight="fill" aria-hidden /> {plan ? `Start ${plan} workout` : "Start workout"}
         </button>
@@ -220,7 +220,7 @@ function LapList({ body }: { body: WorkoutBody }) {
   return (
     <div className="mt-2 max-h-64 overflow-y-auto rounded-xl bg-white px-3 ring-1 ring-stone-200">
       <ol className="divide-y divide-stone-100 tabular-nums">
-        <li className="flex items-center gap-3 py-2.5 font-semibold text-red-700">
+        <li className="flex items-center gap-3 py-2.5 font-semibold text-blue-700">
           <span className="w-14">Lap {laps.length + 1}</span>
           <span className="flex-1 text-sm font-normal">running</span>
           <span>{formatDuration(currentLap(body.startedAt, laps))}</span>
@@ -321,7 +321,7 @@ function FinishSheet({ body, onClose, onEnding }: {
           await onEnding(true);
           await finish.mutateAsync(localIso());
         }}
-        className="mt-4 flex w-full items-center justify-center gap-2 rounded-xl bg-red-600 py-3.5 text-lg font-semibold text-white disabled:opacity-50"
+        className="mt-4 flex w-full items-center justify-center gap-2 rounded-xl bg-blue-600 py-3.5 text-lg font-semibold text-white disabled:opacity-50"
       >
         <CheckCircle size={22} weight="fill" aria-hidden /> Save workout
       </button>
@@ -380,7 +380,7 @@ function EditWorkout({ workout, onClose }: { workout: Workout; onClose: () => vo
               {friendlyDate(workout.date)} · changes save automatically
             </div>
           </div>
-          <button type="button" onClick={onClose} className="rounded-xl bg-red-600 px-4 py-2 font-semibold text-white">Done</button>
+          <button type="button" onClick={onClose} className="rounded-xl bg-blue-600 px-4 py-2 font-semibold text-white">Done</button>
         </header>
         <WorkoutEditor
           body={body}

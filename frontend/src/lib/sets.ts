@@ -108,10 +108,13 @@ export function setCount(entries: Entry[]): number {
   return entries.reduce((n, e) => n + (e.sets?.length ?? 0) + (e.problems?.length ?? 0) + (e.segments?.length ? 1 : 0), 0);
 }
 
-/** Since 2026-10-30 squats and deadlifts share one Legs day; old Squat / Deadlift days count as Legs. */
+/** Old day names and the day type they are now (2026-10-30: one Legs day; front lever and
+ * climbing are Pull; runs are Cardio). */
+const DAY_TYPE: Record<string, string> = { Squat: "Legs", Deadlift: "Legs", "Front lever": "Pull", Climb: "Pull", Run: "Cardio" };
+
 export function dayType(label: string): string {
   const main = label.split(" + ")[0];
-  return main === "Squat" || main === "Deadlift" ? "Legs" : main;
+  return DAY_TYPE[main] ?? main;
 }
 
 /**
@@ -126,8 +129,8 @@ export function heavyNext(workouts: Pick<Workout, "date" | "label" | "entries">[
 }
 
 /**
- * The rotation day due next: among the main session types of the last few weeks ("Push",
- * "Squat", ...), the one done longest ago. Climbing and runs ride along, so they're ignored.
+ * The rotation day due next: among the day types of the last few weeks (Push, Legs, Pull), the
+ * one done longest ago. Cardio is once a week on the side, so it's left out.
  */
 export function nextUp(workouts: Pick<Workout, "date" | "label">[], today: string): { label: string; lastDate: string } | null {
   const since = new Date(`${today}T12:00:00`);
@@ -136,7 +139,7 @@ export function nextUp(workouts: Pick<Workout, "date" | "label">[], today: strin
   const last = new Map<string, string>();
   for (const w of workouts) {
     const main = dayType(w.label);
-    if (w.date < cutoff || main === "Climb" || main === "Run") continue;
+    if (w.date < cutoff || main === "Cardio") continue;
     if (!last.has(main) || last.get(main)! < w.date) last.set(main, w.date);
   }
   if (last.size < 2) return null;

@@ -1,4 +1,4 @@
-"""Short session names ("Push", "Legs + Climb") from what was trained.
+"""Short session names ("Push", "Legs + Climb", "Cardio") from what was trained.
 
 Since 2026-10-30 squats and deadlifts share one Legs day (heavy squat + lighter deadlift, then
 heavy deadlift + light squats). Imported sessions from before keep their old names (Squat,
@@ -7,17 +7,18 @@ Deadlift); for day types and the rotation those count as Legs (DAY_TYPE).
 
 SQUAT = {"squat", "smith-squat", "pistol-squat"}
 HINGE = {"deadlift", "rdl", "reverse-leg-curl"}
+FRONT_LEVER = {"front-raise", "full-front-raise", "advanced-tuck-hold", "half-tuck-front-lever-raise", "high-pull-ups"}
 GROUPS = {
     "Push": {"dips", "bench-press", "smith-bench-press", "dumbbell-bench-press", "overhead-press", "bar-dips"},
     "Legs": SQUAT | HINGE,
-    "Pull": {"chin-ups", "pull-ups", "muscle-up-complex", "wide-pull-ups", "close-pull-ups", "french-chin-ups"},
-    "Front lever": {"front-raise", "full-front-raise", "advanced-tuck-hold", "half-tuck-front-lever-raise",
-                    "l-sit-tuck-planche", "high-pull-ups"},
+    "Pull": {"chin-ups", "pull-ups", "muscle-up-complex", "wide-pull-ups", "close-pull-ups", "french-chin-ups"} | FRONT_LEVER,
 }
+CARDIO = {"treadmill", "peloton-run", "walk"}
 
 
-# Old day names that are one day type now.
-DAY_TYPE = {"Squat": "Legs", "Deadlift": "Legs"}
+# Old day names and the day type they belong to now (2026-10-30: front lever and climbing are pull
+# days; runs are cardio).
+DAY_TYPE = {"Squat": "Legs", "Deadlift": "Legs", "Front lever": "Pull", "Climb": "Pull", "Run": "Cardio"}
 
 
 def day_type(label: str) -> str:
@@ -31,7 +32,8 @@ def session_label(entries: list[tuple[str, int]], names: dict[str, str], legs_da
     the first logged) plus " + Climb" / " + Run"; otherwise the first exercise's name.
     legs_day=False keeps the old Squat / Deadlift names (the WhatsApp import)."""
     groups = GROUPS if legs_day else {
-        **{k: v for k, v in GROUPS.items() if k != "Legs"}, "Squat": SQUAT, "Deadlift": HINGE,
+        "Push": GROUPS["Push"], "Squat": SQUAT, "Deadlift": HINGE, "Pull": GROUPS["Pull"] - FRONT_LEVER,
+        "Front lever": FRONT_LEVER | {"l-sit-tuck-planche"},
     }
     parts: list[str] = []
     sets_per_group: dict[str, int] = {}
@@ -44,8 +46,8 @@ def session_label(entries: list[tuple[str, int]], names: dict[str, str], legs_da
     ids = [exercise_id for exercise_id, _ in entries]
     if "bouldering" in ids:
         parts.append("Climb")
-    if "treadmill" in ids:
-        parts.append("Run")
+    if CARDIO & set(ids):
+        parts.append("Cardio" if legs_day else "Run")
     if not parts and ids:
         parts.append(names.get(ids[0], "Workout"))
     return " + ".join(parts) or "Workout"

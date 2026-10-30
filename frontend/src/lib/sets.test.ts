@@ -97,8 +97,8 @@ describe("nextUp", () => {
       { date: "2026-10-29", label: "Pull" },
       { date: "2026-10-25", label: "Climb" },
     ];
-    // Squat (10-23) and Deadlift (10-28) days are one Legs day now, last done 10-28.
-    expect(nextUp(workouts, "2026-10-30")).toEqual({ label: "Front lever", lastDate: "2026-10-24" });
+    // Squat and Deadlift days are Legs (last 10-28); Front lever and Climb days are Pull (last 10-29).
+    expect(nextUp(workouts, "2026-10-30")).toEqual({ label: "Push", lastDate: "2026-10-26" });
   });
 
   it("needs some history", () => {
@@ -125,6 +125,9 @@ describe("Legs days", () => {
     expect(dayType("Squat + Climb")).toBe("Legs");
     expect(dayType("Deadlift")).toBe("Legs");
     expect(dayType("Push")).toBe("Push");
+    expect(dayType("Front lever + Climb")).toBe("Pull");
+    expect(dayType("Climb")).toBe("Pull");
+    expect(dayType("Run")).toBe("Cardio");
   });
 
   it("alternates the heavy lift", () => {

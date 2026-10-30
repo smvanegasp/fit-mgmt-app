@@ -67,7 +67,8 @@ A mobile-first web app where Sergio logs their gym workouts and sees their progr
   needs them (credentials, exports, DNS).
 - **UI style:** no emojis anywhere. Phosphor icons (`@phosphor-icons/react`, `weight="fill"`).
   Add an `InfoTip` (copy from the pantry) wherever a feature isn't obvious. Black/charcoal dark
-  mode. Red accent (Tailwind red; Sergio, 2026-10-30), so it looks different from the pantry.
+  mode. Blue accent (Tailwind blue, mirrored in `index.css` for dark mode; Sergio, 2026-10-30, after
+  trying red), so it looks different from the pantry. Red is only for errors and delete.
 - **Python** with **uv** (`uv sync`, `uv run pytest`, `uv add`). **Node 22+** (Vite 8).
 
 ## 3. Status
@@ -146,8 +147,10 @@ frontend/
 
 ### Data model (DynamoDB, one table `fit`, `pk`/`sk`)
 
-- Day types: since 2026-10-30 squat and deadlift share one **Legs** day (`labels.py`: new sessions are
-  "Legs"; imported Squat / Deadlift days keep their names but count as Legs via `day_type`).
+- **Day types** (Sergio, 2026-10-30): **Push, Legs, Pull, Cardio**. Squat and deadlift share Legs
+  (heavy squat + lighter deadlift, alternating); front lever and climbing are Pull; cardio is once a
+  week (Peloton run or walk). `labels.py`: new sessions use these names; imported sessions keep
+  theirs (Squat, Deadlift, Front lever, Climb, Run) and map to today's types via `day_type`.
 - `pk = SPACE#main` is Sergio's log; `SPACE#sb-<unixExpiry>-<hex>` is a guest sandbox (stage 5a;
   rows carry `ttl`).
 - **`EXERCISE#<id>`**: `name` (English), `group` (push, pull, legs, posterior, core, skill,
@@ -192,7 +195,8 @@ frontend/
 
 - Source: Sergio's self-chat "Mi grupo", exported with media (iPhone zip), unzipped to
   `private/export/`. Training starts 2025-09-05; ~180 sessions, ~1,800 sets, 14 months.
-- `parse` applies `private/corrections.json` (git-ignored): `start`, per-message rewrites keyed by
+- `parse` translates every shown text (notes, captions, climbing notes) to English with
+  `private/note_translations.json`, and applies `private/corrections.json` (git-ignored): `start`, per-message rewrites keyed by
   `"YYYY-MM-DD HH:MM:SS"` (string = new text, `null` = drop, `{entries: [...]}` = given
   directly), `photos` (drop / attach), `textFixes` (typo fixes applied to every message first), `technique` (extra cues), `notTechnique` (repeated
   comments that aren't cues), `routines` (the eras, written by the agent from the chat and the

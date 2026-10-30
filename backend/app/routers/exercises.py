@@ -19,7 +19,9 @@ def all_exercises(space: str) -> dict[str, Exercise]:
         for e in EXERCISES
     }
     for row in db.query(space, "EXERCISE#"):
-        out[row["id"]] = Exercise(**{**out.get(row["id"], Exercise(**row)).model_dump(), **row})
+        # Catalog copies (written by the import) follow the code, so catalog changes apply.
+        if row.get("source") == "app" or row["id"] not in out:
+            out[row["id"]] = Exercise(**row)
     return out
 
 

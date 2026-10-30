@@ -8,20 +8,19 @@ import { fuzzyMatch } from "../lib/search";
 import { friendlyDate } from "../lib/time";
 import { BottomSheet } from "./BottomSheet";
 
-/** Categories as chips. Climbing and cardio share one ("Climb & run"). */
+/** Categories as chips. Front lever and climbing are pull (Sergio, 2026-10-30). */
 const CATEGORIES: { id: string; label: string; groups: Group[] }[] = [
   { id: "push", label: "Push", groups: ["push"] },
-  { id: "pull", label: "Pull", groups: ["pull"] },
+  { id: "pull", label: "Pull", groups: ["pull", "climbing"] },
   { id: "legs", label: "Legs", groups: ["legs"] },
   { id: "hips", label: "Hips & hamstrings", groups: ["posterior"] },
-  { id: "core", label: "Core", groups: ["core"] },
-  { id: "skills", label: "Skills", groups: ["skill"] },
-  { id: "climb", label: "Climb & run", groups: ["climbing", "cardio"] },
+  { id: "core", label: "Core", groups: ["core", "skill"] },
+  { id: "cardio", label: "Cardio", groups: ["cardio"] },
 ];
 
 export const GROUP_NAMES: Record<Group, string> = {
   push: "Push", pull: "Pull", legs: "Legs", posterior: "Hips & hamstrings", core: "Core",
-  skill: "Skills", cardio: "Climb & run", climbing: "Climb & run",
+  skill: "Core", cardio: "Cardio", climbing: "Pull",
 };
 
 const LOAD_NAMES: Record<Load, string> = {
@@ -109,7 +108,7 @@ export function ExercisePicker({ onPick, onClose, inWorkout, plan }: Props) {
               aria-selected={tab === t.id}
               onClick={() => setTab(t.id)}
               className={`shrink-0 rounded-full px-3.5 py-2 text-sm font-medium whitespace-nowrap ${
-                tab === t.id ? "bg-red-600 text-white" : "bg-stone-100 text-stone-700"
+                tab === t.id ? "bg-blue-600 text-white" : "bg-stone-100 text-stone-700"
               }`}
             >
               {t.label}
@@ -135,7 +134,7 @@ export function ExercisePicker({ onPick, onClose, inWorkout, plan }: Props) {
                 {query.trim() && <span className="text-xs text-stone-500">{GROUP_NAMES[e.group]}</span>}
               </span>
               {inWorkout.includes(e.id) ? (
-                <span className="flex items-center gap-1 text-xs text-red-700">
+                <span className="flex items-center gap-1 text-xs text-blue-700">
                   <Check size={14} weight="bold" aria-hidden /> Added
                 </span>
               ) : (
@@ -149,7 +148,7 @@ export function ExercisePicker({ onPick, onClose, inWorkout, plan }: Props) {
       <button
         type="button"
         onClick={() => setCreating(true)}
-        className="mt-3 flex w-full items-center justify-center gap-2 rounded-xl border border-dashed border-stone-300 py-3 font-medium text-red-700"
+        className="mt-3 flex w-full items-center justify-center gap-2 rounded-xl border border-dashed border-stone-300 py-3 font-medium text-blue-700"
       >
         <Plus size={18} weight="bold" aria-hidden />
         {query.trim() ? `Create "${query.trim()}"` : "Create an exercise"}
@@ -180,7 +179,7 @@ function CreateExercise({ name: initial, onCreated, onCancel }: { name: string; 
       <label className="block">
         <span className="text-sm font-medium text-stone-600">Category</span>
         <select value={group} onChange={(e) => setGroup(e.target.value as Group)} className="mt-1 w-full rounded-lg border border-stone-200 bg-white px-3 py-2">
-          {CATEGORIES.filter((c) => c.id !== "climb").map((c) => (
+          {CATEGORIES.filter((c) => c.id !== "cardio").map((c) => (
             <option key={c.id} value={c.groups[0]}>{c.label}</option>
           ))}
         </select>
@@ -196,7 +195,7 @@ function CreateExercise({ name: initial, onCreated, onCancel }: { name: string; 
       {create.error && <p className="text-sm text-red-600">{create.error.message}</p>}
       <div className="flex gap-2">
         <button type="button" onClick={onCancel} className="flex-1 rounded-xl border border-stone-300 py-3 font-medium">Back</button>
-        <button disabled={!name.trim() || create.isPending} className="flex-1 rounded-xl bg-red-600 py-3 font-medium text-white disabled:opacity-50">
+        <button disabled={!name.trim() || create.isPending} className="flex-1 rounded-xl bg-blue-600 py-3 font-medium text-white disabled:opacity-50">
           Create and add
         </button>
       </div>

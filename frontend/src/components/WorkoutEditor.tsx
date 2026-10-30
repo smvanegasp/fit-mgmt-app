@@ -53,7 +53,7 @@ export function WorkoutEditor({ body, onChange, workoutId, onSetLogged }: Props)
       <button
         type="button"
         onClick={() => setPicking(true)}
-        className="flex w-full items-center justify-center gap-2 rounded-2xl border-2 border-dashed border-stone-300 py-4 text-lg font-semibold text-red-700"
+        className="flex w-full items-center justify-center gap-2 rounded-2xl border-2 border-dashed border-stone-300 py-4 text-lg font-semibold text-blue-700"
       >
         <Plus size={22} weight="bold" aria-hidden /> Add exercise
       </button>
@@ -103,7 +103,7 @@ function WorkoutNotes({ body, onChange }: { body: WorkoutBody; onChange: (body: 
         >
           <input autoFocus aria-label="Workout note" value={text} maxLength={1000} onChange={(e) => setText(e.target.value)}
             className="min-w-0 flex-1 rounded-lg border border-stone-200 px-3 py-2 text-sm" />
-          <button className="rounded-lg bg-red-600 px-3 text-sm font-medium text-white">Save</button>
+          <button className="rounded-lg bg-blue-600 px-3 text-sm font-medium text-white">Save</button>
         </form>
       ) : (
         <div className="mt-1 flex items-center gap-1">

@@ -93,7 +93,16 @@ stage 3 (History). Stage 1 is merged (#4): 179 imported sessions (2025-09-05 to 
 | What Sergio said | Done |
 |---|---|
 | From now on legs is one day: heavy squat + lighter deadlift, alternating with heavy deadlift + light squats | One "Legs" day type (old Squat / Deadlift days count as Legs for the rotation, but keep their names); "Heavy squat today" from the last Legs day; heavy lift first in the picker; the first set starts from the target when last time was light; new routine era "One legs day" from 2026-10-30 |
-| Red instead of green, a shade that looks good | Tailwind red accent (light and dark); delete / discard confirm buttons are dark so they don't look like the main action |
+| Red instead of green, a shade that looks good | Tried red; replaced by blue in round 4 |
+
+## Feedback round 4 on stage 2 (Sergio, 2026-10-30)
+
+| What Sergio said | Done |
+|---|---|
+| Front lever is pull; climbing is pull | Front lever exercises, the muscle-up complex and bouldering are in Pull; old Front lever and Climb days count as Pull days |
+| Run is cardio; weekly cardio from now on (Peloton run or walk) | Cardio day type and category; new exercises Peloton run and Walk (distance + minutes) |
+| Red isn't good; try blue | Blue accent (light and dark), red only for errors and delete |
+| Notes weren't translated, and editing showed a mismatch | All 171 imported texts translated (notes, captions, climbing notes) via a private table; editing a past workout now shows its target and "last time" as of that date |
 
 ## Ideas and improvements
 

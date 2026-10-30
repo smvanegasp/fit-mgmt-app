@@ -146,9 +146,14 @@ def best_drop(sessions: list[tuple[str, Entry]]) -> DatedSets | None:
 def summary(space: str, exercise_id: str, exclude: str | None = None) -> tuple[LastTime | None, Streak | None, list[DatedPhoto], DatedSets | None]:
     """Last session, target game, photos and best drop set for an exercise, ignoring the workout
     being edited."""
+    every = workouts(space)
+    edited = next((w for w in every if w.get("id") == exclude), None)
+    # Editing a past workout: only what came before it counts (its "last time" and its target then).
+    before = (edited["date"], edited.get("startedAt", "")) if edited else None
     done = [
-        (w, e) for w in workouts(space)
-        if w.get("id") != exclude and (e := merged_entry(w, exercise_id)) is not None
+        (w, e) for w in every
+        if w.get("id") != exclude and (before is None or (w["date"], w.get("startedAt", "")) < before)
+        and (e := merged_entry(w, exercise_id)) is not None
     ]
     if not done:
         return None, None, [], None
@@ -171,13 +176,11 @@ def usage(space: str) -> dict[str, tuple[str, int]]:
 
 def session_types(space: str, recent: int = 40) -> list[SessionType]:
     """Each kind of day from the last `recent` sessions of that kind, with the exercises done in at
-    least a quarter of them, in their usual order. Climbing days are their own kind."""
+    least a quarter of them, in their usual order (old day names map to today's types)."""
     by_type: dict[str, list[dict[str, Any]]] = defaultdict(list)
     for w in workouts(space):
         main = day_type(w.get("label") or "Workout")
         by_type[main].append(w)
-        if main != "Climb" and any(e.get("exerciseId") == "bouldering" for e in w.get("entries", [])):
-            by_type["Climb"].append(w)
     types = []
     for label, sessions in by_type.items():
         sessions = sessions[-recent:]
@@ -188,5 +191,8 @@ def session_types(space: str, recent: int = 40) -> list[SessionType]:
                 seen[exercise_id].append(i / max(1, len(ids) - 1))
         usual = [x for x, positions in seen.items() if len(positions) >= max(1, len(sessions) / 4)]
         usual.sort(key=lambda x: sum(seen[x]) / len(seen[x]))
+        if label == "Cardio":
+            # Weekly cardio from 2026-10-30: a Peloton run or a walk.
+            usual = ["peloton-run", "walk", *[x for x in usual if x not in ("peloton-run", "walk")]]
         types.append(SessionType(label=label, exercises=usual, lastDate=sessions[-1]["date"], sessions=len(sessions)))
     return sorted(types, key=lambda t: -t.sessions)

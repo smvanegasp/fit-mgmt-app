@@ -93,6 +93,9 @@ def test_summary_shows_last_time_and_streak(client: TestClient) -> None:
     assert summary["photos"] == [{"key": "main/wa-1", "caption": "Rack at 7", "date": "2026-10-12"}]
     # While editing the 10-23 workout, "last time" is the one before it.
     assert client.get("/api/exercises/squat/summary?exclude=2026-10-23-1").json()["last"]["date"] == "2026-10-20"
+    # Editing an older workout ignores everything after it too: on 10-16 the target was 1 of 3.
+    older = client.get("/api/exercises/squat/summary?exclude=2026-10-16-1").json()
+    assert older["last"]["date"] == "2026-10-12" and older["streak"]["times"] == 1
 
 
 def test_summary_for_an_exercise_never_done(client: TestClient) -> None:

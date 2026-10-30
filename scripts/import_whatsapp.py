@@ -4,6 +4,7 @@ Everything this script reads or writes about the chat stays in the git-ignored p
 
     private/export/_chat.txt          the WhatsApp export, unzipped (with its photos)
     private/corrections.json          hand fixes for messages the rules can't read (optional)
+    private/note_translations.json    English for the notes, captions and climbing notes
     private/import/parsed.json        the result: workouts, technique notes, body weight
     private/import/review.html        each session's messages next to what was parsed
 
@@ -29,7 +30,7 @@ sys.path.insert(0, str(ROOT / "backend"))
 
 from app.catalog import BY_ID  # noqa: E402
 from app.importer.chat import read_chat  # noqa: E402
-from app.importer.parse import parse_messages  # noqa: E402
+from app.importer.parse import parse_messages, translate_texts  # noqa: E402
 
 PRIVATE = ROOT / "private"
 EXPORT = PRIVATE / "export"
@@ -139,6 +140,11 @@ def cmd_parse(_: argparse.Namespace) -> None:
     corrections_file = PRIVATE / "corrections.json"
     corrections = json.loads(corrections_file.read_text(encoding="utf-8")) if corrections_file.exists() else {}
     result = parse_messages(read_chat(chat), corrections)
+    # The app is in English: notes, captions and climbing notes go through a private table.
+    table_file = PRIVATE / "note_translations.json"
+    if table_file.exists():
+        translated = translate_texts(result, json.loads(table_file.read_text(encoding="utf-8")))
+        print(f"Translated texts: {translated}")
     OUT.mkdir(parents=True, exist_ok=True)
     (OUT / "parsed.json").write_text(json.dumps(result, ensure_ascii=False, indent=1), encoding="utf-8")
     (OUT / "review.html").write_text(review_html(result), encoding="utf-8")

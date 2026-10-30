@@ -74,7 +74,7 @@ export function InfoTip({ title, children }: Props) {
         aria-label={`About ${title}`}
         aria-expanded={open}
         aria-controls={id}
-        className="-m-1.5 rounded-full p-1.5 text-stone-400 hover:text-red-700 aria-expanded:text-red-700"
+        className="-m-1.5 rounded-full p-1.5 text-stone-400 hover:text-blue-700 aria-expanded:text-blue-700"
       >
         <Info size={18} weight="fill" aria-hidden />
       </button>

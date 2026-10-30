@@ -698,3 +698,37 @@ def parse_messages(messages: list[Message], corrections: dict[str, Any] | None =
         "routines": corrections.get("routines", []),
         "flags": flags,
     }
+
+
+def translate_texts(result: dict[str, Any], table: dict[str, str]) -> int:
+    """English for every text the app shows from the chat (workout and exercise notes, photo
+    captions, climbing notes, set details), from a {what Sergio wrote: English} table. Returns
+    how many texts were replaced."""
+    replaced = 0
+
+    def tr(text: str) -> str:
+        nonlocal replaced
+        english = table.get(text)
+        if english is not None and english != text:
+            replaced += 1
+            return english
+        return text
+
+    for w in result["workouts"]:
+        w["notes"] = [tr(n) for n in w["notes"]]
+        for p in w["photos"]:
+            if p.get("caption"):
+                p["caption"] = tr(p["caption"])
+        for e in w["entries"]:
+            if e.get("notes"):
+                e["notes"] = list(dict.fromkeys(tr(n) for n in e["notes"]))
+            for p in e.get("photos", []):
+                if p.get("caption"):
+                    p["caption"] = tr(p["caption"])
+            for pr in e.get("problems", []):
+                if pr.get("note"):
+                    pr["note"] = tr(pr["note"])
+            for st in e.get("sets", []):
+                if st.get("detail"):
+                    st["detail"] = tr(st["detail"])
+    return replaced
