@@ -174,3 +174,21 @@ def test_squat_and_deadlift_days_are_one_legs_day(client: TestClient) -> None:
         {"exerciseId": "squat", "sets": [{"reps": 4, "weightLb": 180}] * 5},
         {"exerciseId": "deadlift", "sets": [{"reps": 5, "weightLb": 155}] * 3}]})
     assert client.post("/api/active/finish", json={"endedAt": "2026-10-30T19:00:00"}).json()["label"] == "Legs"
+
+
+def test_a_second_session_on_the_same_day_joins_the_first(client: TestClient) -> None:
+    client.post("/api/active", json={"startedAt": "2026-10-31T09:00:00"})
+    client.put("/api/active", json={"startedAt": "2026-10-31T09:00:00", "entries": [
+        {"exerciseId": "chin-ups", "sets": [{"reps": 4, "weightLb": 90}] * 4}]})
+    first = client.post("/api/active/finish", json={"endedAt": "2026-10-31T10:00:00"}).json()
+
+    client.post("/api/active", json={"startedAt": "2026-10-31T18:00:00"})
+    client.put("/api/active", json={"startedAt": "2026-10-31T18:00:00", "entries": [
+        {"exerciseId": "back-pull", "sets": [{"reps": 10, "weightLb": 32.5}] * 3}]})
+    second = client.post("/api/active/finish", json={"endedAt": "2026-10-31T18:20:00"}).json()
+
+    assert second["id"] == first["id"]
+    assert [e["exerciseId"] for e in second["entries"]] == ["chin-ups", "back-pull"]
+    assert second["startedAt"] == "2026-10-31T09:00:00" and second["endedAt"] == "2026-10-31T18:20:00"
+    assert second["durationMin"] == 80  # 60 + 20, not the 9 hours in between
+    assert len([w for w in client.get("/api/workouts").json() if w["date"] == "2026-10-31"]) == 1

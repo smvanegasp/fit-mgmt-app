@@ -6,7 +6,7 @@ import { useExercises, useWorkout } from "../hooks";
 import { formatDuration } from "../lib/duration";
 import { lapRows } from "../lib/laps";
 import { summarizeSets } from "../lib/sets";
-import { localIso, secondsBetween } from "../lib/time";
+import { clockTime, localIso, minutesText, workoutMinutes } from "../lib/time";
 import { longDate } from "../lib/weeks";
 import { EditWorkout } from "./EditWorkout";
 import { HOLD_COLORS, Ladder } from "./EntryCard";
@@ -40,6 +40,12 @@ export function WorkoutDetail({ workoutId, onClose }: { workoutId: string; onClo
       {workout.error && <p className="py-8 text-center text-stone-500">This workout no longer exists.</p>}
       {w && (
         <div className="space-y-3">
+          {w.durationEstimated && (
+            <p className="text-xs text-stone-500">
+              Times estimated from the WhatsApp log: about 20 min of warm-up and 40 min for the first exercise before the
+              first message; it ends with the last one.
+            </p>
+          )}
           {(w.entries ?? []).map((entry, i) => (
             <EntryView key={i} entry={entry} exercise={byId.get(entry.exerciseId)} />
           ))}
@@ -61,12 +67,12 @@ export function WorkoutDetail({ workoutId, onClose }: { workoutId: string; onClo
 }
 
 function WorkoutWhen({ workout }: { workout: Workout }) {
-  const time = workout.startedAt.slice(11, 16);
-  const minutes = workout.endedAt ? Math.round(secondsBetween(workout.startedAt, workout.endedAt) / 60) : null;
+  const minutes = workoutMinutes(workout);
+  const approx = workout.durationEstimated ? "~" : "";
   return (
     <>
-      {longDate(workout.date, localIso().slice(0, 10))} · {time}
-      {minutes ? ` · ${workout.durationEstimated ? "~" : ""}${minutes} min` : ""}
+      {longDate(workout.date, localIso().slice(0, 10))} · {approx}{clockTime(workout.startedAt)}
+      {minutes ? ` · ${approx}${minutesText(minutes)}` : ""}
     </>
   );
 }

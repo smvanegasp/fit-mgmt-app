@@ -25,3 +25,22 @@ export function friendlyDate(day: string, today = localIso().slice(0, 10)): stri
   const short = `${MONTHS[m - 1]} ${d}`;
   return y === Number(today.slice(0, 4)) ? short : `${short}, ${y}`;
 }
+
+/** "5:37 PM" from a stored local time. */
+export function clockTime(iso: string): string {
+  const [h, m] = iso.slice(11, 16).split(":").map(Number);
+  return `${h % 12 || 12}:${String(m).padStart(2, "0")} ${h < 12 ? "AM" : "PM"}`;
+}
+
+/** "45 min", "1 h", "1 h 28 min". */
+export function minutesText(minutes: number): string {
+  const m = Math.round(minutes);
+  if (m < 60) return `${m} min`;
+  return `${Math.floor(m / 60)} h${m % 60 ? ` ${m % 60} min` : ""}`;
+}
+
+/** How long a workout was: its training minutes, or start to end; null while unknown. */
+export function workoutMinutes(w: { startedAt: string; endedAt?: string; durationMin?: number }): number | null {
+  if (w.durationMin !== undefined) return w.durationMin;
+  return w.endedAt ? secondsBetween(w.startedAt, w.endedAt) / 60 : null;
+}

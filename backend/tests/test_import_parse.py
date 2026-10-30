@@ -101,7 +101,9 @@ def test_a_session_with_targets_notes_and_follow_ups() -> None:
     workout = result["workouts"][0]
     assert workout["id"] == "2025-11-01-1"
     assert workout["label"] == "Squat"
-    assert workout["startedAt"] == "2025-11-01T17:41:59" and workout["endedAt"] == "2025-11-01T18:09:30"
+    # 20 min warm-up + 40 min first exercise before the first message.
+    assert workout["startedAt"] == "2025-11-01T16:41:59" and workout["endedAt"] == "2025-11-01T18:09:30"
+    assert workout["durationMin"] == 88
     squat, pistol = workout["entries"]
     assert squat["exerciseId"] == "squat"
     # The follow-up "1x6 last again" keeps the last weight.
@@ -144,14 +146,17 @@ def test_climbing_runs_and_lifting_in_one_message() -> None:
         {"mph": 2, "minutes": 2}, {"mph": 6, "minutes": 18}], "distanceMi": 3.13}]
 
 
-def test_sessions_split_on_long_gaps_and_skip_non_training() -> None:
+def test_one_workout_per_day_and_skip_non_training() -> None:
     result = parse(
         "9/20/26 4:24:44 PM | Front raise. 3x6.",
         "9/20/26 7:50:40 PM | Left arm. 3x10 Back pull. 32.5 lbs.",
         "9/21/26 9:00:00 AM | https://example.com/something",
         "9/22/26 9:00:00 AM | - Buy groceries\n- Call the bank",
     )
-    assert [w["id"] for w in result["workouts"]] == ["2026-09-20-1", "2026-09-20-2"]
+    assert [w["id"] for w in result["workouts"]] == ["2026-09-20-1"]
+    assert [e["exerciseId"] for e in result["workouts"][0]["entries"]] == ["front-raise", "back-pull"]
+    # Two sessions that day: each counts an hour before its message, not the hours in between.
+    assert result["workouts"][0]["durationMin"] == 120
 
 
 def test_photos_attach_to_the_nearest_exercise_and_duplicates_are_dropped() -> None:

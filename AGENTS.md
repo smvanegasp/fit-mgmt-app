@@ -41,6 +41,8 @@ A mobile-first web app where Sergio logs their gym workouts and sees their progr
   guests see. **The log's main job is a concise checklist shown when Sergio starts that exercise
   while training**: the things that, if he does them, make the lift go better. Keep it short
   (one line per cue, newest wording only).
+- **Everything in English** (Sergio insists): imported notes go through `private/note_translations.json`
+  and cues through `cueTranslations`; never show Spanish in the UI (originals are stored, not shown).
 - **Units:** pounds (lb). No AI in the app. Decisions from stage 1 (2026-10-29): barbell weights
   are written as plates and the app adds a 45 lb bar for totals; weighted dips and chin-ups track
   only the added weight; exercise names are English (Spanish spellings are aliases; notes stay
@@ -159,10 +161,13 @@ frontend/
 - **`EXERCISE#<id>`**: `name` (English), `group` (push, pull, legs, posterior, core, skill,
   cardio, climbing), `load`, `measure` (reps, seconds, run, climb), `barLb`, `aliases`, `source`
   (`catalog` from `app/catalog.py`, later `app` for ones Sergio creates).
-- **`WORKOUT#<yyyy-mm-dd>#<id>`**: one session. `plan` (day type chosen at the start), `laps`
+- **`WORKOUT#<yyyy-mm-dd>#<id>`**: **one per day** (Sergio, 2026-10-30): a second session the same day
+  joins the first (`POST /active/finish` merges; the import groups by day). `durationMin` = training
+  minutes when a day had separate sessions (the hours between don't count). `plan` (day type chosen at the start), `laps`
   `[{at, label?}]` (stopwatch laps; logging a set ends one, labeled "Set 2 · Bench press"),
   `id` (`<date>-<n>`), `startedAt`/`endedAt` (local
-  time, no zone), `durationEstimated` (true for imports: first to last message), `label` ("Push",
+  time, no zone), `durationEstimated` (true for imports: each session starts ~60 min before its first message,
+  20 min warm-up + 40 min first exercise, and ends with its last message), `label` ("Push",
   "Squat + Climb"...), `notes`, `photos` `[{key, caption}]`, `source` (`whatsapp` / `app`), and
   `entries` in order, each `{exerciseId, sets?, targets?, notes?, photos?, problems?, segments?,
   distanceMi?}`:

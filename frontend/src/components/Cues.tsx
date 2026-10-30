@@ -74,7 +74,7 @@ function AddCue({ exerciseId, onDone }: { exerciseId: string; onDone: () => void
     <form onSubmit={submit} className="flex gap-2 pb-1">
       <input
         aria-label="New cue"
-        placeholder="e.g. Manos firmes en el agarre"
+        placeholder="e.g. Hands firm on the grip"
         maxLength={300}
         value={text}
         onChange={(e) => setText(e.target.value)}
@@ -139,7 +139,6 @@ function CueRow({ cue }: { cue: Note }) {
     <li className={`flex items-start gap-2 py-2.5 ${cue.hidden ? "opacity-50" : ""}`}>
       <div className="flex-1">
         <p className="text-sm">{cue.text}</p>
-        {cue.original && <p className="text-xs text-stone-500 italic">“{cue.original}”</p>}
         <p className="text-xs text-stone-500">
           Since {friendlyDate(cue.date)}
           {cue.sessions > 1 ? ` · written in ${cue.sessions} sessions` : ""}

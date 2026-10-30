@@ -94,7 +94,7 @@ export function ExercisePicker({ onPick, onClose, inWorkout, plan, title = "Add 
         <input
           type="search"
           aria-label="Search exercises"
-          placeholder="Search (bench, press banca, dips...)"
+          placeholder="Search (bench, dips, squat...)"
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           className="w-full rounded-xl border border-stone-200 bg-white py-2.5 pr-3 pl-9"

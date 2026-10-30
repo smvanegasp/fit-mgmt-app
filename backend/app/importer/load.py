@@ -79,6 +79,7 @@ def build_rows(parsed: dict[str, Any], space: str) -> tuple[dict[str, dict[str, 
         rows[f"WORKOUT#{w['date']}#{w['id']}"] = {
             "id": w["id"], "date": w["date"], "startedAt": w["startedAt"], "endedAt": w["endedAt"],
             "durationEstimated": w["durationEstimated"], "label": w["label"], "source": "whatsapp",
+            **({"durationMin": w["durationMin"]} if w.get("durationMin") is not None else {}),
             "notes": w["notes"], "photos": photos(w["photos"]), "entries": entries,
         }
     for n in parsed["notes"]:

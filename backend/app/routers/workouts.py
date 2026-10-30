@@ -6,6 +6,7 @@ Finishing turns it into a WORKOUT row.
 """
 
 import uuid
+from datetime import datetime
 from typing import Any
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
@@ -119,6 +120,28 @@ def finish_workout(body: FinishBody, space: str = Depends(current_space)) -> Wor
     if not active.entries:
         raise HTTPException(status.HTTP_400_BAD_REQUEST, "Add at least one exercise before finishing")
     date = active.startedAt[:10]
+    same_day = db.query(space, f"WORKOUT#{date}#")
+    if same_day:
+        # One workout per day: a second session joins the first one.
+        first = Workout(**same_day[0])
+
+        def minutes(start: str, end: str | None) -> float:
+            return (datetime.fromisoformat(end) - datetime.fromisoformat(start)).total_seconds() / 60 if end else 0
+
+        merged = first.model_copy(update={
+            "durationMin": round((first.durationMin or minutes(first.startedAt, first.endedAt))
+                                 + minutes(active.startedAt, body.endedAt)),
+            "entries": first.entries + active.entries,
+            "notes": first.notes + active.notes,
+            "photos": first.photos + active.photos,
+            "laps": first.laps + active.laps,
+            "endedAt": max(first.endedAt or "", body.endedAt),
+            "plan": first.plan or active.plan,
+        })
+        merged = merged.model_copy(update={"label": _label(space, merged, legs_day=first.source == "app")})
+        db.put(space, _sk(merged.id), _clean(merged.model_dump()))
+        db.delete(space, ACTIVE)
+        return merged
     workout = Workout(**{**active.model_dump(), "endedAt": body.endedAt, "label": _label(space, active)},
                       id=f"{date}-{uuid.uuid4().hex[:6]}", date=date, source="app")
     db.put(space, _sk(workout.id), _clean(workout.model_dump()))

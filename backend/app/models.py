@@ -110,6 +110,9 @@ class Workout(WorkoutBody):
     date: str
     label: str
     durationEstimated: bool = False
+    # Minutes of training when the day had separate sessions (a midday and an evening one), so
+    # the hours in between don't count. Absent: endedAt - startedAt.
+    durationMin: float | None = None
     source: Literal["whatsapp", "app"] = "app"
 
 

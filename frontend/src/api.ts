@@ -88,6 +88,8 @@ export interface Workout extends WorkoutBody {
   date: string;
   label: string;
   durationEstimated?: boolean;
+  /** Training minutes when the day had separate sessions. */
+  durationMin?: number;
   source: "whatsapp" | "app";
 }
 
