@@ -1,7 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useCallback, useEffect, useRef } from "react";
 
-import { api, type Note, type WorkoutBody } from "./api";
+import { api, type Group, type Note, type WorkoutBody } from "./api";
 
 export function useHealth() {
   return useQuery({ queryKey: ["health"], queryFn: api.health });
@@ -19,6 +19,31 @@ export function useCreateExercise() {
   });
 }
 
+export function useExerciseHistory(exerciseId: string) {
+  return useQuery({ queryKey: ["history", exerciseId], queryFn: () => api.exerciseHistory(exerciseId) });
+}
+
+/** Rename / recategorize or merge: names, sessions and cues can change everywhere. */
+function useExerciseChange<T>(fn: (vars: T) => Promise<unknown>) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: fn,
+    onSuccess: () => {
+      for (const key of ["exercises", "summary", "history", "workouts", "session-types"]) {
+        qc.invalidateQueries({ queryKey: [key] });
+      }
+    },
+  });
+}
+
+export function useUpdateExercise() {
+  return useExerciseChange((v: { id: string; patch: { name?: string; group?: Group } }) => api.updateExercise(v.id, v.patch));
+}
+
+export function useMergeExercise() {
+  return useExerciseChange((v: { id: string; into: string }) => api.mergeExercise(v.id, v.into));
+}
+
 /** Cues, last time and streak for an exercise; `exclude` = the saved workout being edited. */
 export function useExerciseSummary(exerciseId: string, exclude?: string) {
   return useQuery({
@@ -33,6 +58,10 @@ export function useSessionTypes() {
 
 export function useWorkouts(limit = 20) {
   return useQuery({ queryKey: ["workouts", limit], queryFn: () => api.listWorkouts(limit) });
+}
+
+export function useWorkout(id: string) {
+  return useQuery({ queryKey: ["workouts", "one", id], queryFn: () => api.getWorkout(id), retry: false });
 }
 
 export function useActive() {
@@ -137,6 +166,7 @@ export function useSaveWorkout(workoutId: string) {
       const saved = await api.updateWorkout(workoutId, body);
       qc.invalidateQueries({ queryKey: ["workouts"] });
       qc.invalidateQueries({ queryKey: ["summary"] });
+      qc.invalidateQueries({ queryKey: ["history"] });
       return saved;
     },
     [qc, workoutId],

@@ -6,15 +6,16 @@ import { PHOTO_SIDE, THUMB_SIDE, resizeImage } from "../lib/images";
 import { BottomSheet } from "./BottomSheet";
 
 /** Thumbnails; tap one to see it full size. */
-export function PhotoStrip({ photos, onRemove }: { photos: Photo[]; onRemove?: (photo: Photo) => void }) {
+export function PhotoStrip({ photos, onRemove, grid }: { photos: Photo[]; onRemove?: (photo: Photo) => void; grid?: boolean }) {
   const [open, setOpen] = useState<Photo | null>(null);
   if (photos.length === 0) return null;
   return (
     <>
-      <div className="mt-2 flex gap-2 overflow-x-auto">
+      <div className={grid ? "mt-2 grid grid-cols-3 gap-2" : "mt-2 flex gap-2 overflow-x-auto"}>
         {photos.map((p) => (
           <button key={p.key} type="button" onClick={() => setOpen(p)} className="shrink-0">
-            <img src={photoUrl(p.key, "thumb")} alt={p.caption ?? "Photo"} className="size-16 rounded-lg object-cover" />
+            <img src={photoUrl(p.key, "thumb")} alt={p.caption ?? "Photo"}
+              className={grid ? "aspect-square w-full rounded-lg object-cover" : "size-16 rounded-lg object-cover"} />
           </button>
         ))}
       </div>

@@ -18,7 +18,7 @@ wrong is fixed in a corrections file (kept in private/, never in git) keyed by m
     }
 
 Output (all JSON-serializable, ready for app.importer.load):
-    workouts:  one per training session (a day; a gap of 2h+ starts a new one)
+    workouts:  one per training day (start estimated an hour before the first message)
     notes:     the technique log per exercise (repeated cues merged, first and last date)
     body:      body-weight entries
 """
@@ -37,7 +37,24 @@ from app.labels import session_label
 
 NAMES = {e.id: e.name for e in EXERCISES}
 KG_TO_LB = 2.20462
+# One workout per day (Sergio, 2026-10-30), however far apart the messages are.
+# The first message comes after the warm-up (~20 min) and the first exercise (~40 min, 5 min rests),
+# so the workout started about an hour before it; it ended with the last message.
+BEFORE_FIRST_MESSAGE = timedelta(minutes=20 + 40)
+# Within a day, a gap this long between messages means a separate session (its own warm-up).
 SESSION_GAP = timedelta(hours=2)
+
+
+def training_minutes(times: list[datetime]) -> float:
+    """Minutes trained in a day: each session runs from an hour before its first message to its last."""
+    total = timedelta()
+    start = previous = times[0]
+    for t in times[1:] + [None]:  # type: ignore[list-item]
+        if t is None or t - previous > SESSION_GAP:
+            total += previous - start + BEFORE_FIRST_MESSAGE
+            start = t if t is not None else start
+        previous = t if t is not None else previous
+    return round(total.total_seconds() / 60)
 # A note written on its own right after an exercise belongs to that exercise.
 ATTACH_NOTE_WITHIN = timedelta(minutes=5)
 # Photos sent within this window of an entry belong to it.
@@ -609,7 +626,7 @@ def parse_messages(messages: list[Message], corrections: dict[str, Any] | None =
                 fixed = fixed.replace(wrong, right)
             message = Message(message.at, message.sender, fixed, message.attachment)
         last = sessions[-1] if sessions else None
-        if last is None or message.at.date() != last.ended.date() or message.at - last.ended > SESSION_GAP:
+        if last is None or message.at.date() != last.ended.date():
             last = Session(started=message.at, ended=message.at)
             sessions.append(last)
         last.ended = message.at
@@ -655,7 +672,8 @@ def parse_messages(messages: list[Message], corrections: dict[str, Any] | None =
         workouts.append({
             "id": workout_id,
             "date": day,
-            "startedAt": session.started.isoformat(),
+            "startedAt": (session.started - BEFORE_FIRST_MESSAGE).isoformat(),
+            "durationMin": training_minutes([m.at for m in session.messages]),
             "endedAt": session.ended.isoformat(),
             "durationEstimated": True,
             "label": session_label([(e.exercise_id, len(e.sets)) for e in session.entries], NAMES, legs_day=False),

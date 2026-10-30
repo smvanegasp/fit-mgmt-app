@@ -12,14 +12,13 @@ import { BottomSheet } from "./BottomSheet";
 const CATEGORIES: { id: string; label: string; groups: Group[] }[] = [
   { id: "push", label: "Push", groups: ["push"] },
   { id: "pull", label: "Pull", groups: ["pull", "climbing"] },
-  { id: "legs", label: "Legs", groups: ["legs"] },
-  { id: "hips", label: "Hips & hamstrings", groups: ["posterior"] },
+  { id: "legs", label: "Legs", groups: ["legs", "posterior"] },
   { id: "core", label: "Core", groups: ["core", "skill"] },
   { id: "cardio", label: "Cardio", groups: ["cardio"] },
 ];
 
 export const GROUP_NAMES: Record<Group, string> = {
-  push: "Push", pull: "Pull", legs: "Legs", posterior: "Hips & hamstrings", core: "Core",
+  push: "Push", pull: "Pull", legs: "Legs", posterior: "Legs", core: "Core",
   skill: "Core", cardio: "Cardio", climbing: "Pull",
 };
 
@@ -39,9 +38,12 @@ interface Props {
   inWorkout: string[];
   /** The day type chosen at the start ("Squat"): opens on its usual exercises. */
   plan?: string;
+  title?: string;
+  /** Offer "Create an exercise" (not when just choosing a filter). */
+  allowCreate?: boolean;
 }
 
-export function ExercisePicker({ onPick, onClose, inWorkout, plan }: Props) {
+export function ExercisePicker({ onPick, onClose, inWorkout, plan, title = "Add exercise", allowCreate = true }: Props) {
   const exercises = useExercises();
   const types = useSessionTypes();
   const [query, setQuery] = useState("");
@@ -85,13 +87,13 @@ export function ExercisePicker({ onPick, onClose, inWorkout, plan }: Props) {
   }
 
   return (
-    <BottomSheet title="Add exercise" onClose={onClose}>
+    <BottomSheet title={title} onClose={onClose}>
       <div className="relative">
         <MagnifyingGlass size={18} className="absolute top-1/2 left-3 -translate-y-1/2 text-stone-400" aria-hidden />
         <input
           type="search"
           aria-label="Search exercises"
-          placeholder="Search (bench, press banca, dips...)"
+          placeholder="Search (bench, dips, squat...)"
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           className="w-full rounded-xl border border-stone-200 bg-white py-2.5 pr-3 pl-9"
@@ -99,7 +101,7 @@ export function ExercisePicker({ onPick, onClose, inWorkout, plan }: Props) {
       </div>
 
       {!query.trim() && (
-        <div className="-mx-4 mt-3 flex gap-2 overflow-x-auto px-4 pb-1" role="tablist" aria-label="Categories">
+        <div className="-mx-4 mt-2 flex gap-2 overflow-x-auto px-4 py-1.5" role="tablist" aria-label="Categories">
           {tabs.map((t) => (
             <button
               key={t.id}
@@ -145,14 +147,14 @@ export function ExercisePicker({ onPick, onClose, inWorkout, plan }: Props) {
         ))}
       </ul>
 
-      <button
+      {allowCreate && <button
         type="button"
         onClick={() => setCreating(true)}
         className="mt-3 flex w-full items-center justify-center gap-2 rounded-xl border border-dashed border-stone-300 py-3 font-medium text-blue-700"
       >
         <Plus size={18} weight="bold" aria-hidden />
         {query.trim() ? `Create "${query.trim()}"` : "Create an exercise"}
-      </button>
+      </button>}
     </BottomSheet>
   );
 }

@@ -41,6 +41,8 @@ A mobile-first web app where Sergio logs their gym workouts and sees their progr
   guests see. **The log's main job is a concise checklist shown when Sergio starts that exercise
   while training**: the things that, if he does them, make the lift go better. Keep it short
   (one line per cue, newest wording only).
+- **Everything in English** (Sergio insists): imported notes go through `private/note_translations.json`
+  and cues through `cueTranslations`; never show Spanish in the UI (originals are stored, not shown).
 - **Units:** pounds (lb). No AI in the app. Decisions from stage 1 (2026-10-29): barbell weights
   are written as plates and the app adds a 45 lb bar for totals; weighted dips and chin-ups track
   only the added weight; exercise names are English (Spanish spellings are aliases; notes stay
@@ -77,9 +79,10 @@ A mobile-first web app where Sergio logs their gym workouts and sees their progr
 |---|---|---|
 | 0 | Skeleton: FastAPI + React/Vite, Docker Compose, CI (tests, build, Docker, secret scan), deploy workflow (off until 6b), Dependabot, docs | #1 |
 | 1 | WhatsApp import: exercise catalog, chat parser, private corrections, review page, loader into DynamoDB + S3 (local), S3Mock in Compose | #4 |
-| 2 | Train tab: day type + stopwatch with laps (a set ends a lap), picker (usual exercises for the day, category chips), English bullet cues, last time, target game (3 in a row, a miss takes one away), setup photos, "Last time" with sets and drop set apart, best drop set, set logger, drop sets, climbing and runs, notes and photos, finish / discard (no rest timer: Sergio times rest with laps), edit or delete past workouts | open |
+| 2 | Train tab: day type + stopwatch with laps (a set ends a lap), picker (usual exercises for the day, category chips), English bullet cues, last time, target game (3 in a row, a miss takes one away), setup photos, "Last time" with sets and drop set apart, best drop set, set logger, drop sets, climbing and runs, notes and photos, finish / discard (no rest timer: Sergio times rest with laps), edit or delete past workouts | #5 |
+| 3 | History: workouts by week with day-type and exercise filters, workout detail (read, then edit), exercise pages (target, best set, best drop, cues, photos, every session), rename and merge exercises | open |
 
-Next: **stage 3, History** (list by week, workout detail, exercise pages). Full plan in [docs/BACKLOG.md](docs/BACKLOG.md).
+Next: **stage 4a, Progress** (consistency calendar, streaks, strength charts). Full plan in [docs/BACKLOG.md](docs/BACKLOG.md).
 
 ## 4. Architecture
 
@@ -136,13 +139,15 @@ backend/
 frontend/
   src/App.tsx               tabs Train / History / Progress / Settings
   src/api.ts, hooks.ts      API client and TanStack Query hooks
-  src/pages/                TrainPage (idle: next up, start, recent; active workout; edit saved),
-                            HistoryPage, ProgressPage, SettingsPage
-  src/components/           WorkoutEditor, EntryCard (set logger, drop sets, climbing, run, notes),
+  src/pages/                TrainPage (idle: day type, start, last workouts; active workout),
+                            HistoryPage (Workouts by week + filters / Exercises), ProgressPage, SettingsPage
+  src/components/           Screens (stack of full-screen pages: useScreens().openWorkout / openExercise),
+                            Screen, WorkoutDetail, ExercisePage, EditWorkout, WorkoutCard,
+                            WorkoutEditor, EntryCard (set logger, drop sets, climbing, run, notes),
                             Cues (checklist + manage sheet), ExercisePicker, Stepper,
                             Photos, BottomSheet, InfoTip (both from the pantry), ComingSoon
   src/lib/                  pure logic + tests: sets (summaries, next set, ladder, volume, next up),
-                            time (local ISO), laps, duration, search (fuzzy), images, theme
+                            time (local ISO), weeks (week grouping, long dates), laps, duration, search (fuzzy), images, theme
 ```
 
 ### Data model (DynamoDB, one table `fit`, `pk`/`sk`)
@@ -156,10 +161,13 @@ frontend/
 - **`EXERCISE#<id>`**: `name` (English), `group` (push, pull, legs, posterior, core, skill,
   cardio, climbing), `load`, `measure` (reps, seconds, run, climb), `barLb`, `aliases`, `source`
   (`catalog` from `app/catalog.py`, later `app` for ones Sergio creates).
-- **`WORKOUT#<yyyy-mm-dd>#<id>`**: one session. `plan` (day type chosen at the start), `laps`
+- **`WORKOUT#<yyyy-mm-dd>#<id>`**: **one per day** (Sergio, 2026-10-30): a second session the same day
+  joins the first (`POST /active/finish` merges; the import groups by day). `durationMin` = training
+  minutes when a day had separate sessions (the hours between don't count). `plan` (day type chosen at the start), `laps`
   `[{at, label?}]` (stopwatch laps; logging a set ends one, labeled "Set 2 · Bench press"),
   `id` (`<date>-<n>`), `startedAt`/`endedAt` (local
-  time, no zone), `durationEstimated` (true for imports: first to last message), `label` ("Push",
+  time, no zone), `durationEstimated` (true for imports: each session starts ~60 min before its first message,
+  20 min warm-up + 40 min first exercise, and ends with its last message), `label` ("Push",
   "Squat + Climb"...), `notes`, `photos` `[{key, caption}]`, `source` (`whatsapp` / `app`), and
   `entries` in order, each `{exerciseId, sets?, targets?, notes?, photos?, problems?, segments?,
   distanceMi?}`:
@@ -212,6 +220,7 @@ frontend/
 |---|---|
 | Health | `GET /health` |
 | Day types | `GET /session-types` (label, usual exercises in order, last date, sessions) |
+| Exercise page | `GET /exercises/{id}/history` (sessions newest first, all photos, best set) · `PATCH /exercises/{id} {name?, group?}` (old name stays an alias) · `POST /exercises/{id}/merge {into}` (sessions and cues move; the duplicate is hidden) |
 | Exercises | `GET /exercises` (catalog + custom, with `lastDone`, `timesDone`) · `POST /exercises` · `GET /exercises/{id}/summary[?exclude=workoutId]` (cues, last, streak = target game, photos, bestDrop) |
 | Cues | `POST /exercises/{id}/notes {text, date}` · `PATCH /exercises/{id}/notes/{noteId} {text?, hidden?}` · `DELETE` (same path) |
 | Workouts | `GET /workouts?limit=` (newest first) · `GET/PUT/DELETE /workouts/{id}` (PUT keeps id, date, source; label recomputed) |

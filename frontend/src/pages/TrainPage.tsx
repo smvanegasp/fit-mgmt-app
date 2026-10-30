@@ -1,39 +1,36 @@
-import { ArrowLeft, CaretDown, CheckCircle, Flag, Play, Timer, Trash } from "@phosphor-icons/react";
+import { CaretDown, CheckCircle, Flag, Play, Timer } from "@phosphor-icons/react";
 import { useEffect, useRef, useState } from "react";
-import { createPortal } from "react-dom";
 
-import { api, type Entry, type Exercise, type Workout, type WorkoutBody } from "../api";
+import { api, type Workout, type WorkoutBody } from "../api";
 import { BottomSheet } from "../components/BottomSheet";
 import { InfoTip } from "../components/InfoTip";
+import { WorkoutCard } from "../components/WorkoutCard";
+import { useScreens } from "../components/Screens";
 import { WorkoutEditor } from "../components/WorkoutEditor";
 import {
   useActive,
   useAutosave,
-  useDeleteWorkout,
   useDiscardWorkout,
-  useExercises,
   useFinishWorkout,
   useSaveActive,
-  useSaveWorkout,
   useSessionTypes,
   useStartWorkout,
   useWorkouts,
 } from "../hooks";
 import { formatDuration } from "../lib/duration";
 import { currentLap, lapRows } from "../lib/laps";
-import { heavyNext, nextUp, setCount, summarizeSets } from "../lib/sets";
-import { friendlyDate, localIso, secondsBetween } from "../lib/time";
+import { heavyNext, nextUp, setCount } from "../lib/sets";
+import { localIso, secondsBetween } from "../lib/time";
 
 export function TrainPage() {
   const active = useActive();
-  const [editing, setEditing] = useState<Workout | null>(null);
+  const screens = useScreens();
 
   if (active.isLoading) return null;
   if (active.error) return <p className="mt-16 text-center text-red-600">Couldn't load: {active.error.message}</p>;
   return (
     <>
-      {active.data ? <ActiveWorkout initial={active.data} /> : <Idle onEdit={setEditing} />}
-      {editing && <EditWorkout workout={editing} onClose={() => setEditing(null)} />}
+      {active.data ? <ActiveWorkout initial={active.data} /> : <Idle onOpen={(w) => screens.openWorkout(w.id)} />}
     </>
   );
 }
@@ -46,7 +43,7 @@ function useDayTypes() {
   return (types.data ?? []).filter((t) => t.sessions >= 3).map((t) => t.label);
 }
 
-function Idle({ onEdit }: { onEdit: (w: Workout) => void }) {
+function Idle({ onOpen }: { onOpen: (w: Workout) => void }) {
   const start = useStartWorkout();
   const workouts = useWorkouts(30);
   const dayTypes = useDayTypes();
@@ -110,67 +107,17 @@ function Idle({ onEdit }: { onEdit: (w: Workout) => void }) {
       {last.length > 0 && (
         <section className="mt-10">
           <h2 className="text-lg font-semibold">Last workouts</h2>
-          <p className="mb-3 text-sm text-stone-500">Tap one to see or fix it.</p>
+          <p className="mb-3 text-sm text-stone-500">Tap one to see it. Everything is in History.</p>
           <ul className="space-y-2">
             {last.map((w) => (
               <li key={w.id}>
-                <WorkoutCard workout={w} onClick={() => onEdit(w)} />
+                <WorkoutCard workout={w} onClick={() => onOpen(w)} />
               </li>
             ))}
           </ul>
         </section>
       )}
     </div>
-  );
-}
-
-const WEEKDAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
-
-/** The main thing done for one exercise: its heaviest sets, best boulder, or distance. */
-function highlight(entry: Entry, exercise: Exercise | undefined): string | null {
-  if (!exercise) return null;
-  if (entry.problems?.length) {
-    const sent = entry.problems.filter((p) => p.result === "sent").map((p) => Number(p.grade.slice(1)));
-    return sent.length ? `${exercise.name} up to V${Math.max(...sent)}` : exercise.name;
-  }
-  if (entry.distanceMi) return `${exercise.name} ${entry.distanceMi} mi`;
-  const sets = (entry.sets ?? []).filter((s) => !s.drop);
-  if (!sets.length) return exercise.name;
-  const top = Math.max(...sets.map((s) => s.weightLb ?? 0));
-  const main = summarizeSets(sets.filter((s) => (s.weightLb ?? 0) === top), exercise.load);
-  return `${exercise.name} ${main}`;
-}
-
-function WorkoutCard({ workout, onClick }: { workout: Workout; onClick: () => void }) {
-  const exercises = useExercises();
-  const byId = new Map((exercises.data ?? []).map((e) => [e.id, e]));
-  const minutes = workout.endedAt ? Math.round(secondsBetween(workout.startedAt, workout.endedAt) / 60) : null;
-  const day = new Date(`${workout.date}T12:00:00`);
-  const lines = (workout.entries ?? []).slice(0, 3).map((e) => highlight(e, byId.get(e.exerciseId))).filter(Boolean);
-  const more = (workout.entries?.length ?? 0) - lines.length;
-
-  return (
-    <button type="button" onClick={onClick} className="flex w-full items-stretch gap-4 rounded-2xl border border-stone-200 bg-white p-3 text-left">
-      <div className="flex w-12 shrink-0 flex-col items-center justify-center rounded-xl bg-stone-100 py-1">
-        <span className="text-xs font-medium text-stone-500 uppercase">{WEEKDAYS[day.getDay()]}</span>
-        <span className="text-xl font-semibold">{day.getDate()}</span>
-      </div>
-      <div className="min-w-0 flex-1 py-0.5">
-        <div className="flex items-baseline justify-between gap-2">
-          <span className="font-semibold">{workout.label}</span>
-          <span className="shrink-0 text-xs text-stone-500">
-            {friendlyDate(workout.date)}
-            {minutes ? ` · ${workout.durationEstimated ? "~" : ""}${minutes} min` : ""}
-          </span>
-        </div>
-        {exercises.data && (
-          <ul className="mt-0.5 text-sm text-stone-600">
-            {lines.map((line) => <li key={line} className="truncate">{line}</li>)}
-            {more > 0 && <li className="text-xs text-stone-500">+{more} more</li>}
-          </ul>
-        )}
-      </div>
-    </button>
   );
 }
 
@@ -349,62 +296,5 @@ function Stat({ label, value }: { label: string; value: string }) {
       <dt className="text-xs text-stone-500">{label}</dt>
       <dd className="text-xl font-semibold tabular-nums">{value}</dd>
     </div>
-  );
-}
-
-// ------------------------------------------------------------------ editing a saved workout
-
-function EditWorkout({ workout, onClose }: { workout: Workout; onClose: () => void }) {
-  const [body, setBody] = useState<WorkoutBody>(workout);
-  const autosave = useAutosave(useSaveWorkout(workout.id));
-  const remove = useDeleteWorkout();
-  const [confirmDelete, setConfirmDelete] = useState(false);
-
-  useEffect(() => {
-    document.body.style.overflow = "hidden";
-    return () => {
-      document.body.style.overflow = "";
-    };
-  }, []);
-
-  return createPortal(
-    <div className="fixed inset-0 z-30 overflow-y-auto bg-stone-50">
-      <div className="mx-auto max-w-lg px-4 pb-16">
-        <header className="sticky top-0 z-10 -mx-4 mb-3 flex items-center gap-2 border-b border-stone-200 bg-stone-50/95 px-4 pt-[max(0.75rem,env(safe-area-inset-top))] pb-3 backdrop-blur">
-          <button type="button" onClick={onClose} className="rounded-full p-2 text-stone-700" aria-label="Back">
-            <ArrowLeft size={22} weight="bold" aria-hidden />
-          </button>
-          <div className="flex-1">
-            <div className="font-semibold">{workout.label}</div>
-            <div className="text-sm text-stone-500">
-              {friendlyDate(workout.date)} · changes save automatically
-            </div>
-          </div>
-          <button type="button" onClick={onClose} className="rounded-xl bg-blue-600 px-4 py-2 font-semibold text-white">Done</button>
-        </header>
-        <WorkoutEditor
-          body={body}
-          workoutId={workout.id}
-          onChange={(next) => {
-            setBody(next);
-            autosave(next);
-          }}
-        />
-        <div className="mt-6">
-          {confirmDelete ? (
-            <button type="button" onClick={async () => { await remove.mutateAsync(workout.id); onClose(); }}
-              className="w-full rounded-xl bg-stone-900 py-3 font-medium text-white">
-              Yes, delete this workout
-            </button>
-          ) : (
-            <button type="button" onClick={() => setConfirmDelete(true)}
-              className="flex w-full items-center justify-center gap-2 rounded-xl border border-red-200 py-3 font-medium text-red-600">
-              <Trash size={18} weight="fill" aria-hidden /> Delete workout
-            </button>
-          )}
-        </div>
-      </div>
-    </div>,
-    document.body,
   );
 }

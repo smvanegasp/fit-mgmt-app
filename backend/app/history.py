@@ -14,7 +14,7 @@ from typing import Any
 
 from app import db
 from app.labels import day_type
-from app.models import DatedPhoto, DatedSets, Entry, LastTime, Scheme, SessionType, Streak
+from app.models import BestSet, DatedPhoto, DatedSets, Entry, ExerciseHistory, ExerciseSession, LastTime, Scheme, SessionType, Streak
 
 GOAL = 3
 
@@ -196,3 +196,28 @@ def session_types(space: str, recent: int = 40) -> list[SessionType]:
             usual = ["peloton-run", "walk", *[x for x in usual if x not in ("peloton-run", "walk")]]
         types.append(SessionType(label=label, exercises=usual, lastDate=sessions[-1]["date"], sessions=len(sessions)))
     return sorted(types, key=lambda t: -t.sessions)
+
+
+def best_set(sessions: list[tuple[str, Entry]]) -> BestSet | None:
+    """The heaviest working set, most reps breaking ties (body-weight work: just the most reps);
+    the earliest date wins a full tie, as that's when it was first done."""
+    best: tuple[float, float] | None = None
+    found: BestSet | None = None
+    for day, entry in sessions:
+        for s in entry.sets:
+            if s.drop or s.detail or (s.reps is None and s.seconds is None):
+                continue
+            key = (s.weightLb or 0, s.reps or s.seconds or 0)
+            if best is None or key > best:
+                best, found = key, BestSet(date=day, set=s)
+    return found
+
+
+def exercise_history(space: str, exercise_id: str) -> ExerciseHistory:
+    done = [(w, e) for w in workouts(space) if (e := merged_entry(w, exercise_id)) is not None]
+    sessions = [
+        ExerciseSession(workoutId=w["id"], date=w["date"], label=w.get("label") or "Workout", entry=e)
+        for w, e in reversed(done)
+    ]
+    photos = [DatedPhoto(**p.model_dump(), date=w["date"]) for w, e in reversed(done) for p in e.photos]
+    return ExerciseHistory(sessions=sessions, photos=photos, best=best_set([(w["date"], e) for w, e in done]))

@@ -5,7 +5,18 @@ from fastapi import APIRouter, Depends, HTTPException, status
 
 from app import db, history
 from app.catalog import EXERCISES
-from app.models import Exercise, ExerciseCreate, ExerciseSummary, Note, NoteCreate, NoteUpdate, SessionType
+from app.models import (
+    Exercise,
+    ExerciseCreate,
+    ExerciseHistory,
+    ExerciseSummary,
+    ExerciseUpdate,
+    MergeBody,
+    Note,
+    NoteCreate,
+    NoteUpdate,
+    SessionType,
+)
 from app.space import current_space
 
 router = APIRouter(prefix="/api/exercises", tags=["exercises"])
@@ -41,6 +52,8 @@ def list_exercises(space: str = Depends(current_space)) -> list[Exercise]:
     used = history.usage(space)
     out = []
     for exercise in all_exercises(space).values():
+        if exercise.hidden:
+            continue
         last, count = used.get(exercise.id, (None, 0))
         out.append(exercise.model_copy(update={"lastDone": last, "timesDone": count}))
     return sorted(out, key=lambda e: e.name.lower())
@@ -58,6 +71,61 @@ def create_exercise(body: ExerciseCreate, space: str = Depends(current_space)) -
                         barLb=45 if body.load == "barbell" else 0, source="app")
     db.put(space, f"EXERCISE#{exercise_id}", exercise.model_dump(exclude={"lastDone", "timesDone"}))
     return exercise
+
+
+def _save(space: str, exercise: Exercise) -> None:
+    """Changes to a catalog exercise are stored as the space's own version of it."""
+    data = exercise.model_dump(exclude={"lastDone", "timesDone"})
+    db.put(space, f"EXERCISE#{exercise.id}", {**data, "source": "app"})
+
+
+@router.patch("/{exercise_id}")
+def update_exercise(exercise_id: str, body: ExerciseUpdate, space: str = Depends(current_space)) -> Exercise:
+    """Rename or recategorize. The old name stays searchable."""
+    exercise = get_exercise(space, exercise_id)
+    if body.name is not None:
+        name = " ".join(body.name.split())
+        others = [e for e in all_exercises(space).values() if e.id != exercise_id and not e.hidden]
+        if any(e.name.lower() == name.lower() for e in others):
+            raise HTTPException(status.HTTP_409_CONFLICT, f'"{name}" already exists')
+        if name != exercise.name:
+            exercise.aliases = list(dict.fromkeys([*exercise.aliases, exercise.name.lower()]))
+            exercise.name = name
+    if body.group is not None:
+        exercise.group = body.group
+    exercise.source = "app"
+    _save(space, exercise)
+    return exercise
+
+
+@router.post("/{exercise_id}/merge")
+def merge_exercise(exercise_id: str, body: MergeBody, space: str = Depends(current_space)) -> Exercise:
+    """Move every session and cue of a duplicate into another exercise, then hide the duplicate."""
+    source = get_exercise(space, exercise_id)
+    target = get_exercise(space, body.into)
+    if source.id == target.id:
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, "Pick a different exercise to merge into")
+    for sk, workout in db.keys(space, "WORKOUT#"):
+        entries = workout.get("entries", [])
+        if any(e.get("exerciseId") == source.id for e in entries):
+            for e in entries:
+                if e.get("exerciseId") == source.id:
+                    e["exerciseId"] = target.id
+            db.put(space, sk, workout)
+    for sk, note in db.keys(space, f"NOTE#{source.id}#"):
+        db.put(space, f"NOTE#{target.id}#{note['date']}#{note['id']}", {**note, "exerciseId": target.id})
+        db.delete(space, sk)
+    target.aliases = list(dict.fromkeys([*target.aliases, source.name.lower(), *source.aliases]))
+    _save(space, target)
+    _save(space, source.model_copy(update={"hidden": True, "mergedInto": target.id}))
+    return target
+
+
+@router.get("/{exercise_id}/history", response_model_exclude_none=True)
+def exercise_history(exercise_id: str, space: str = Depends(current_space)) -> ExerciseHistory:
+    """For the exercise page: every session, all photos, the best set."""
+    get_exercise(space, exercise_id)
+    return history.exercise_history(space, exercise_id)
 
 
 @router.get("/{exercise_id}/summary", response_model_exclude_none=True)

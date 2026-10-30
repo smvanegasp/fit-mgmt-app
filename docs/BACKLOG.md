@@ -26,9 +26,18 @@ Sergio merges.
 
 ## Now
 
-Stage 2 PR open (Train tab). Waiting for Sergio to try it at the gym through ngrok. Next is
-stage 3 (History). Stage 1 is merged (#4): 179 imported sessions (2025-09-05 to 2026-10-29),
-1,783 sets, 51 technique cues, 15 photos, 3 routine eras, in the local stack.
+Stage 3 PR open (History), with feedback round 1 done. Next: stage 4a (Progress plots).
+
+## Stage 3: what's in it
+
+- History tab, **Workouts**: weeks ("This week", "Last week", "Oct 12 – 18") with counts, cards with
+  the main sets; filters by day type (Push, Legs, Pull, Cardio) and by exercise.
+- **Workout detail** (read view): date, time, duration, each exercise (sets and drop set apart,
+  boulders, distance), notes, photos, laps (folded); Edit opens the editor; tap an exercise to open
+  its page. The Train tab's "Last workouts" open the same view.
+- **Exercise page**: sessions, since, best set; the target game; best drop set; the full cue list
+  (edit, hide, add; originals shown); all photos; every session (tap to open it). Pencil: rename,
+  change category, or merge a duplicate into another exercise (sessions and cues move over).
 
 ### Stage 1: interpretations Sergio confirmed
 
@@ -104,12 +113,38 @@ stage 3 (History). Stage 1 is merged (#4): 179 imported sessions (2025-09-05 to 
 | Red isn't good; try blue | Blue accent (light and dark), red only for errors and delete |
 | Notes weren't translated, and editing showed a mismatch | All 171 imported texts translated (notes, captions, climbing notes) via a private table; editing a past workout now shows its target and "last time" as of that date |
 
+## Feedback round 1 on stage 3 (Sergio, 2026-10-30)
+
+| What Sergio said | Done |
+|---|---|
+| One workout per day; exercises from the same day weren't merged | Import groups by day (177 workouts); in the app, a second session the same day joins the first; training time adds the sessions, not the hours between |
+| Bullets for the exercises on the cards | Done |
+| Date boxes grew with the card | Fixed size |
+| Unclear times; estimate better: ~20 min warm-up before any message, first message after the first exercise (~40 min, 5 min rests) | Each session starts ~60 min before its first message, ends at the last; shown as "~5:37 PM · ~1 h 28 min" with a one-line explanation |
+| Still some Spanish | All imported text checked (0 left); three non-training messages that had joined a day dropped; Spanish originals no longer shown under cues; two Spanish UI examples replaced |
+| Wants plots | Belong in Progress (stage 4); proposal below |
+| Bullets not visible; pills cut on top; drop the exercise filter pill; "Hips & hamstrings" is legs | Bullets drawn inside the line; pill rows get room for their outline; filter removed; deadlift, RDL, leg curl, back extension are Legs |
+
+## Stage 4: plot plan (proposed 2026-10-30)
+
+| Question | Plot | Stage |
+|---|---|---|
+| Am I consistent? | Calendar heatmap of training days (a year, colored by day type) + current / longest streak + workouts per week bars with a goal line | 4a |
+| Am I getting stronger? | Per exercise: top-set weight over time (line, PR dots); body-weight work: reps; small multiples for the main lifts (squat, deadlift, bench, dips, chin-ups) | 4a |
+| How is the target game going? | Per lift: one dot per session (reached / missed / light day) under the strength line | 4a |
+| How much work? | Weekly volume (weight x reps), stacked by day type | 4b |
+| Drop sets | Total reps per ladder over time | 4b |
+| Climbing | Hardest grade sent per session (step line) + grade pyramid | 4b |
+| Routine evolution | Timeline of routine eras with session dots | 4b |
+| Time | Session length and rest (from laps) trend | 4b |
+
 ## Ideas and improvements
 
 None yet; add as they come up.
 
 ## Done
 
+- 2026-10-30: Stage 2 Train tab merged (#5), after four feedback rounds.
 - 2026-10-29: Stage 1 WhatsApp import merged (#4).
 - 2026-10-29: Stage 1 decisions: bar = plates + 45 lb; weighted dips/chin-ups track added weight
   only; English exercise names; bouldering and treadmill included.

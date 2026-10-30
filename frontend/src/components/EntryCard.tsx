@@ -123,7 +123,7 @@ function LastTime({ date, sets, load, best }: { date: string; sets: SetData[]; l
 // ------------------------------------------------------------------ the target game
 
 /** Sergio's game: reach the target 3 sessions in a row (a miss takes one away), then go up. */
-function TargetGame({ streak, load, today }: { streak: Streak; load: Exercise["load"]; today: SetData[] }) {
+export function TargetGame({ streak, load, today }: { streak: Streak; load: Exercise["load"]; today: SetData[] }) {
   const reachedToday = today.length > 0 && reachesTarget(today, streak.scheme);
   const done = streak.times >= streak.goal;
   return (
