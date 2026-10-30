@@ -26,7 +26,10 @@ Sergio merges.
 
 ## Now
 
-Stage 3 PR open (History), with feedback round 1 done. Next: stage 4a (Progress plots).
+Stages 0-3 merged (#1, #3, #4, #5, #6); no open PRs. Next: **stage 4a, Progress plots**, following
+the plot plan below (consistency calendar + streaks + workouts per week; strength per exercise with
+PRs; target-game dots). Then 4b (volume, drop sets, climbing, routine timeline, time), 4c (separate
+desktop design), 5a guests and passcode, 5b welcome page, 6a-6c AWS, 7 production import.
 
 ## Stage 3: what's in it
 
@@ -58,7 +61,7 @@ Stage 3 PR open (History), with feedback round 1 done. Next: stage 4a (Progress 
 - Start: stopwatch from a server-side start time (survives locking and reloads), "Next up" from
   the rotation, recent workouts (tap to edit or delete).
 - Each exercise: **technique cues** (Sergio, 2026-10-29: the checklist of things that make the
-  lift go better, shown when he starts the exercise; top 3 by how often they were written, more
+  lift go better, shown when they start the exercise; top 3 by how often they were written, more
   on tap, add / edit / hide), "Last" session, **target streak** computed from history ("Target
   5×5 @ 170, done 2 times in a row": the last session's first group of working sets and how many
   sessions in a row reached it), set logger with big steppers pre-filled from the last set or
@@ -80,10 +83,10 @@ Stage 3 PR open (History), with feedback round 1 done. Next: stage 4a (Progress 
 
 | What Sergio said | Done |
 |---|---|
-| Stopwatch laps, he uses them a lot; logging a set should start a lap (rests 4-5 min) | Lap button + running lap; each set ends a lap labeled with it; lap list; saved with the workout |
+| Stopwatch laps, they use them a lot; logging a set should start a lap (rests 4-5 min) | Lap button + running lap; each set ends a lap labeled with it; lap list; saved with the workout |
 | "Recent" on the first page isn't clear | Day-type chips ("next up" preselected) + "Start Squat workout"; "Last workouts" cards with date, type, duration, main sets |
 | Keep in mind: bullets, all in English | Bullets; 50 cues translated (original kept, shown in the edit sheet) |
-| Target: goal is 3 in a row; a miss takes one away | The target game, replayed over history and synced to his written counts |
+| Target: goal is 3 in a row; a miss takes one away | The target game, replayed over history and synced to their written counts |
 | Adding exercises is too complex; better categories | Picker opens on "Usual on <day> days" in usual order; chips: Recent, Push, Pull, Legs, Hips & hamstrings, Core, Skills, Climb & run |
 | See the photos taken for an exercise (setups) | "Your photos" on each exercise card |
 | Rest: keep the countdown, up to 5 min, default 5 min | Choices 1-5 min, default 5:00 |
@@ -92,8 +95,8 @@ Stage 3 PR open (History), with feedback round 1 done. Next: stage 4a (Progress 
 
 | What Sergio said | Done |
 |---|---|
-| Laps in a toggle, to see how much he rested | Tap the running lap under the stopwatch: the lap list opens in place, newest first |
-| Remove the rest timer; he manages rest with laps | Removed |
+| Laps in a toggle, to see how much they rested | Tap the running lap under the stopwatch: the lap list opens in place, newest first |
+| Remove the rest timer; they manage rest with laps | Removed |
 | "Last" doesn't separate the target sets from the drop set | "Last time" box: Sets and Drop set rows; ladders as weight×reps chips |
 | See the best drop set so far | Best drop (most total reps) on the card and in the drop-set sheet, with the running total and "new best" |
 
@@ -144,6 +147,7 @@ None yet; add as they come up.
 
 ## Done
 
+- 2026-10-30: Stage 3 History merged (#6), after two feedback rounds.
 - 2026-10-30: Stage 2 Train tab merged (#5), after four feedback rounds.
 - 2026-10-29: Stage 1 WhatsApp import merged (#4).
 - 2026-10-29: Stage 1 decisions: bar = plates + 45 lb; weighted dips/chin-ups track added weight
