@@ -183,6 +183,16 @@ def test_corrections_rewrite_drop_and_replace_messages() -> None:
     assert second["entries"] == [{"exerciseId": "wide-pull-ups", "sets": [{"reps": 72}]}]
 
 
+def test_text_fixes_standardize_typos_before_parsing() -> None:
+    result = parse(
+        "12/3/25 2:11:03 PM | Dios 1x4 90 kbs. Muñecos fuertes",
+        corrections={"textFixes": [["Muñecos fuertes", "Muñecas fuertes"]]},
+    )
+    entry = only_entry(result)
+    assert entry["exerciseId"] == "dips" and entry["sets"] == [{"reps": 4, "weightLb": 90}]
+    assert entry["notes"] == ["Muñecas fuertes"]
+
+
 def test_technique_log_keeps_repeated_cues_and_picked_ones() -> None:
     result = parse(
         "1/1/26 1:00:00 PM | RDL. 4x8. 150 lbs + barra. First rep cuenta",

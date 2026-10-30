@@ -27,21 +27,22 @@ Sergio merges.
 ## Now
 
 Stage 1 PR open: the WhatsApp history parses into 179 sessions (2025-09-05 to 2026-10-29),
-450 exercise entries, 1,780 sets, 60 technique cues, 15 photos, 3 routine eras, loaded into the
-local stack. Waiting for Sergio to check `private/import/review.html` against his memory, and the
-guesses below.
+450 exercise entries, 1,783 sets, 61 technique cues, 15 photos, 3 routine eras, loaded into the
+local stack. Sergio confirmed the guesses below (2026-10-29); next is stage 2.
 
-### Stage 1: guesses to confirm with Sergio
+### Stage 1: interpretations Sergio confirmed
 
-- 2026-01-02 dips drop set, written "0-0-0-0-0 / 6-2-2-2-3-5 / 90-70-45-25-0": read as reps
-  6-2-2-2-3 at 90-70-45-25-0.
-- 2026-09-07 squats "2x8 1x6 50 lbs + bar": read as 150 (typo; the target says 150).
-- 2026-05-11 "Bench press. 40 lbs. 5x8": stored as barbell 40 + bar; maybe dumbbells?
-- 2025-11-11 "Chin ups 1x5 45 lbs" sent the day after the pull session: kept on 2025-11-11.
-- "Pull up muscle up intercaladas N": read as N muscle-ups alternated with pull-ups.
-- "Bar dips" and "Wide bar dips" are one exercise; "Close ups" = close-grip chin-ups.
-- Smith machine bar counted as 45 lb, like a barbell.
+- Dip and chin-up drop sets are always 90-70-45-25-0 lb; the other line is the reps. The
+  2026-01-02 one reads 6-2-2-2-3.
+- 2026-09-07 squats "50 lbs" is 150. 2026-05-11 "Bench press 40 lbs 5x8" was dumbbells (40 each).
+- "Pull up muscle up intercaladas N": alternating muscle-up, pull-up, muscle-up, pull-up (N
+  muscle-ups).
+- "Bar dips" = "Wide bar dips"; "Close ups" = close-grip chin-ups; Smith machine bar = 45 lb.
+- "Psychosis Dope" is a song Sergio paces sets to: a set, rest during the second scream, a set.
+  Kept as a chin-up cue.
+- Typos are standardized through `textFixes` in the private corrections (Sergio's OK).
 - Imported session times run from the first to the last message (warm-up not included).
+- 2025-11-11 "Chin ups 1x5 45 lbs" sent the day after the pull session: kept on 2025-11-11.
 
 ## Stage 2 notes (from the import)
 

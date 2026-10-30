@@ -171,7 +171,7 @@ frontend/
   `private/export/`. Training starts 2025-09-05; ~180 sessions, ~1,800 sets, 14 months.
 - `parse` applies `private/corrections.json` (git-ignored): `start`, per-message rewrites keyed by
   `"YYYY-MM-DD HH:MM:SS"` (string = new text, `null` = drop, `{entries: [...]}` = given
-  directly), `photos` (drop / attach), `technique` (extra cues), `notTechnique` (repeated
+  directly), `photos` (drop / attach), `textFixes` (typo fixes applied to every message first), `technique` (extra cues), `notTechnique` (repeated
   comments that aren't cues), `routines` (the eras, written by the agent from the chat and the
   2-week rotation photo). Fix parser rules for patterns, corrections for one-offs.
 - Check `private/import/review.html` (chat next to result) after any parser change.

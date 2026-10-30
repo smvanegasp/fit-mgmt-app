@@ -10,6 +10,8 @@ wrong is fixed in a corrections file (kept in private/, never in git) keyed by m
         "2025-09-13 10:54:55": "2x3. Weighted dips 36 kg. Last set 2 reps",   # rewrite it
         "2026-02-05 20:01:59": {"entries": [...]}  # give the entries directly
       },
+      "textFixes": [["Muñecos fuertes u derechas", "Muñecas fuertes y derechas"]],
+
       "photos": {"00000333-PHOTO-...jpg": "drop" | "workout" | "<exerciseId>"},
       "technique": {"<exerciseId>": ["cue written once but worth keeping", ...]},
       "routines": [...]
@@ -588,6 +590,8 @@ def parse_messages(messages: list[Message], corrections: dict[str, Any] | None =
     corrections = corrections or {}
     start = date.fromisoformat(corrections.get("start", "1970-01-01"))
     rewrites = corrections.get("messages", {})
+    # Typos fixed everywhere before parsing: [["Muñecos fuertes", "Muñecas fuertes"], ...], in order.
+    text_fixes: list[list[str]] = corrections.get("textFixes", [])
 
     sessions: list[Session] = []
     for message in messages:
@@ -602,6 +606,11 @@ def parse_messages(messages: list[Message], corrections: dict[str, Any] | None =
                 continue
             if isinstance(fix, str):
                 message = Message(message.at, message.sender, fix, message.attachment)
+        if message.text and text_fixes:
+            fixed = message.text
+            for wrong, right in text_fixes:
+                fixed = fixed.replace(wrong, right)
+            message = Message(message.at, message.sender, fixed, message.attachment)
         last = sessions[-1] if sessions else None
         if last is None or message.at.date() != last.ended.date() or message.at - last.ended > SESSION_GAP:
             last = Session(started=message.at, ended=message.at)
