@@ -1,15 +1,9 @@
 """Exercise pages and housekeeping: history, best set, rename, merge."""
 
-import pytest
 from fastapi.testclient import TestClient
 
 from app import db
-from app.main import app
 
-
-@pytest.fixture
-def client() -> TestClient:
-    return TestClient(app)
 
 
 def workout(day: str, entries: list[dict], label: str = "Push") -> None:

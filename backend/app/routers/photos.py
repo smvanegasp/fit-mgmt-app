@@ -1,4 +1,5 @@
-"""Exercise and workout photos (copied from the pantry; guest limits join in stage 5a)."""
+"""Exercise and workout photos (copied from the pantry). Guests see the owner's photos (their sandbox
+is a copy of the log) and can add a few of their own."""
 
 import uuid
 from typing import Literal
@@ -6,14 +7,16 @@ from typing import Literal
 from fastapi import APIRouter, Depends, File, HTTPException, Response, UploadFile, status
 from pydantic import BaseModel
 
-from app import storage
-from app.space import OWNER_SPACE, current_space
+from app import ratelimit, storage
+from app.sandbox import OWNER_SPACE, PREFIX
+from app.space import current_space
 
 router = APIRouter(prefix="/api/photos", tags=["photos"])
 
 # The phone resizes photos before upload, so real uploads are far below these limits.
 MAX_PHOTO_BYTES = 3 * 1024 * 1024
 MAX_THUMB_BYTES = 400 * 1024
+GUEST_PHOTOS_PER_DAY = 40
 # Magic numbers of the formats a browser canvas can produce.
 SIGNATURES = {b"\xff\xd8\xff": "image/jpeg", b"\x89PNG": "image/png", b"RIFF": "image/webp"}
 
@@ -54,6 +57,8 @@ async def upload_photo(
     thumb: UploadFile = File(...),
     space: str = Depends(current_space),
 ) -> PhotoOut:
+    if space.startswith(PREFIX) and ratelimit.hit(f"photos#{space}", 86400) > GUEST_PHOTOS_PER_DAY:
+        raise ratelimit.too_many("That's a lot of photos for one demo; try again tomorrow")
     full_data, full_type = await _read_image(photo, MAX_PHOTO_BYTES, "photo")
     thumb_data, thumb_type = await _read_image(thumb, MAX_THUMB_BYTES, "thumbnail")
     photo_key = f"{space}/{uuid.uuid4().hex}"

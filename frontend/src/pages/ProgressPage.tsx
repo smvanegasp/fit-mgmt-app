@@ -237,7 +237,8 @@ function Consistency({ days, today }: { days: ProgressDay[]; today: string }) {
   const counts = useMemo(() => weekCounts(days), [days]);
   const streak = useMemo(() => streaks(days, today), [days, today]);
   const first = days[0].date;
-  const rows = weekRows(today, count);
+  // No empty weeks from before the first workout.
+  const rows = weekRows(today, count).filter((row) => row.days[6] >= first);
   const more = rows.at(-1)!.monday > first;
 
   return (

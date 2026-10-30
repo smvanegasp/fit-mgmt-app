@@ -26,8 +26,19 @@ Sergio merges.
 
 ## Now
 
-Stages 0-4b merged (#1, #3-#9). **Stage 4c (desktop) is in review** on `stage-4c-desktop`: Sergio
-looks at it on a computer. Then 5a guests and passcode, 5b welcome page, 6a-6c AWS, 7 production import.
+Stages 0-4c merged (#1, #3-#11). **Stage 5a (guests and passcode) is in review** on
+`stage-5a-guests`: Sergio sets a passcode and tests. Then 5b welcome page, 6a-6c AWS, 7 production import.
+
+## Stage 5a: what's in it
+
+- Ported from the pantry: signed session cookie (owner 90 days, guest until the demo expires),
+  sandboxes `sb-<expiry>-<id>` with TTL on every row, scrypt passcode, DynamoDB rate limits,
+  `set_passcode.py`.
+- A demo copies the owner's log without the workout in progress (`ACTIVE`); with no workouts yet
+  (production before stage 7) it gets a sample log: 8 weeks of Push / Legs / Pull, cues, a routine.
+- A simple start screen (Look around / I'm Sergio; 5b makes it the welcome page), the demo banner
+  (time left, reset, log in), Settings: Log out or Leave the demo.
+- The cue check is off for guests (each call costs).
 
 ## Stage 4c: what's in it (desktop, 2026-10-30)
 
@@ -113,8 +124,9 @@ looks at it on a computer. Then 5a guests and passcode, 5b welcome page, 6a-6c A
   media** (the photos are part of the technique log); put the `.zip` (or the `.txt` plus media
   files) in `private/` at the repo root. Android caps exports with media at the most recent
   ~10,000 messages; if the chat is longer, also export **Without media** for the full text.
-- Now: a **Groq API key** in `backend/.env` as `GROQ_API_KEY=...` (Sergio adds it; then
-  `docker compose up -d api`). Without it the cue check stays off.
+- Done: Groq API key in `backend/.env` (2026-10-30).
+- Now: the **owner passcode**: `cd backend && uv run python ../scripts/set_passcode.py` (Sergio types
+  6 digits, hidden), then `docker compose up -d api`.
 - Later: alert email (6a), passcode via `set_passcode.py` (5a), Hostinger access (6c), welcome
   note text and photo (5b).
 
@@ -206,8 +218,7 @@ looks at it on a computer. Then 5a guests and passcode, 5b welcome page, 6a-6c A
 - Session time and rest per set from laps, once there are app-logged workouts with laps (stage 4b
   left it out: no data yet). Weekly volume if it turns out useful.
 
-- Stage 5a: turn the cue check off for guest sandboxes (it costs per call and guests could spam it),
-  or rate-limit it. Stage 6a: `GROQ_API_KEY` as SSM `/fit/GROQ_API_KEY`.
+- Stage 6a: `GROQ_API_KEY` as SSM `/fit/GROQ_API_KEY`.
 
 ## Done
 

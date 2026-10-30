@@ -1,15 +1,9 @@
 """The Progress tab and exercise pages: training days, and each exercise's progression ladder."""
 
-import pytest
 from fastapi.testclient import TestClient
 
 from app import db
-from app.main import app
 
-
-@pytest.fixture
-def client() -> TestClient:
-    return TestClient(app)
 
 
 def day(date: str, label: str, entries: list[dict]) -> None:

@@ -21,6 +21,7 @@ from app.models import (
     NoteUpdate,
     SessionType,
 )
+from app.sandbox import OWNER_SPACE
 from app.space import current_space
 
 router = APIRouter(prefix="/api/exercises", tags=["exercises"])
@@ -158,8 +159,11 @@ def add_note(exercise_id: str, body: NoteCreate, space: str = Depends(current_sp
 
 @router.post("/{exercise_id}/cue-check")
 def check_cue(exercise_id: str, body: CueCheck, space: str = Depends(current_space)) -> CueSuggestion:
-    """Whether today's note should add or reword a cue (a suggestion; Sergio accepts it or not)."""
+    """Whether today's note should add or reword a cue (a suggestion; Sergio accepts it or not).
+    Off in guest demos: each check is a paid call."""
     exercise = get_exercise(space, exercise_id)
+    if space != OWNER_SPACE:
+        raise HTTPException(status.HTTP_503_SERVICE_UNAVAILABLE, "The cue check is off in demos")
     try:
         return cue_check.check(exercise, cues(space, exercise_id), body.note)
     except cue_check.CueCheckOff:

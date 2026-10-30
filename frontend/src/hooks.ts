@@ -1,7 +1,33 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useCallback, useEffect, useRef, useState } from "react";
 
-import { api, type CueSection, type Group, type Note, type NotePatch, type WorkoutBody } from "./api";
+import { api, type CueSection, type Group, type Note, type NotePatch, type SessionInfo, type WorkoutBody } from "./api";
+
+const SESSION = ["session"];
+
+export const useSession = () => useQuery({ queryKey: SESSION, queryFn: api.getSession, staleTime: Infinity });
+
+/** Switching sessions switches data spaces, so drop everything cached from the old one. */
+function useSessionChange<A>(fn: (arg: A) => Promise<SessionInfo>) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: fn,
+    onSuccess: (session) => {
+      qc.removeQueries({ predicate: (q) => q.queryKey[0] !== SESSION[0] });
+      qc.setQueryData(SESSION, session);
+    },
+  });
+}
+
+export const useStartGuest = () => useSessionChange<void>(api.startGuest);
+export const useResetGuest = () => useSessionChange<void>(api.resetGuest);
+export const useOwnerLogin = () => useSessionChange<string>(api.ownerLogin);
+export const useLogout = () => useSessionChange<void>(api.logout);
+
+export function useRefreshSession() {
+  const qc = useQueryClient();
+  return useCallback(() => qc.invalidateQueries({ queryKey: SESSION }), [qc]);
+}
 
 export function useHealth() {
   return useQuery({ queryKey: ["health"], queryFn: api.health });
