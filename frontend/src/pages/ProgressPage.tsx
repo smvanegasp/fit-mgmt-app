@@ -1,12 +1,14 @@
-import { ChartLineUp, Check } from "@phosphor-icons/react";
+import { CaretDown, CaretRight, ChartLineUp, Check } from "@phosphor-icons/react";
 import { useMemo, useState } from "react";
 
-import type { ProgressDay } from "../api";
+import type { ProgressDay, Routine } from "../api";
 import { ComingSoon } from "../components/ComingSoon";
 import { InfoTip } from "../components/InfoTip";
-import { LiftCard, TypeLegend, groupColor, typeColor } from "../components/Progression";
+import { PhotoStrip } from "../components/Photos";
+import { GradePyramid, LiftCard, TYPE_COLOR, TypeLegend, groupColor, typeColor } from "../components/Progression";
 import { useScreens } from "../components/Screens";
-import { useExercises, useProgress } from "../hooks";
+import { useExerciseHistory, useExercises, useProgress } from "../hooks";
+import { climbing } from "../lib/kinds";
 import { WEEKLY_GOAL, shortDate, streaks, weekCounts, weekRows } from "../lib/progress";
 import { localIso } from "../lib/time";
 import { longDate } from "../lib/weeks";
@@ -42,7 +44,76 @@ export function ProgressPage() {
             onOpen={() => screens.openExercise(lift.exerciseId)} />
         );
       })}
+      <ClimbingCard />
+
+      {(progress.data?.routines ?? []).length > 0 && <Routines routines={progress.data!.routines} today={today} />}
     </div>
+  );
+}
+
+/** Climbing on Progress: the hardest send and the grade pyramid; the full page has the rest. */
+function ClimbingCard() {
+  const history = useExerciseHistory("bouldering");
+  const screens = useScreens();
+  const sessions = history.data?.sessions ?? [];
+  const { hardest, grades } = climbing(sessions);
+  if (grades.length === 0) return null;
+  const sends = grades.reduce((n, g) => n + g.sent, 0);
+  return (
+    <button type="button" onClick={() => screens.openExercise("bouldering")} className="block w-full rounded-2xl border border-stone-200 bg-white p-4 text-left">
+      <div className="flex items-center gap-2">
+        <span className="min-w-0 flex-1 font-semibold">Climbing</span>
+        <CaretRight size={14} className="shrink-0 text-stone-400" aria-hidden />
+      </div>
+      <div className="mt-0.5 text-sm text-stone-600">
+        Hardest send {hardest?.grade ?? "none yet"} · {sends} sends in {sessions.length} sessions
+      </div>
+      <div className="mt-3"><GradePyramid sessions={sessions} color={TYPE_COLOR.Pull} /></div>
+    </button>
+  );
+}
+
+/** How the routine evolved: the eras newest first; the current one open, past ones on tap. */
+function Routines({ routines, today }: { routines: Routine[]; today: string }) {
+  const [open, setOpen] = useState<string | null>(routines[0]?.id ?? null);
+  return (
+    <section>
+      <h2 className="flex items-center gap-1 px-1 pt-3 pb-2 font-semibold">
+        Routine
+        <InfoTip title="Routine">The plans you followed, newest first, with the workouts logged in each. Tap one to see its days.</InfoTip>
+      </h2>
+      <ol className="rounded-2xl border border-stone-200 bg-white px-4 py-2">
+        {routines.map((r, i) => {
+          const isOpen = open === r.id;
+          return (
+            <li key={r.id} className="relative pl-6">
+              {/* The timeline: a dot per era on a line. */}
+              <span className={`absolute top-4 left-[5px] size-2.5 rounded-full ${i === 0 ? "bg-blue-600" : "bg-stone-400"}`} aria-hidden />
+              {i < routines.length - 1 && <span className="absolute top-7 bottom-0 left-[9px] w-px bg-stone-200" aria-hidden />}
+              <button type="button" onClick={() => setOpen(isOpen ? null : r.id)} aria-expanded={isOpen}
+                className="flex w-full items-start gap-2 py-2.5 text-left">
+                <span className="min-w-0 flex-1">
+                  <span className="block font-medium">{r.name}</span>
+                  <span className="text-xs text-stone-500">
+                    {shortDate(r.from, today)} – {r.to ? shortDate(r.to, today) : "now"} · {r.sessions} {r.sessions === 1 ? "workout" : "workouts"}
+                  </span>
+                </span>
+                <CaretDown size={14} className={`mt-1 shrink-0 text-stone-400 ${isOpen ? "rotate-180" : ""}`} aria-hidden />
+              </button>
+              {isOpen && (
+                <div className="pb-3 text-sm">
+                  <ul className="list-disc space-y-0.5 pl-5 text-stone-700 marker:text-stone-400">
+                    {r.days.map((d) => <li key={d}>{d}</li>)}
+                  </ul>
+                  {r.notes && <p className="mt-2 text-stone-600">{r.notes}</p>}
+                  {r.photos.length > 0 && <PhotoStrip photos={r.photos} />}
+                </div>
+              )}
+            </li>
+          );
+        })}
+      </ol>
+    </section>
   );
 }
 

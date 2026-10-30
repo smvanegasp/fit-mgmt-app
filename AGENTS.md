@@ -91,15 +91,16 @@ A mobile-first web app where Sergio logs their gym workouts and sees their progr
 | 1 | WhatsApp import: exercise catalog, chat parser, private corrections, review page, loader into DynamoDB + S3 (local), S3Mock in Compose | #4 |
 | 2 | Train tab: day type + stopwatch with laps (a set ends a lap), picker (usual exercises for the day, category chips), English bullet cues, last time, target game (3 in a row, a miss takes one away), setup photos, "Last time" with sets and drop set apart, best drop set, set logger, drop sets, climbing and runs, notes and photos, finish / discard (no rest timer: Sergio times rest with laps), edit or delete past workouts | #5 |
 | 3 | History: one workout per day, grouped by week with day-type filters; workout detail (read, then edit) with estimated times; exercise pages (target, best set, best drop, cues, photos, every session); rename and merge exercises; everything in English | #6 |
-| 4a | Progress: one consistency view (weeks as rows of days colored by day type, count per week, streak of weeks with 3+), the five main lifts as progression ladders (set glyphs: columns = sets, squares = reps); full ladder on every exercise page; one home per piece of information, linked from the rest | open |
+| 4a | Progress: one consistency view (weeks as rows of days colored by day type, count per week, streak of weeks with 3+), the five main lifts as progression ladders (set glyphs: columns = sets, squares = reps); full ladder on every exercise page; one home per piece of information, linked from the rest | #8 |
+| 4b | Routine timeline (eras, sessions, days, notes, photo) on Progress; drop sets (total reps per ladder, best in full) on the dips and chin-ups pages; climbing grade pyramid and hardest send on the bouldering page, with a card on Progress | open |
 
-**Where things stand (2026-10-30):** stages 0-3 are merged; stage 4a (Progress) is in review on `stage-4a-progress`. The app runs **only
+**Where things stand (2026-10-30):** stages 0-4a are merged; stage 4b is in review on `stage-4b-progress`. The app runs **only
 locally** (Docker + ngrok); nothing is on AWS yet (stages 6a-6c), so the WhatsApp history is only in
 the local DynamoDB (`load --local`), and anything logged in the app now stays local. Sergio tests on
 their phone through the ngrok URL and may be using the local app while the agent works.
 
-**Next: Sergio's feedback on 4a, then stage 4b** (volume, drop sets, climbing, routine timeline,
-time; see "Stage 4: plot plan" in [docs/BACKLOG.md](docs/BACKLOG.md)). Load the `dataviz` skill
+**Next: Sergio's feedback on 4b, then stage 4c** (the separate desktop design; see
+[docs/BACKLOG.md](docs/BACKLOG.md)). Load the `dataviz` skill
 before writing chart code. Visuals are plain SVG/HTML in `components/Progression.tsx` (no chart
 library). Day-type colors are CSS variables in `index.css` (`--chart-push/legs/pull/cardio`),
 checked with the dataviz palette validator in both modes.
@@ -182,7 +183,8 @@ frontend/
                             colors), Nav (useGoTo: switch tabs from a page)
   src/lib/                  pure logic + tests: sets (summaries, next set, ladder, volume, next up),
                             time (local ISO), weeks (week grouping, long dates), laps, duration, search (fuzzy), images, theme,
-                            progress (week rows and counts, streaks, step dates), cues (sections and order)
+                            progress (week rows and counts, streaks, step dates), cues (sections and order),
+                            kinds (drop ladders, climbing grades)
 ```
 
 ### Data model (DynamoDB, one table `fit`, `pk`/`sk`)
@@ -257,7 +259,7 @@ frontend/
 | Area | Endpoints |
 |---|---|
 | Health | `GET /health` |
-| Progress | `GET /progress` (days with day type; the main lifts' progression ladders) · `GET /exercises/{id}/progress` (one exercise's ladder: `steps` of `{scheme, sessions, times}`, oldest first) |
+| Progress | `GET /progress` (days with day type; the main lifts' progression ladders; routine eras newest first with their workouts) · `GET /exercises/{id}/progress` (one exercise's ladder: `steps` of `{scheme, sessions, times}`, oldest first) |
 | Day types | `GET /session-types` (label, usual exercises in order, last date, sessions) |
 | Exercise page | `GET /exercises/{id}/history` (sessions newest first, all photos, best set) · `PATCH /exercises/{id} {name?, group?}` (old name stays an alias) · `POST /exercises/{id}/merge {into}` (sessions and cues move; the duplicate is hidden) |
 | Exercises | `GET /exercises` (catalog + custom, with `lastDone`, `timesDone`) · `POST /exercises` · `GET /exercises/{id}/summary[?exclude=workoutId]` (cues, last, streak = target game, photos, bestDrop) |

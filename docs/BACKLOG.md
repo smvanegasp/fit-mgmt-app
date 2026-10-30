@@ -26,9 +26,19 @@ Sergio merges.
 
 ## Now
 
-Stages 0-3 merged (#1, #3, #4, #5, #6, #7). **Stage 4a (Progress) is in review** on
-`stage-4a-progress`: Sergio tests it on their phone. Then 4b (volume, drop sets, climbing, routine timeline, time), 4c (separate
-desktop design), 5a guests and passcode, 5b welcome page, 6a-6c AWS, 7 production import.
+Stages 0-4a merged (#1, #3-#8). **Stage 4b is in review** on `stage-4b-progress`: Sergio tests it on
+their phone. Then 4c (separate desktop design), 5a guests and passcode, 5b welcome page, 6a-6c AWS, 7 production import.
+
+## Stage 4b: what's in it (re-scoped for simplicity, 2026-10-30)
+
+- **Routine** on Progress: the eras as a timeline, newest first, with dates and workouts logged; the
+  current one open (days, notes), past ones on tap (and the rotation photo).
+- **Drop sets** on the dips and chin-ups pages: the best ladder in full, then each ladder's total
+  reps as a bar, newest first (tap to open the workout). Replaces the "best drop set" box.
+- **Climbing** on the bouldering page: hardest send and the grade pyramid (sent solid, tried light);
+  a Climbing card on Progress links there.
+- Left out on purpose (in Ideas): weekly volume (repeats the ladders and weeks) and session time /
+  rest (no workout has laps yet; imported times are estimates).
 
 ## Stage 4a: what's in it
 
@@ -181,6 +191,9 @@ desktop design), 5a guests and passcode, 5b welcome page, 6a-6c AWS, 7 productio
 | Time | Session length and rest (from laps) trend | 4b |
 
 ## Ideas and improvements
+
+- Session time and rest per set from laps, once there are app-logged workouts with laps (stage 4b
+  left it out: no data yet). Weekly volume if it turns out useful.
 
 - Stage 5a: turn the cue check off for guest sandboxes (it costs per call and guests could spam it),
   or rate-limit it. Stage 6a: `GROQ_API_KEY` as SSM `/fit/GROQ_API_KEY`.

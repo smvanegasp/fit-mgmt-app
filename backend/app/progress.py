@@ -3,9 +3,10 @@ exercise's progression ladder (the targets Sergio worked through, built from the
 
 from typing import Any
 
+from app import db
 from app.history import merged_entry, replay, workouts
 from app.labels import day_type
-from app.models import Exercise, Lift, Progress, ProgressDay, Step, StepSession
+from app.models import Exercise, Lift, Progress, ProgressDay, Routine, Step, StepSession
 
 # The lifts on the Progress tab.
 MAIN_LIFTS = ["squat", "deadlift", "bench-press", "dips", "chin-ups"]
@@ -41,4 +42,14 @@ def progress(space: str, exercises: dict[str, Exercise]) -> Progress:
         for w in every
     ]
     lifts = [ladder(every, exercises[x]) for x in MAIN_LIFTS if x in exercises]
-    return Progress(days=days, lifts=lifts)
+    return Progress(days=days, lifts=lifts, routines=routines(space, days))
+
+
+def routines(space: str, days: list[ProgressDay]) -> list[Routine]:
+    """The routine eras, newest first, with the workouts logged in each."""
+    out = []
+    for row in db.query(space, "ROUTINE#"):
+        era = Routine(**row)
+        era.sessions = sum(1 for d in days if d.date >= era.start and (era.end is None or d.date <= era.end))
+        out.append(era)
+    return sorted(out, key=lambda r: r.start, reverse=True)

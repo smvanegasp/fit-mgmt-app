@@ -323,6 +323,26 @@ class Lift(BaseModel):
     steps: list[Step]
 
 
+
+
+class Routine(BaseModel):
+    """A routine era (the plan Sergio followed from one date to another), for the timeline."""
+
+    model_config = {"populate_by_name": True}
+
+    id: str
+    name: str
+    start: str = Field(alias="from")
+    end: str | None = Field(None, alias="to")
+    days: list[str] = Field(default_factory=list)
+    notes: str = ""
+    photos: list[Photo] = Field(default_factory=list)
+    # Workouts logged in the era.
+    sessions: int = 0
+
+
 class Progress(BaseModel):
     days: list[ProgressDay]
     lifts: list[Lift]
+    # Newest first.
+    routines: list[Routine] = Field(default_factory=list)
