@@ -173,7 +173,7 @@ frontend/
   src/App.tsx               tabs Train / History / Progress / Settings
   src/api.ts, hooks.ts      API client and TanStack Query hooks
   src/pages/                TrainPage (idle: day type, start, last workouts; active workout),
-                            HistoryPage (Workouts by week + filters / Exercises), ProgressPage (consistency
+                            HistoryPage (Workouts by month and week + filters / Exercises), ProgressPage (consistency
                             weeks + streak, lift ladders), SettingsPage
   src/components/           Screens (stack of full-screen pages: useScreens().openWorkout / openExercise),
                             Screen, WorkoutDetail, ExercisePage, EditWorkout, WorkoutCard,

@@ -29,6 +29,12 @@ Sergio merges.
 Stages 0-4b merged (#1, #3-#9). **Stage 4c (desktop) is in review** on `stage-4c-desktop`: Sergio
 looks at it on a computer. Then 5a guests and passcode, 5b welcome page, 6a-6c AWS, 7 production import.
 
+## Feedback on stage 4c (Sergio, 2026-10-30)
+
+| What Sergio said | Done |
+|---|---|
+| Desktop approved; the History toggles were missing | History, Workouts: weeks grouped by month; months fold (the newest open) with their workout count |
+
 ## Stage 4c: what's in it (desktop, 2026-10-30)
 
 - From 1024px: a left sidebar replaces the bottom tabs; the app opens on **Progress**.
