@@ -146,6 +146,7 @@ desktop design), 5a guests and passcode, 5b welcome page, 6a-6c AWS, 7 productio
 | Remove workout notes and photos | Gone from the editor; old ones still show on the workout |
 | An LLM (gpt-oss-120b on Groq) to see if a note should update the cues | The cue check: after a note, a suggestion to add or reword a cue (accept / no thanks); needs `GROQ_API_KEY` |
 | Group the cues and order them by importance, only with the cues they have | Sections Setup, Brace & breathe, Lift; ranked by the agent (50 cues, none new or reworded); the key cue of each section shows, the rest on tap |
+| Light mode too light, hard to read; dark is great | Light-mode grays a step darker (muted labels 4.8:1, secondary text ~7:1 on white; borders and empty days visible), past targets less faded; dark unchanged |
 
 ## Feedback round 1 on stage 4a (Sergio, 2026-10-30)
 

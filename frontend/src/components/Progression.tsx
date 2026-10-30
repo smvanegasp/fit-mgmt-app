@@ -51,7 +51,7 @@ export function SetGlyph({ sets, max, color, faded = false }: { sets: number[]; 
   const height = squares ? max * (CELL + GAP) - GAP : 36;
   const width = sets.length * (CELL + 2) - 2;
   return (
-    <svg width={width} height={height} aria-hidden className="shrink-0" style={{ opacity: faded ? 0.45 : 1 }}>
+    <svg width={width} height={height} aria-hidden className="shrink-0" style={{ opacity: faded ? "var(--glyph-faded)" : 1 }}>
       {sets.map((reps, i) => {
         const x = i * (CELL + 2);
         if (!squares) {
