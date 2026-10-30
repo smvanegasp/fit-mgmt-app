@@ -120,7 +120,7 @@ function CueRow({ cue }: { cue: Note }) {
         >
           <input aria-label="Cue" value={text} onChange={(e) => setText(e.target.value)} maxLength={300}
             className="min-w-0 flex-1 rounded-lg border border-stone-200 px-3 py-2 text-sm" />
-          <button className="rounded-lg bg-emerald-600 px-3 text-sm font-medium text-white">Save</button>
+          <button className="rounded-lg bg-red-600 px-3 text-sm font-medium text-white">Save</button>
         </form>
       </li>
     );

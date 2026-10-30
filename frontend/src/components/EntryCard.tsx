@@ -1,7 +1,7 @@
 import { ArrowsDownUp, Check, Images, NotePencil, Target, Trash, X } from "@phosphor-icons/react";
 import { useEffect, useState } from "react";
 
-import type { Entry, Exercise, Photo, Problem, SetData, Streak } from "../api";
+import type { Entry, Exercise, Photo, Problem, Scheme, SetData, Streak } from "../api";
 import { useExerciseSummary } from "../hooks";
 import { ladderWeights, nextSet, reachesTarget, schemeText, summarizeSets, weightText } from "../lib/sets";
 import { friendlyDate } from "../lib/time";
@@ -34,7 +34,7 @@ export function EntryCard({ entry, exercise, excludeWorkoutId, onChange, onRemov
         <h2 className="flex-1 text-lg leading-tight font-semibold">{exercise.name}</h2>
         {confirmRemove ? (
           <span className="flex items-center gap-1">
-            <button type="button" onClick={onRemove} className="rounded-lg bg-red-600 px-2.5 py-1 text-sm font-medium text-white">Remove</button>
+            <button type="button" onClick={onRemove} className="rounded-lg bg-stone-900 px-2.5 py-1 text-sm font-medium text-white">Remove</button>
             <button type="button" onClick={() => setConfirmRemove(false)} className="rounded p-1 text-stone-500" aria-label="Keep exercise">
               <X size={18} weight="bold" aria-hidden />
             </button>
@@ -66,7 +66,7 @@ export function EntryCard({ entry, exercise, excludeWorkoutId, onChange, onRemov
       ) : exercise.measure === "run" ? (
         <RunLog entry={entry} onChange={onChange} />
       ) : (
-        <SetLog entry={entry} exercise={exercise} lastSets={last?.entry.sets} bestDrop={summary.data?.bestDrop}
+        <SetLog entry={entry} exercise={exercise} lastSets={last?.entry.sets} bestDrop={summary.data?.bestDrop} target={streak?.scheme}
           onChange={onChange} onSetLogged={onSetLogged} />
       )}
 
@@ -127,8 +127,8 @@ function TargetGame({ streak, load, today }: { streak: Streak; load: Exercise["l
   const reachedToday = today.length > 0 && reachesTarget(today, streak.scheme);
   const done = streak.times >= streak.goal;
   return (
-    <div className="mt-2 flex items-center gap-3 rounded-xl bg-emerald-50 px-3 py-2 text-emerald-900">
-      <Target size={20} weight="fill" className="shrink-0 text-emerald-700" aria-hidden />
+    <div className="mt-2 flex items-center gap-3 rounded-xl bg-red-50 px-3 py-2 text-red-900">
+      <Target size={20} weight="fill" className="shrink-0 text-red-700" aria-hidden />
       <div className="min-w-0 flex-1">
         <div className="text-sm font-semibold">Target {schemeText(streak.scheme, load)}</div>
         <div className="text-xs">
@@ -141,7 +141,7 @@ function TargetGame({ streak, load, today }: { streak: Streak; load: Exercise["l
           <span
             key={i}
             className={`size-3 rounded-full ${
-              i < streak.times ? "bg-emerald-600" : i === streak.times && reachedToday ? "bg-emerald-300" : "border-2 border-emerald-300"
+              i < streak.times ? "bg-red-600" : i === streak.times && reachedToday ? "bg-red-300" : "border-2 border-red-300"
             }`}
           />
         ))}
@@ -157,22 +157,22 @@ function TargetGame({ streak, load, today }: { streak: Streak; load: Exercise["l
 // ------------------------------------------------------------------ lifting
 
 
-function SetLog({ entry, exercise, lastSets, bestDrop, onChange, onSetLogged }: {
-  entry: Entry; exercise: Exercise; lastSets?: SetData[]; bestDrop?: { date: string; sets: SetData[] };
+function SetLog({ entry, exercise, lastSets, bestDrop, target, onChange, onSetLogged }: {
+  entry: Entry; exercise: Exercise; lastSets?: SetData[]; bestDrop?: { date: string; sets: SetData[] }; target?: Scheme;
   onChange: (e: Entry) => void; onSetLogged: (label: string) => void;
 }) {
   const sets = entry.sets ?? [];
   const [editing, setEditing] = useState<number | null>(null);
-  const [draft, setDraft] = useState<SetData>(() => nextSet(sets, lastSets, exercise));
+  const [draft, setDraft] = useState<SetData>(() => nextSet(sets, lastSets, exercise, target));
   const [dropOpen, setDropOpen] = useState(false);
   const hasWeight = exercise.load !== "bodyweight" && exercise.load !== "none";
   const seconds = exercise.measure === "seconds";
 
   // When "last time" arrives (or a set is logged), suggest the next set.
   useEffect(() => {
-    if (editing === null) setDraft(nextSet(sets, lastSets, exercise));
+    if (editing === null) setDraft(nextSet(sets, lastSets, exercise, target));
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [lastSets, sets.length, editing]);
+  }, [lastSets, target, sets.length, editing]);
 
   function save() {
     const next = [...sets];
@@ -207,7 +207,7 @@ function SetLog({ entry, exercise, lastSets, bestDrop, onChange, onSetLogged }: 
                   setDraft(s);
                 }}
                 className={`flex w-full items-center gap-3 rounded-lg px-3 py-2 text-left tabular-nums ${
-                  editing === i ? "bg-emerald-50 ring-1 ring-emerald-600" : "bg-stone-50"
+                  editing === i ? "bg-red-50 ring-1 ring-red-600" : "bg-stone-50"
                 }`}
               >
                 <span className="w-5 text-sm text-stone-500">{i + 1}</span>
@@ -255,7 +255,7 @@ function SetLog({ entry, exercise, lastSets, bestDrop, onChange, onSetLogged }: 
           <button
             type="button"
             onClick={save}
-            className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-emerald-600 py-3.5 text-lg font-semibold text-white active:bg-emerald-700"
+            className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-red-600 py-3.5 text-lg font-semibold text-white active:bg-red-700"
           >
             <Check size={22} weight="bold" aria-hidden />
             {editing === null ? `Log set ${sets.length + 1}` : `Update set ${editing + 1}`}
@@ -321,7 +321,7 @@ function DropSetSheet({ weights: initial, lastReps, best, onClose, onLog }: {
       <button
         type="button"
         onClick={() => onLog(steps.filter((s) => s.reps > 0).map((s) => ({ ...s, drop: true })))}
-        className="mt-4 w-full rounded-xl bg-emerald-600 py-3.5 text-lg font-semibold text-white"
+        className="mt-4 w-full rounded-xl bg-red-600 py-3.5 text-lg font-semibold text-white"
       >
         Log drop set{best ? ` · ${total} reps${total > bestTotal ? " (new best)" : ""}` : ""}
       </button>
@@ -366,7 +366,7 @@ function ClimbLog({ entry, onChange }: { entry: Entry; onChange: (e: Entry) => v
         <div className="flex flex-wrap gap-1.5" role="radiogroup" aria-label="Grade">
           {GRADES.map((g) => (
             <button key={g} type="button" role="radio" aria-checked={draft.grade === g} onClick={() => setDraft({ ...draft, grade: g })}
-              className={`rounded-lg px-3 py-2 text-sm font-semibold ${draft.grade === g ? "bg-emerald-600 text-white" : "bg-stone-100"}`}>
+              className={`rounded-lg px-3 py-2 text-sm font-semibold ${draft.grade === g ? "bg-red-600 text-white" : "bg-stone-100"}`}>
               {g}
             </button>
           ))}
@@ -375,7 +375,7 @@ function ClimbLog({ entry, onChange }: { entry: Entry; onChange: (e: Entry) => v
           {Object.entries(HOLD_COLORS).map(([name, hex]) => (
             <button key={name} type="button" role="radio" aria-checked={draft.color === name} aria-label={name}
               onClick={() => setDraft({ ...draft, color: draft.color === name ? undefined : name })}
-              className={`size-9 rounded-full border-2 ${draft.color === name ? "border-emerald-600 ring-2 ring-emerald-600" : "border-stone-300"}`}
+              className={`size-9 rounded-full border-2 ${draft.color === name ? "border-red-600 ring-2 ring-red-600" : "border-stone-300"}`}
               style={{ background: hex }} />
           ))}
         </div>
@@ -399,7 +399,7 @@ function ClimbLog({ entry, onChange }: { entry: Entry; onChange: (e: Entry) => v
           />
         </div>
         <button type="button" onClick={() => onChange({ ...entry, problems: [...problems, draft] })}
-          className="mt-3 flex w-full items-center justify-center gap-2 rounded-xl bg-emerald-600 py-3.5 text-lg font-semibold text-white">
+          className="mt-3 flex w-full items-center justify-center gap-2 rounded-xl bg-red-600 py-3.5 text-lg font-semibold text-white">
           <Check size={22} weight="bold" aria-hidden /> Add {draft.grade}
         </button>
       </div>
@@ -456,7 +456,7 @@ function EntryNotes({ entry, onChange }: { entry: Entry; onChange: (e: Entry) =>
         >
           <input autoFocus aria-label="Note for today" placeholder="How it went today" value={text} maxLength={1000}
             onChange={(e) => setText(e.target.value)} className="min-w-0 flex-1 rounded-lg border border-stone-200 px-3 py-2 text-sm" />
-          <button className="rounded-lg bg-emerald-600 px-3 text-sm font-medium text-white">Save</button>
+          <button className="rounded-lg bg-red-600 px-3 text-sm font-medium text-white">Save</button>
         </form>
       ) : (
         <div className="flex items-center gap-1">

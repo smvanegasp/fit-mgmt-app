@@ -30,9 +30,10 @@ def _clean(data: dict[str, Any]) -> dict[str, Any]:
     return data
 
 
-def _label(space: str, body: WorkoutBody) -> str:
+def _label(space: str, body: WorkoutBody, legs_day: bool = True) -> str:
+    """legs_day=False keeps the old Squat / Deadlift names, for imported workouts being edited."""
     names = {e.id: e.name for e in all_exercises(space).values()}
-    return body.label or session_label([(e.exerciseId, len(e.sets)) for e in body.entries], names)
+    return body.label or session_label([(e.exerciseId, len(e.sets)) for e in body.entries], names, legs_day)
 
 
 def _sk(workout_id: str) -> str:
@@ -66,7 +67,8 @@ def get_workout(workout_id: str, space: str = Depends(current_space)) -> Workout
 @router.put("/workouts/{workout_id}", response_model_exclude_none=True)
 def update_workout(workout_id: str, body: WorkoutBody, space: str = Depends(current_space)) -> Workout:
     old = _get(space, workout_id)
-    workout = Workout(**{**body.model_dump(), "label": _label(space, body)}, id=old.id, date=old.date,
+    label = _label(space, body, legs_day=old.source == "app")
+    workout = Workout(**{**body.model_dump(), "label": label}, id=old.id, date=old.date,
                       durationEstimated=old.durationEstimated, source=old.source)
     db.put(space, _sk(workout_id), _clean(workout.model_dump()))
     return workout

@@ -13,6 +13,7 @@ from datetime import date, timedelta
 from typing import Any
 
 from app import db
+from app.labels import day_type
 from app.models import DatedPhoto, DatedSets, Entry, LastTime, Scheme, SessionType, Streak
 
 GOAL = 3
@@ -173,7 +174,7 @@ def session_types(space: str, recent: int = 40) -> list[SessionType]:
     least a quarter of them, in their usual order. Climbing days are their own kind."""
     by_type: dict[str, list[dict[str, Any]]] = defaultdict(list)
     for w in workouts(space):
-        main = (w.get("label") or "Workout").split(" + ")[0]
+        main = day_type(w.get("label") or "Workout")
         by_type[main].append(w)
         if main != "Climb" and any(e.get("exerciseId") == "bouldering" for e in w.get("entries", [])):
             by_type["Climb"].append(w)

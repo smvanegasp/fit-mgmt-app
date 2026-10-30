@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { ladderWeights, nextSet, nextUp, reachesTarget, schemeText, summarizeSets, volume, weightText } from "./sets";
+import { dayType, heavyNext, ladderWeights, nextSet, nextUp, reachesTarget, schemeText, summarizeSets, volume, weightText } from "./sets";
 
 const barbell = { load: "barbell" as const, measure: "reps" as const, barLb: 45 };
 const added = { load: "added" as const, measure: "reps" as const, barLb: 0 };
@@ -61,6 +61,13 @@ describe("nextSet", () => {
     expect(nextSet([], undefined, { load: "bodyweight", measure: "seconds" })).toEqual({ seconds: 10 });
   });
 
+  it("starts from the target when last time was a light day", () => {
+    const target = { sets: [4, 4, 4, 4, 4], weightLb: 180, each: false, seconds: false };
+    const lightDay = [{ reps: 6, weightLb: 155 }, { reps: 6, weightLb: 155 }];
+    expect(nextSet([], lightDay, barbell, target)).toEqual({ reps: 4, weightLb: 180 });
+    expect(nextSet([], [{ reps: 4, weightLb: 180 }], barbell, target)).toEqual({ reps: 4, weightLb: 180 });
+  });
+
   it("ignores drop sets", () => {
     expect(nextSet([{ reps: 4, weightLb: 115 }, { reps: 4, weightLb: 90, drop: true }], undefined, added)).toEqual({ reps: 4, weightLb: 115 });
   });
@@ -90,7 +97,8 @@ describe("nextUp", () => {
       { date: "2026-10-29", label: "Pull" },
       { date: "2026-10-25", label: "Climb" },
     ];
-    expect(nextUp(workouts, "2026-10-30")).toEqual({ label: "Squat", lastDate: "2026-10-23" });
+    // Squat (10-23) and Deadlift (10-28) days are one Legs day now, last done 10-28.
+    expect(nextUp(workouts, "2026-10-30")).toEqual({ label: "Front lever", lastDate: "2026-10-24" });
   });
 
   it("needs some history", () => {
@@ -109,5 +117,22 @@ describe("reachesTarget", () => {
 
   it("ignores drop sets", () => {
     expect(reachesTarget([...Array(3).fill({ reps: 4, weightLb: 90 }), { reps: 6, weightLb: 90, drop: true }], target)).toBe(false);
+  });
+});
+
+describe("Legs days", () => {
+  it("counts old Squat and Deadlift days as Legs", () => {
+    expect(dayType("Squat + Climb")).toBe("Legs");
+    expect(dayType("Deadlift")).toBe("Legs");
+    expect(dayType("Push")).toBe("Push");
+  });
+
+  it("alternates the heavy lift", () => {
+    const deadliftFirst = { date: "2026-10-28", label: "Deadlift", entries: [{ exerciseId: "deadlift" }, { exerciseId: "squat" }] };
+    const squatFirst = { date: "2026-10-30", label: "Legs", entries: [{ exerciseId: "squat" }, { exerciseId: "deadlift" }] };
+    const push = { date: "2026-10-31", label: "Push", entries: [{ exerciseId: "dips" }] };
+    expect(heavyNext([deadliftFirst])).toBe("squat");
+    expect(heavyNext([deadliftFirst, squatFirst, push])).toBe("deadlift");
+    expect(heavyNext([push])).toBeNull();
   });
 });

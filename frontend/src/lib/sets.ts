@@ -61,11 +61,21 @@ export function reachesTarget(sets: SetData[], scheme: Scheme): boolean {
 
 /**
  * What the set logger starts with: the last set logged today, otherwise the set at the same
- * position last time (so the 4th set suggests last time's 4th), otherwise empty.
+ * position last time (so the 4th set suggests last time's 4th), otherwise empty. When the target
+ * is heavier than last time (last time was a light day), the first set starts from the target.
  */
-export function nextSet(today: SetData[], lastTime: SetData[] | undefined, exercise: Pick<Exercise, "load" | "measure">): SetData {
+export function nextSet(
+  today: SetData[],
+  lastTime: SetData[] | undefined,
+  exercise: Pick<Exercise, "load" | "measure">,
+  target?: Scheme,
+): SetData {
   const work = today.filter((s) => !s.drop);
-  const previous = (lastTime ?? []).filter((s) => !s.drop);
+  const lastTop = Math.max(0, ...(lastTime ?? []).filter((s) => !s.drop).map((s) => s.weightLb ?? 0));
+  const fromTarget: SetData[] | undefined = target && (target.weightLb ?? 0) > lastTop
+    ? target.sets.map((n) => (target.seconds ? { seconds: n, weightLb: target.weightLb } : { reps: n, weightLb: target.weightLb }))
+    : undefined;
+  const previous = (fromTarget ?? lastTime ?? []).filter((s) => !s.drop);
   const source = work.at(-1) ?? previous[0];
   // Where last session changed weight (heavy sets -> volume sets), follow it.
   const fromLast = previous[work.length];
@@ -98,6 +108,23 @@ export function setCount(entries: Entry[]): number {
   return entries.reduce((n, e) => n + (e.sets?.length ?? 0) + (e.problems?.length ?? 0) + (e.segments?.length ? 1 : 0), 0);
 }
 
+/** Since 2026-10-30 squats and deadlifts share one Legs day; old Squat / Deadlift days count as Legs. */
+export function dayType(label: string): string {
+  const main = label.split(" + ")[0];
+  return main === "Squat" || main === "Deadlift" ? "Legs" : main;
+}
+
+/**
+ * Which lift goes heavy on the next Legs day: the one that was light last time. On a Legs day the
+ * heavy lift comes first, so the last Legs day's first squat or deadlift was its heavy one.
+ */
+export function heavyNext(workouts: Pick<Workout, "date" | "label" | "entries">[]): "squat" | "deadlift" | null {
+  const lastLegs = [...workouts].sort((a, b) => b.date.localeCompare(a.date)).find((w) => dayType(w.label) === "Legs");
+  const first = lastLegs?.entries?.find((e) => e.exerciseId === "squat" || e.exerciseId === "deadlift");
+  if (!first) return null;
+  return first.exerciseId === "squat" ? "deadlift" : "squat";
+}
+
 /**
  * The rotation day due next: among the main session types of the last few weeks ("Push",
  * "Squat", ...), the one done longest ago. Climbing and runs ride along, so they're ignored.
@@ -108,7 +135,7 @@ export function nextUp(workouts: Pick<Workout, "date" | "label">[], today: strin
   const cutoff = since.toISOString().slice(0, 10);
   const last = new Map<string, string>();
   for (const w of workouts) {
-    const main = w.label.split(" + ")[0];
+    const main = dayType(w.label);
     if (w.date < cutoff || main === "Climb" || main === "Run") continue;
     if (!last.has(main) || last.get(main)! < w.date) last.set(main, w.date);
   }

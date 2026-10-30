@@ -146,10 +146,28 @@ def test_laps_and_plan_are_saved_with_the_workout(client: TestClient) -> None:
 def test_session_types_list_usual_exercises_in_order(client: TestClient) -> None:
     for day in ("2026-10-01", "2026-10-08", "2026-10-15"):
         db.put("main", f"WORKOUT#{day}#{day}-1", {
-            "id": f"{day}-1", "date": day, "startedAt": f"{day}T19:00:00", "label": "Squat", "source": "app",
+            "id": f"{day}-1", "date": day, "startedAt": f"{day}T19:00:00", "label": "Legs", "source": "app",
             "entries": [{"exerciseId": "squat", "sets": [{"reps": 5, "weightLb": 170}]},
                         {"exerciseId": "calf-raises", "sets": [{"reps": 10}]}],
         })
     types = {t["label"]: t for t in client.get("/api/session-types").json()}
-    assert types["Squat"]["exercises"] == ["squat", "calf-raises"]
-    assert types["Squat"]["lastDate"] == "2026-10-15" and types["Squat"]["sessions"] == 3
+    assert types["Legs"]["exercises"] == ["squat", "calf-raises"]
+    assert types["Legs"]["lastDate"] == "2026-10-15" and types["Legs"]["sessions"] == 3
+
+
+def test_squat_and_deadlift_days_are_one_legs_day(client: TestClient) -> None:
+    squat_day("2026-10-23-1", "2026-10-23", FIVE_BY_FIVE)
+    db.put("main", "WORKOUT#2026-10-28#2026-10-28-1", {
+        "id": "2026-10-28-1", "date": "2026-10-28", "startedAt": "2026-10-28T16:00:00", "label": "Deadlift",
+        "source": "whatsapp", "entries": [{"exerciseId": "deadlift", "sets": [{"reps": 3, "weightLb": 190}] * 4},
+                                          {"exerciseId": "squat", "sets": [{"reps": 6, "weightLb": 155}] * 3}],
+    })
+    types = {t["label"]: t for t in client.get("/api/session-types").json()}
+    assert "Squat" not in types and "Deadlift" not in types
+    assert types["Legs"]["sessions"] == 2 and set(types["Legs"]["exercises"]) == {"squat", "deadlift"}
+
+    client.post("/api/active", json={"startedAt": "2026-10-30T18:00:00", "plan": "Legs"})
+    client.put("/api/active", json={"startedAt": "2026-10-30T18:00:00", "entries": [
+        {"exerciseId": "squat", "sets": [{"reps": 4, "weightLb": 180}] * 5},
+        {"exerciseId": "deadlift", "sets": [{"reps": 5, "weightLb": 155}] * 3}]})
+    assert client.post("/api/active/finish", json={"endedAt": "2026-10-30T19:00:00"}).json()["label"] == "Legs"

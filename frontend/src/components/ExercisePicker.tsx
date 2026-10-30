@@ -2,7 +2,8 @@ import { Check, MagnifyingGlass, Plus } from "@phosphor-icons/react";
 import { useMemo, useState } from "react";
 
 import type { Exercise, Group, Load } from "../api";
-import { useCreateExercise, useExercises, useSessionTypes } from "../hooks";
+import { useCreateExercise, useExercises, useSessionTypes, useWorkouts } from "../hooks";
+import { heavyNext } from "../lib/sets";
 import { fuzzyMatch } from "../lib/search";
 import { friendlyDate } from "../lib/time";
 import { BottomSheet } from "./BottomSheet";
@@ -49,7 +50,14 @@ export function ExercisePicker({ onPick, onClose, inWorkout, plan }: Props) {
 
   const all = exercises.data ?? [];
   const byId = useMemo(() => new Map(all.map((e) => [e.id, e])), [all]);
-  const usual = (types.data ?? []).find((t) => t.label === plan)?.exercises ?? [];
+  const workouts = useWorkouts(30);
+  let usual = (types.data ?? []).find((t) => t.label === plan)?.exercises ?? [];
+  // On a Legs day the heavy lift goes first, then the lighter one.
+  const heavy = plan === "Legs" && workouts.data ? heavyNext(workouts.data) : null;
+  if (heavy) {
+    const light = heavy === "squat" ? "deadlift" : "squat";
+    usual = [heavy, light, ...usual.filter((id) => id !== heavy && id !== light)];
+  }
   const usualLeft = usual.filter((id) => !inWorkout.includes(id) && byId.has(id));
   const [tab, setTab] = useState<string>(usualLeft.length > 0 ? "usual" : "recent");
 
@@ -101,7 +109,7 @@ export function ExercisePicker({ onPick, onClose, inWorkout, plan }: Props) {
               aria-selected={tab === t.id}
               onClick={() => setTab(t.id)}
               className={`shrink-0 rounded-full px-3.5 py-2 text-sm font-medium whitespace-nowrap ${
-                tab === t.id ? "bg-emerald-600 text-white" : "bg-stone-100 text-stone-700"
+                tab === t.id ? "bg-red-600 text-white" : "bg-stone-100 text-stone-700"
               }`}
             >
               {t.label}
@@ -127,7 +135,7 @@ export function ExercisePicker({ onPick, onClose, inWorkout, plan }: Props) {
                 {query.trim() && <span className="text-xs text-stone-500">{GROUP_NAMES[e.group]}</span>}
               </span>
               {inWorkout.includes(e.id) ? (
-                <span className="flex items-center gap-1 text-xs text-emerald-700">
+                <span className="flex items-center gap-1 text-xs text-red-700">
                   <Check size={14} weight="bold" aria-hidden /> Added
                 </span>
               ) : (
@@ -141,7 +149,7 @@ export function ExercisePicker({ onPick, onClose, inWorkout, plan }: Props) {
       <button
         type="button"
         onClick={() => setCreating(true)}
-        className="mt-3 flex w-full items-center justify-center gap-2 rounded-xl border border-dashed border-stone-300 py-3 font-medium text-emerald-700"
+        className="mt-3 flex w-full items-center justify-center gap-2 rounded-xl border border-dashed border-stone-300 py-3 font-medium text-red-700"
       >
         <Plus size={18} weight="bold" aria-hidden />
         {query.trim() ? `Create "${query.trim()}"` : "Create an exercise"}
@@ -188,7 +196,7 @@ function CreateExercise({ name: initial, onCreated, onCancel }: { name: string; 
       {create.error && <p className="text-sm text-red-600">{create.error.message}</p>}
       <div className="flex gap-2">
         <button type="button" onClick={onCancel} className="flex-1 rounded-xl border border-stone-300 py-3 font-medium">Back</button>
-        <button disabled={!name.trim() || create.isPending} className="flex-1 rounded-xl bg-emerald-600 py-3 font-medium text-white disabled:opacity-50">
+        <button disabled={!name.trim() || create.isPending} className="flex-1 rounded-xl bg-red-600 py-3 font-medium text-white disabled:opacity-50">
           Create and add
         </button>
       </div>

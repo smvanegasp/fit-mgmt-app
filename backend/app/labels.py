@@ -1,22 +1,42 @@
-"""Short session names ("Push", "Squat + Climb") from what was trained."""
+"""Short session names ("Push", "Legs + Climb") from what was trained.
 
+Since 2026-10-30 squats and deadlifts share one Legs day (heavy squat + lighter deadlift, then
+heavy deadlift + light squats). Imported sessions from before keep their old names (Squat,
+Deadlift); for day types and the rotation those count as Legs (DAY_TYPE).
+"""
+
+SQUAT = {"squat", "smith-squat", "pistol-squat"}
+HINGE = {"deadlift", "rdl", "reverse-leg-curl"}
 GROUPS = {
     "Push": {"dips", "bench-press", "smith-bench-press", "dumbbell-bench-press", "overhead-press", "bar-dips"},
-    "Squat": {"squat", "smith-squat", "pistol-squat"},
-    "Deadlift": {"deadlift", "rdl", "reverse-leg-curl"},
+    "Legs": SQUAT | HINGE,
     "Pull": {"chin-ups", "pull-ups", "muscle-up-complex", "wide-pull-ups", "close-pull-ups", "french-chin-ups"},
     "Front lever": {"front-raise", "full-front-raise", "advanced-tuck-hold", "half-tuck-front-lever-raise",
                     "l-sit-tuck-planche", "high-pull-ups"},
 }
 
 
-def session_label(entries: list[tuple[str, int]], names: dict[str, str]) -> str:
+# Old day names that are one day type now.
+DAY_TYPE = {"Squat": "Legs", "Deadlift": "Legs"}
+
+
+def day_type(label: str) -> str:
+    """The kind of day a session was: "Squat + Climb" -> "Legs"."""
+    main = label.split(" + ")[0]
+    return DAY_TYPE.get(main, main)
+
+
+def session_label(entries: list[tuple[str, int]], names: dict[str, str], legs_day: bool = True) -> str:
     """entries: (exerciseId, number of sets) in order. The main lifting group (most sets, ties to
-    the first logged) plus " + Climb" / " + Run"; otherwise the first exercise's name."""
+    the first logged) plus " + Climb" / " + Run"; otherwise the first exercise's name.
+    legs_day=False keeps the old Squat / Deadlift names (the WhatsApp import)."""
+    groups = GROUPS if legs_day else {
+        **{k: v for k, v in GROUPS.items() if k != "Legs"}, "Squat": SQUAT, "Deadlift": HINGE,
+    }
     parts: list[str] = []
     sets_per_group: dict[str, int] = {}
     for exercise_id, sets in entries:
-        group = next((g for g, ids in GROUPS.items() if exercise_id in ids), None)
+        group = next((g for g, ids in groups.items() if exercise_id in ids), None)
         if group:
             sets_per_group[group] = sets_per_group.get(group, 0) + sets
     if sets_per_group:

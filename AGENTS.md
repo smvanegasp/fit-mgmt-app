@@ -67,7 +67,7 @@ A mobile-first web app where Sergio logs their gym workouts and sees their progr
   needs them (credentials, exports, DNS).
 - **UI style:** no emojis anywhere. Phosphor icons (`@phosphor-icons/react`, `weight="fill"`).
   Add an `InfoTip` (copy from the pantry) wherever a feature isn't obvious. Black/charcoal dark
-  mode. Emerald accent.
+  mode. Red accent (Tailwind red; Sergio, 2026-10-30), so it looks different from the pantry.
 - **Python** with **uv** (`uv sync`, `uv run pytest`, `uv add`). **Node 22+** (Vite 8).
 
 ## 3. Status
@@ -146,6 +146,8 @@ frontend/
 
 ### Data model (DynamoDB, one table `fit`, `pk`/`sk`)
 
+- Day types: since 2026-10-30 squat and deadlift share one **Legs** day (`labels.py`: new sessions are
+  "Legs"; imported Squat / Deadlift days keep their names but count as Legs via `day_type`).
 - `pk = SPACE#main` is Sergio's log; `SPACE#sb-<unixExpiry>-<hex>` is a guest sandbox (stage 5a;
   rows carry `ttl`).
 - **`EXERCISE#<id>`**: `name` (English), `group` (push, pull, legs, posterior, core, skill,

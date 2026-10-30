@@ -21,7 +21,7 @@ import {
 } from "../hooks";
 import { formatDuration } from "../lib/duration";
 import { currentLap, lapRows } from "../lib/laps";
-import { nextUp, setCount, summarizeSets } from "../lib/sets";
+import { heavyNext, nextUp, setCount, summarizeSets } from "../lib/sets";
 import { friendlyDate, localIso, secondsBetween } from "../lib/time";
 
 export function TrainPage() {
@@ -54,6 +54,7 @@ function Idle({ onEdit }: { onEdit: (w: Workout) => void }) {
   const suggestion = workouts.data ? nextUp(workouts.data, today) : null;
   const [picked, setPicked] = useState<string | null>(null);
   const plan = picked ?? suggestion?.label ?? null;
+  const heavy = workouts.data ? heavyNext(workouts.data) : null;
   const last = (workouts.data ?? []).slice(0, 5);
 
   return (
@@ -76,7 +77,7 @@ function Idle({ onEdit }: { onEdit: (w: Workout) => void }) {
                 role="radio"
                 aria-checked={plan === label}
                 onClick={() => setPicked(label)}
-                className={`rounded-full px-4 py-2 font-medium ${plan === label ? "bg-emerald-600 text-white" : "bg-white text-stone-700 ring-1 ring-stone-200"}`}
+                className={`rounded-full px-4 py-2 font-medium ${plan === label ? "bg-red-600 text-white" : "bg-white text-stone-700 ring-1 ring-stone-200"}`}
               >
                 {label}
                 {suggestion?.label === label && <span className="ml-1.5 text-xs opacity-80">next up</span>}
@@ -84,11 +85,21 @@ function Idle({ onEdit }: { onEdit: (w: Workout) => void }) {
             ))}
           </div>
         )}
+        {plan === "Legs" && heavy && (
+          <p className="mt-3 flex items-center gap-1 text-sm text-stone-700">
+            <span className="font-semibold">Heavy {heavy} today</span>
+            <span className="text-stone-500">· {heavy === "squat" ? "deadlift" : "squats"} lighter</span>
+            <InfoTip title="Legs day">
+              Squats and deadlifts share one day: one goes heavy, the other lighter, and they swap each time. Last
+              Legs day was heavy {heavy === "squat" ? "deadlift" : "squat"}. Light sessions don't count for or against a target.
+            </InfoTip>
+          </p>
+        )}
         <button
           type="button"
           onClick={() => start.mutate({ startedAt: localIso(), plan: plan ?? undefined })}
           disabled={start.isPending}
-          className="mt-5 inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-emerald-600 py-5 text-xl font-semibold text-white shadow-sm active:bg-emerald-700"
+          className="mt-5 inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-red-600 py-5 text-xl font-semibold text-white shadow-sm active:bg-red-700"
         >
           <Play size={26} weight="fill" aria-hidden /> {plan ? `Start ${plan} workout` : "Start workout"}
         </button>
@@ -209,7 +220,7 @@ function LapList({ body }: { body: WorkoutBody }) {
   return (
     <div className="mt-2 max-h-64 overflow-y-auto rounded-xl bg-white px-3 ring-1 ring-stone-200">
       <ol className="divide-y divide-stone-100 tabular-nums">
-        <li className="flex items-center gap-3 py-2.5 font-semibold text-emerald-700">
+        <li className="flex items-center gap-3 py-2.5 font-semibold text-red-700">
           <span className="w-14">Lap {laps.length + 1}</span>
           <span className="flex-1 text-sm font-normal">running</span>
           <span>{formatDuration(currentLap(body.startedAt, laps))}</span>
@@ -310,7 +321,7 @@ function FinishSheet({ body, onClose, onEnding }: {
           await onEnding(true);
           await finish.mutateAsync(localIso());
         }}
-        className="mt-4 flex w-full items-center justify-center gap-2 rounded-xl bg-emerald-600 py-3.5 text-lg font-semibold text-white disabled:opacity-50"
+        className="mt-4 flex w-full items-center justify-center gap-2 rounded-xl bg-red-600 py-3.5 text-lg font-semibold text-white disabled:opacity-50"
       >
         <CheckCircle size={22} weight="fill" aria-hidden /> Save workout
       </button>
@@ -320,7 +331,7 @@ function FinishSheet({ body, onClose, onEnding }: {
       </button>
       {confirmDiscard ? (
         <button type="button" onClick={async () => { await onEnding(false); await discard.mutateAsync(); }}
-          className="mt-2 w-full rounded-xl bg-red-600 py-3 font-medium text-white">
+          className="mt-2 w-full rounded-xl bg-stone-900 py-3 font-medium text-white">
           Yes, discard this workout
         </button>
       ) : (
@@ -369,7 +380,7 @@ function EditWorkout({ workout, onClose }: { workout: Workout; onClose: () => vo
               {friendlyDate(workout.date)} · changes save automatically
             </div>
           </div>
-          <button type="button" onClick={onClose} className="rounded-xl bg-emerald-600 px-4 py-2 font-semibold text-white">Done</button>
+          <button type="button" onClick={onClose} className="rounded-xl bg-red-600 px-4 py-2 font-semibold text-white">Done</button>
         </header>
         <WorkoutEditor
           body={body}
@@ -382,7 +393,7 @@ function EditWorkout({ workout, onClose }: { workout: Workout; onClose: () => vo
         <div className="mt-6">
           {confirmDelete ? (
             <button type="button" onClick={async () => { await remove.mutateAsync(workout.id); onClose(); }}
-              className="w-full rounded-xl bg-red-600 py-3 font-medium text-white">
+              className="w-full rounded-xl bg-stone-900 py-3 font-medium text-white">
               Yes, delete this workout
             </button>
           ) : (

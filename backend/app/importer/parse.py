@@ -658,7 +658,7 @@ def parse_messages(messages: list[Message], corrections: dict[str, Any] | None =
             "startedAt": session.started.isoformat(),
             "endedAt": session.ended.isoformat(),
             "durationEstimated": True,
-            "label": session_label([(e.exercise_id, len(e.sets)) for e in session.entries], NAMES),
+            "label": session_label([(e.exercise_id, len(e.sets)) for e in session.entries], NAMES, legs_day=False),
             "source": "whatsapp",
             "notes": session.notes,
             "photos": session.photos,

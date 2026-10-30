@@ -88,6 +88,13 @@ stage 3 (History). Stage 1 is merged (#4): 179 imported sessions (2025-09-05 to 
 | "Last" doesn't separate the target sets from the drop set | "Last time" box: Sets and Drop set rows; ladders as weight×reps chips |
 | See the best drop set so far | Best drop (most total reps) on the card and in the drop-set sheet, with the running total and "new best" |
 
+## Feedback round 3 on stage 2 (Sergio, 2026-10-30)
+
+| What Sergio said | Done |
+|---|---|
+| From now on legs is one day: heavy squat + lighter deadlift, alternating with heavy deadlift + light squats | One "Legs" day type (old Squat / Deadlift days count as Legs for the rotation, but keep their names); "Heavy squat today" from the last Legs day; heavy lift first in the picker; the first set starts from the target when last time was light; new routine era "One legs day" from 2026-10-30 |
+| Red instead of green, a shade that looks good | Tailwind red accent (light and dark); delete / discard confirm buttons are dark so they don't look like the main action |
+
 ## Ideas and improvements
 
 None yet; add as they come up.
