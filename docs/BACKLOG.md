@@ -123,6 +123,7 @@ Stage 3 PR open (History), with feedback round 1 done. Next: stage 4a (Progress 
 | Unclear times; estimate better: ~20 min warm-up before any message, first message after the first exercise (~40 min, 5 min rests) | Each session starts ~60 min before its first message, ends at the last; shown as "~5:37 PM · ~1 h 28 min" with a one-line explanation |
 | Still some Spanish | All imported text checked (0 left); three non-training messages that had joined a day dropped; Spanish originals no longer shown under cues; two Spanish UI examples replaced |
 | Wants plots | Belong in Progress (stage 4); proposal below |
+| Bullets not visible; pills cut on top; drop the exercise filter pill; "Hips & hamstrings" is legs | Bullets drawn inside the line; pill rows get room for their outline; filter removed; deadlift, RDL, leg curl, back extension are Legs |
 
 ## Stage 4: plot plan (proposed 2026-10-30)
 

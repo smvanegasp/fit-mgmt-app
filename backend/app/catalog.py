@@ -104,14 +104,14 @@ EXERCISES: tuple[CatalogExercise, ...] = (
                     aliases=("lunges",)),
     CatalogExercise("calf-raises", "Single-leg calf raises", "legs", "dumbbell",
                     aliases=("calves", "calve raises", "calves raises", "clave raises", "calf raises")),
-    # Posterior chain
-    CatalogExercise("deadlift", "Deadlift", "posterior", "barbell", bar_lb=BAR,
+    # Hinge (legs days)
+    CatalogExercise("deadlift", "Deadlift", "legs", "barbell", bar_lb=BAR,
                     aliases=("deadlift", "deadlift regular", "peso muerto")),
-    CatalogExercise("rdl", "Romanian deadlift", "posterior", "barbell", bar_lb=BAR,
+    CatalogExercise("rdl", "Romanian deadlift", "legs", "barbell", bar_lb=BAR,
                     aliases=("rdl", "romanian deadlift")),
-    CatalogExercise("reverse-leg-curl", "Leg curl", "posterior", "machine",
+    CatalogExercise("reverse-leg-curl", "Leg curl", "legs", "machine",
                     aliases=("reverse leg curl", "leg curl")),
-    CatalogExercise("back-raise", "Back extension", "posterior", "bodyweight",
+    CatalogExercise("back-raise", "Back extension", "legs", "bodyweight",
                     aliases=("back raise",)),
     # Core
     CatalogExercise("leg-raises", "Hanging leg raises", "core", "bodyweight",

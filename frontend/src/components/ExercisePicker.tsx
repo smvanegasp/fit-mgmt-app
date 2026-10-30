@@ -12,14 +12,13 @@ import { BottomSheet } from "./BottomSheet";
 const CATEGORIES: { id: string; label: string; groups: Group[] }[] = [
   { id: "push", label: "Push", groups: ["push"] },
   { id: "pull", label: "Pull", groups: ["pull", "climbing"] },
-  { id: "legs", label: "Legs", groups: ["legs"] },
-  { id: "hips", label: "Hips & hamstrings", groups: ["posterior"] },
+  { id: "legs", label: "Legs", groups: ["legs", "posterior"] },
   { id: "core", label: "Core", groups: ["core", "skill"] },
   { id: "cardio", label: "Cardio", groups: ["cardio"] },
 ];
 
 export const GROUP_NAMES: Record<Group, string> = {
-  push: "Push", pull: "Pull", legs: "Legs", posterior: "Hips & hamstrings", core: "Core",
+  push: "Push", pull: "Pull", legs: "Legs", posterior: "Legs", core: "Core",
   skill: "Core", cardio: "Cardio", climbing: "Pull",
 };
 
@@ -102,7 +101,7 @@ export function ExercisePicker({ onPick, onClose, inWorkout, plan, title = "Add 
       </div>
 
       {!query.trim() && (
-        <div className="-mx-4 mt-3 flex gap-2 overflow-x-auto px-4 pb-1" role="tablist" aria-label="Categories">
+        <div className="-mx-4 mt-2 flex gap-2 overflow-x-auto px-4 py-1.5" role="tablist" aria-label="Categories">
           {tabs.map((t) => (
             <button
               key={t.id}

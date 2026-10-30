@@ -43,9 +43,14 @@ export function WorkoutCard({ workout, onClick }: { workout: Workout; onClick: (
           </span>
         </div>
         {exercises.data && (
-          <ul className="mt-1 list-disc space-y-0.5 pl-4 text-sm text-stone-600 marker:text-stone-400">
-            {lines.map((line) => <li key={line} className="truncate">{line}</li>)}
-            {more > 0 && <li className="list-none text-xs text-stone-500">+{more} more</li>}
+          <ul className="mt-1 space-y-0.5 text-sm text-stone-600">
+            {lines.map((line) => (
+              <li key={line} className="flex items-baseline gap-2">
+                <span className="size-1.5 shrink-0 translate-y-[-2px] rounded-full bg-stone-400" aria-hidden />
+                <span className="min-w-0 truncate">{line}</span>
+              </li>
+            ))}
+            {more > 0 && <li className="pl-3.5 text-xs text-stone-500">+{more} more</li>}
           </ul>
         )}
       </div>

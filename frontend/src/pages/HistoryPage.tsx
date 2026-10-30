@@ -1,8 +1,8 @@
-import { CaretRight, Funnel, MagnifyingGlass, X } from "@phosphor-icons/react";
+import { CaretRight, MagnifyingGlass } from "@phosphor-icons/react";
 import { useMemo, useState } from "react";
 
 import type { Exercise, Group } from "../api";
-import { ExercisePicker, GROUP_NAMES } from "../components/ExercisePicker";
+import { GROUP_NAMES } from "../components/ExercisePicker";
 import { useScreens } from "../components/Screens";
 import { WorkoutCard } from "../components/WorkoutCard";
 import { useExercises, useWorkouts } from "../hooks";
@@ -37,44 +37,29 @@ function Workouts() {
   const workouts = useWorkouts(1000);
   const screens = useScreens();
   const [type, setType] = useState<string | null>(null);
-  const [exercise, setExercise] = useState<Exercise | null>(null);
-  const [picking, setPicking] = useState(false);
   const today = localIso().slice(0, 10);
 
   const all = workouts.data ?? [];
-  const shown = all.filter(
-    (w) => (!type || dayType(w.label) === type) && (!exercise || (w.entries ?? []).some((e) => e.exerciseId === exercise.id)),
-  );
+  const shown = all.filter((w) => !type || dayType(w.label) === type);
   const weeks = groupByWeek(shown, today);
   const first = all.at(-1)?.date;
 
   return (
     <>
-      <div className="-mx-4 mt-3 flex gap-2 overflow-x-auto px-4 pb-1" role="radiogroup" aria-label="Day type">
+      <div className="-mx-4 mt-2 flex gap-2 overflow-x-auto px-4 py-1.5" role="radiogroup" aria-label="Day type">
         {[null, ...DAY_TYPES].map((t) => (
           <button key={t ?? "all"} type="button" role="radio" aria-checked={type === t} onClick={() => setType(t)}
             className={`shrink-0 rounded-full px-3.5 py-2 text-sm font-medium ${type === t ? "bg-blue-600 text-white" : "bg-white text-stone-700 ring-1 ring-stone-200"}`}>
             {t ?? "All"}
           </button>
         ))}
-        {exercise ? (
-          <button type="button" onClick={() => setExercise(null)}
-            className="flex shrink-0 items-center gap-1 rounded-full bg-blue-600 px-3.5 py-2 text-sm font-medium text-white">
-            {exercise.name} <X size={14} weight="bold" aria-label="Clear exercise filter" />
-          </button>
-        ) : (
-          <button type="button" onClick={() => setPicking(true)}
-            className="flex shrink-0 items-center gap-1 rounded-full bg-white px-3.5 py-2 text-sm font-medium text-stone-700 ring-1 ring-stone-200">
-            <Funnel size={14} weight="fill" aria-hidden /> Exercise
-          </button>
-        )}
       </div>
 
       {workouts.isLoading && <p className="py-10 text-center text-stone-500">Loading...</p>}
       {workouts.data && (
         <p className="mt-3 text-sm text-stone-500">
           {shown.length} {shown.length === 1 ? "workout" : "workouts"}
-          {first && !type && !exercise ? ` since ${friendlyDate(first)}` : ""}
+          {first && !type ? ` since ${friendlyDate(first)}` : ""}
         </p>
       )}
       {workouts.data && shown.length === 0 && <p className="py-10 text-center text-stone-500">No workouts match.</p>}
@@ -95,10 +80,6 @@ function Workouts() {
         </section>
       ))}
 
-      {picking && (
-        <ExercisePicker title="Workouts with..." allowCreate={false} inWorkout={[]} onClose={() => setPicking(false)}
-          onPick={(e) => { setExercise(e); setPicking(false); }} />
-      )}
     </>
   );
 }
@@ -106,6 +87,7 @@ function Workouts() {
 // ------------------------------------------------------------------ exercises
 
 const ORDER: Group[] = ["push", "pull", "climbing", "legs", "posterior", "core", "skill", "cardio"];
+
 
 function Exercises() {
   const exercises = useExercises();

@@ -124,7 +124,7 @@ function Tile({ label, value, hint }: { label: string; value: string; hint?: str
   );
 }
 
-const GROUPS: Group[] = ["push", "pull", "legs", "posterior", "core", "cardio"];
+const GROUPS: Group[] = ["push", "pull", "legs", "core", "cardio"];
 
 /** Rename, change category, or merge a duplicate into another exercise. */
 function ManageSheet({ exercise, onClose, onMerged }: { exercise: Exercise; onClose: () => void; onMerged: () => void }) {
@@ -167,7 +167,7 @@ function ManageSheet({ exercise, onClose, onMerged }: { exercise: Exercise; onCl
         <label className="block">
           <span className="text-sm font-medium text-stone-600">Category</span>
           <select
-            value={exercise.group === "skill" ? "core" : exercise.group === "climbing" ? "pull" : exercise.group}
+            value={exercise.group === "skill" ? "core" : exercise.group === "climbing" ? "pull" : exercise.group === "posterior" ? "legs" : exercise.group}
             onChange={(e) => update.mutate({ id: exercise.id, patch: { group: e.target.value as Group } })}
             className="mt-1 w-full rounded-lg border border-stone-200 bg-white px-3 py-2"
           >
