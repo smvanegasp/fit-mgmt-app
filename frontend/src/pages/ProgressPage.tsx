@@ -1,13 +1,15 @@
 import { CaretDown, CaretRight, ChartLineUp, Check } from "@phosphor-icons/react";
-import { useMemo, useState } from "react";
+import { useLayoutEffect, useMemo, useRef, useState } from "react";
 
 import type { ProgressDay, Routine } from "../api";
 import { ComingSoon } from "../components/ComingSoon";
 import { InfoTip } from "../components/InfoTip";
 import { PhotoStrip } from "../components/Photos";
 import { GradePyramid, LiftCard, TYPE_COLOR, TypeLegend, groupColor, typeColor } from "../components/Progression";
+import { useGoTo } from "../components/Nav";
 import { useScreens } from "../components/Screens";
-import { useExerciseHistory, useExercises, useProgress } from "../hooks";
+import { WorkoutCard } from "../components/WorkoutCard";
+import { useDesktop, useExerciseHistory, useExercises, useProgress, useWorkouts } from "../hooks";
 import { climbing } from "../lib/kinds";
 import { WEEKLY_GOAL, shortDate, streaks, weekCounts, weekRows } from "../lib/progress";
 import { localIso } from "../lib/time";
@@ -19,6 +21,7 @@ export function ProgressPage() {
   const screens = useScreens();
   const today = localIso().slice(0, 10);
   const days = progress.data?.days ?? [];
+  const desktop = useDesktop();
 
   if (progress.isLoading) return <p className="py-10 text-center text-stone-500">Loading...</p>;
   if (progress.isError) return <p className="py-10 text-center text-red-700">Couldn't load your progress.</p>;
@@ -27,27 +30,133 @@ export function ProgressPage() {
   }
 
   return (
-    <div className="mt-2 space-y-3 pb-28">
-      <Consistency days={days} today={today} />
+    // Phones: one column. Computers: a dashboard (the year at a glance, lifts in a grid, the
+    // routine next to the last workouts).
+    <div className="mt-2 space-y-3 pb-28 lg:mt-0 lg:space-y-6 lg:pb-12">
+      {desktop ? <YearConsistency days={days} today={today} /> : <Consistency days={days} today={today} />}
 
-      <h2 className="flex items-center gap-1 px-1 pt-3 font-semibold">
-        Strength
-        <InfoTip title="Strength">
-          Your last targets, oldest to newest: columns are sets and squares are reps, the number under each is the weight.
-          Tap a lift for its full progression. Every exercise has one on its page (History, Exercises).
-        </InfoTip>
-      </h2>
-      {(progress.data?.lifts ?? []).map((lift) => {
-        const exercise = exercises.data?.find((e) => e.id === lift.exerciseId);
-        return (
-          <LiftCard key={lift.exerciseId} lift={lift} load={lift.load} color={groupColor(exercise?.group)}
-            onOpen={() => screens.openExercise(lift.exerciseId)} />
-        );
-      })}
-      <ClimbingCard />
+      <section className="space-y-3 lg:space-y-0">
+        <h2 className="flex items-center gap-1 px-1 pt-3 font-semibold lg:pt-0 lg:pb-3">
+          Strength
+          <InfoTip title="Strength">
+            Your last targets, oldest to newest: columns are sets and squares are reps, the number under each is the weight.
+            Tap a lift for its full progression. Every exercise has one on its page (History, Exercises).
+          </InfoTip>
+        </h2>
+        <div className="space-y-3 lg:grid lg:grid-cols-2 lg:gap-4 lg:space-y-0 xl:grid-cols-3">
+          {(progress.data?.lifts ?? []).map((lift) => {
+            const exercise = exercises.data?.find((e) => e.id === lift.exerciseId);
+            return (
+              <LiftCard key={lift.exerciseId} lift={lift} load={lift.load} color={groupColor(exercise?.group)}
+                onOpen={() => screens.openExercise(lift.exerciseId)} />
+            );
+          })}
+          <ClimbingCard />
+        </div>
+      </section>
 
-      {(progress.data?.routines ?? []).length > 0 && <Routines routines={progress.data!.routines} today={today} />}
+      <div className="lg:grid lg:grid-cols-2 lg:items-start lg:gap-6">
+        {(progress.data?.routines ?? []).length > 0 && <Routines routines={progress.data!.routines} today={today} />}
+        {desktop && <LastWorkouts />}
+      </div>
     </div>
+  );
+}
+
+/** Computers: the last workouts next to the routine (on phones they're on Train). */
+function LastWorkouts() {
+  const workouts = useWorkouts(3);
+  const screens = useScreens();
+  const goTo = useGoTo();
+  return (
+    <section>
+      <h2 className="flex items-center px-1 pt-3 pb-2 font-semibold">
+        Last workouts
+        <button type="button" onClick={() => goTo("history")} className="ml-auto text-sm font-medium text-blue-700">All in History</button>
+      </h2>
+      <div className="space-y-2">
+        {(workouts.data ?? []).map((w) => <WorkoutCard key={w.id} workout={w} onClick={() => screens.openWorkout(w.id)} />)}
+      </div>
+    </section>
+  );
+}
+
+/** Computers: the streak next to a year of training days (weeks as columns, Monday on top), with a
+ * mark under each week that reached the goal. Same data as the phone's weeks view, laid wide. */
+function YearConsistency({ days, today }: { days: ProgressDay[]; today: string }) {
+  const screens = useScreens();
+  const byDate = useMemo(() => new Map(days.map((d) => [d.date, d])), [days]);
+  const counts = useMemo(() => weekCounts(days), [days]);
+  const streak = useMemo(() => streaks(days, today), [days, today]);
+  // As many recent weeks as fit at full size (a year on a wide screen).
+  const grid = useRef<HTMLDivElement>(null);
+  const [fit, setFit] = useState(52);
+  useLayoutEffect(() => {
+    const el = grid.current;
+    if (!el) return;
+    const measure = () => setFit(Math.max(8, Math.min(52, Math.floor((el.clientWidth - 24) / 17))));
+    measure();
+    const observer = new ResizeObserver(measure);
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, []);
+  const weeks = weekRows(today, fit).reverse();
+  const thisWeek = counts.get(weeks.at(-1)!.monday) ?? 0;
+  const thisYear = days.filter((d) => d.date.startsWith(today.slice(0, 4))).length;
+  const first = days[0].date;
+
+  return (
+    <section className="flex gap-8 rounded-2xl border border-stone-200 bg-white p-6">
+      <div className="w-44 shrink-0">
+        <div className="text-4xl font-semibold">{streak.current}</div>
+        <div className="flex items-center gap-1 text-sm text-stone-500">
+          week streak
+          <InfoTip title="Streak">
+            Weeks in a row with at least {WEEKLY_GOAL} workouts. This week doesn't break the streak while it's still going.
+          </InfoTip>
+        </div>
+        <dl className="mt-5 space-y-3 text-sm">
+          <div><dt className="text-stone-500">Longest</dt><dd className="font-semibold">{streak.longest} weeks</dd></div>
+          <div><dt className="text-stone-500">This week</dt><dd className="font-semibold">{thisWeek} of {WEEKLY_GOAL}</dd></div>
+          <div><dt className="text-stone-500">In {today.slice(0, 4)}</dt><dd className="font-semibold">{thisYear} workouts</dd></div>
+        </dl>
+      </div>
+      <div className="min-w-0 flex-1">
+        <div className="flex items-center justify-between">
+          <h2 className="font-semibold">Consistency</h2>
+          <TypeLegend />
+        </div>
+        <div ref={grid} className="mt-4 flex gap-[3px]">
+          <div className="mr-1 flex flex-col gap-[3px] pt-5 text-[10px] text-stone-500">
+            {WEEKDAYS.map((d, i) => <span key={i} className="h-3.5 leading-[14px]">{i % 2 === 0 ? d : ""}</span>)}
+          </div>
+          {weeks.map((week, w) => {
+            const month = w === 0 || week.monday.slice(0, 7) !== weeks[w - 1].monday.slice(0, 7);
+            const n = counts.get(week.monday) ?? 0;
+            return (
+              <div key={week.monday} className="flex min-w-3.5 flex-1 flex-col gap-[3px]">
+                <span className="h-4 text-[10px] whitespace-nowrap text-stone-500">{month ? shortDate(week.monday).split(" ")[0] : ""}</span>
+                {week.days.map((day) => {
+                  const workout = byDate.get(day);
+                  if (workout) {
+                    return (
+                      <button key={day} type="button" onClick={() => screens.openWorkout(workout.workoutId)}
+                        title={`${longDate(day, today)}: ${workout.label}`} aria-label={`${longDate(day, today)}: ${workout.label}`}
+                        className={`h-3.5 rounded-[3px] hover:opacity-80 ${day === today ? "ring-2 ring-stone-400" : ""}`}
+                        style={{ background: typeColor(workout.type) }} />
+                    );
+                  }
+                  return <span key={day} className={`h-3.5 rounded-[3px] ${day > today || day < first ? "" : "bg-stone-100"}`} />;
+                })}
+                {/* The week reached the goal. */}
+                <span className={`mt-1 h-1 rounded-full ${n >= WEEKLY_GOAL ? "bg-blue-600" : ""}`} title={`${n} workouts`} />
+              </div>
+            );
+          })}
+        </div>
+        <p className="mt-2 text-xs text-stone-500">The blue marks under the weeks reached {WEEKLY_GOAL} workouts. Click a day to open it.</p>
+      </div>
+    </section>
   );
 }
 
@@ -60,7 +169,7 @@ function ClimbingCard() {
   if (grades.length === 0) return null;
   const sends = grades.reduce((n, g) => n + g.sent, 0);
   return (
-    <button type="button" onClick={() => screens.openExercise("bouldering")} className="block w-full rounded-2xl border border-stone-200 bg-white p-4 text-left">
+    <button type="button" onClick={() => screens.openExercise("bouldering")} className="flex w-full flex-col rounded-2xl border border-stone-200 bg-white p-4 text-left">
       <div className="flex items-center gap-2">
         <span className="min-w-0 flex-1 font-semibold">Climbing</span>
         <CaretRight size={14} className="shrink-0 text-stone-400" aria-hidden />

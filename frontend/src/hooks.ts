@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { useCallback, useEffect, useRef } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 
 import { api, type CueSection, type Group, type Note, type NotePatch, type WorkoutBody } from "./api";
 
@@ -206,4 +206,18 @@ export function useUpdateNote() {
 
 export function useDeleteNote() {
   return useNoteMutation((note: Note) => api.deleteNote(note.exerciseId, note.id), (note) => note.exerciseId);
+}
+
+/** The desktop layout (Tailwind's lg, 1024px and up): its own navigation and dashboard. */
+export const DESKTOP = "(min-width: 1024px)";
+
+export function useDesktop(): boolean {
+  const [desktop, setDesktop] = useState(() => window.matchMedia(DESKTOP).matches);
+  useEffect(() => {
+    const query = window.matchMedia(DESKTOP);
+    const onChange = () => setDesktop(query.matches);
+    query.addEventListener("change", onChange);
+    return () => query.removeEventListener("change", onChange);
+  }, []);
+  return desktop;
 }

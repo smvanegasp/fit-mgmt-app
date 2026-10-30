@@ -26,8 +26,19 @@ Sergio merges.
 
 ## Now
 
-Stages 0-4a merged (#1, #3-#8). **Stage 4b is in review** on `stage-4b-progress`: Sergio tests it on
-their phone. Then 4c (separate desktop design), 5a guests and passcode, 5b welcome page, 6a-6c AWS, 7 production import.
+Stages 0-4b merged (#1, #3-#9). **Stage 4c (desktop) is in review** on `stage-4c-desktop`: Sergio
+looks at it on a computer. Then 5a guests and passcode, 5b welcome page, 6a-6c AWS, 7 production import.
+
+## Stage 4c: what's in it (desktop, 2026-10-30)
+
+- From 1024px: a left sidebar replaces the bottom tabs; the app opens on **Progress**.
+- **Progress as a dashboard:** the streak, longest, this week and workouts this year next to a
+  year heatmap (weeks as columns, a blue mark under weeks that reached 3; click a day to open it);
+  the five lifts and Climbing in a grid; the routine timeline next to the last three workouts.
+- **Workout and exercise pages** open as a panel on the right over the dimmed page.
+- **History:** workout cards two per row, exercise categories in two columns.
+- Train and Settings: one centered column. Phone and tablet layouts unchanged.
+- Built as a working prototype for Sergio to judge on a computer (instead of static mockups).
 
 ## Stage 4b: what's in it (re-scoped for simplicity, 2026-10-30)
 

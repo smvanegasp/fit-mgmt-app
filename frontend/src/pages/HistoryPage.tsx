@@ -17,8 +17,8 @@ const DAY_TYPES = ["Push", "Legs", "Pull", "Cardio"];
 export function HistoryPage() {
   const [view, setView] = useState<View>("workouts");
   return (
-    <div className="pb-28">
-      <div className="mt-2 grid grid-cols-2 gap-1 rounded-xl bg-stone-100 p-1" role="tablist" aria-label="History">
+    <div className="pb-28 lg:pb-12">
+      <div className="mt-2 grid grid-cols-2 gap-1 rounded-xl bg-stone-100 p-1 lg:mt-0 lg:max-w-sm" role="tablist" aria-label="History">
         {(["workouts", "exercises"] as const).map((v) => (
           <button key={v} type="button" role="tab" aria-selected={view === v} onClick={() => setView(v)}
             className={`rounded-lg py-2 font-medium capitalize ${view === v ? "bg-white shadow-sm" : "text-stone-500"}`}>
@@ -70,7 +70,7 @@ function Workouts() {
             <span className="font-semibold">{week.label}</span>
             <span className="text-sm text-stone-500">{week.items.length} {week.items.length === 1 ? "workout" : "workouts"}</span>
           </h2>
-          <ul className="space-y-2">
+          <ul className="space-y-2 lg:grid lg:grid-cols-2 lg:gap-3 lg:space-y-0">
             {week.items.map((w) => (
               <li key={w.id}>
                 <WorkoutCard workout={w} onClick={() => screens.openWorkout(w.id)} />
@@ -119,35 +119,37 @@ function Exercises() {
           className="w-full rounded-xl border border-stone-200 bg-white py-2.5 pr-3 pl-9" />
       </div>
       {exercises.isLoading && <p className="py-10 text-center text-stone-500">Loading...</p>}
-      {groups.map(([name, items]) => (
-        <section key={name} className="mt-3">
-          <h2>
-            <button type="button" onClick={() => toggle(name)} aria-expanded={!!query || open.has(name)}
-              className="flex w-full items-center gap-2 py-2 text-left text-sm font-semibold tracking-wide text-stone-500 uppercase">
-              {name}
-              <span className="font-normal normal-case">· {items.length}</span>
-              <CaretDown size={14} className={`ml-auto ${query || open.has(name) ? "rotate-180" : ""}`} aria-hidden />
-            </button>
-          </h2>
-          {(query || open.has(name)) && (
-            <ul className="divide-y divide-stone-100 rounded-2xl border border-stone-200 bg-white">
-              {items.map((e) => (
-                <li key={e.id}>
-                  <button type="button" onClick={() => screens.openExercise(e.id)} className="flex w-full items-center gap-3 px-4 py-3 text-left">
-                    <span className="min-w-0 flex-1">
-                      <span className="block font-medium">{e.name}</span>
-                      <span className="text-xs text-stone-500">
-                        {e.timesDone ? `${e.timesDone} ${e.timesDone === 1 ? "session" : "sessions"} · last ${friendlyDate(e.lastDone!)}` : "Not done yet"}
+      <div className="lg:mt-2 lg:grid lg:grid-cols-2 lg:items-start lg:gap-x-6">
+        {groups.map(([name, items]) => (
+          <section key={name} className="mt-3">
+            <h2>
+              <button type="button" onClick={() => toggle(name)} aria-expanded={!!query || open.has(name)}
+                className="flex w-full items-center gap-2 py-2 text-left text-sm font-semibold tracking-wide text-stone-500 uppercase">
+                {name}
+                <span className="font-normal normal-case">· {items.length}</span>
+                <CaretDown size={14} className={`ml-auto ${query || open.has(name) ? "rotate-180" : ""}`} aria-hidden />
+              </button>
+            </h2>
+            {(query || open.has(name)) && (
+              <ul className="divide-y divide-stone-100 rounded-2xl border border-stone-200 bg-white">
+                {items.map((e) => (
+                  <li key={e.id}>
+                    <button type="button" onClick={() => screens.openExercise(e.id)} className="flex w-full items-center gap-3 px-4 py-3 text-left">
+                      <span className="min-w-0 flex-1">
+                        <span className="block font-medium">{e.name}</span>
+                        <span className="text-xs text-stone-500">
+                          {e.timesDone ? `${e.timesDone} ${e.timesDone === 1 ? "session" : "sessions"} · last ${friendlyDate(e.lastDone!)}` : "Not done yet"}
+                        </span>
                       </span>
-                    </span>
-                    <CaretRight size={16} className="text-stone-400" aria-hidden />
-                  </button>
-                </li>
-              ))}
-            </ul>
-          )}
-        </section>
-      ))}
+                      <CaretRight size={16} className="text-stone-400" aria-hidden />
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </section>
+        ))}
+      </div>
       {!query && (
         <button type="button" onClick={() => setShowAll(!showAll)} className="mt-4 w-full py-2 text-sm font-medium text-blue-700">
           {showAll ? "Only exercises I've done" : "Show every exercise"}

@@ -92,15 +92,16 @@ A mobile-first web app where Sergio logs their gym workouts and sees their progr
 | 2 | Train tab: day type + stopwatch with laps (a set ends a lap), picker (usual exercises for the day, category chips), English bullet cues, last time, target game (3 in a row, a miss takes one away), setup photos, "Last time" with sets and drop set apart, best drop set, set logger, drop sets, climbing and runs, notes and photos, finish / discard (no rest timer: Sergio times rest with laps), edit or delete past workouts | #5 |
 | 3 | History: one workout per day, grouped by week with day-type filters; workout detail (read, then edit) with estimated times; exercise pages (target, best set, best drop, cues, photos, every session); rename and merge exercises; everything in English | #6 |
 | 4a | Progress: one consistency view (weeks as rows of days colored by day type, count per week, streak of weeks with 3+), the five main lifts as progression ladders (set glyphs: columns = sets, squares = reps); full ladder on every exercise page; one home per piece of information, linked from the rest | #8 |
-| 4b | Routine timeline (eras, sessions, days, notes, photo) on Progress; drop sets (total reps per ladder, best in full) on the dips and chin-ups pages; climbing grade pyramid and hardest send on the bouldering page, with a card on Progress | open |
+| 4b | Routine timeline (eras, sessions, days, notes, photo) on Progress; drop sets (total reps per ladder, best in full) on the dips and chin-ups pages; climbing grade pyramid and hardest send on the bouldering page, with a card on Progress | #9 |
+| 4c | Desktop (from 1024px): sidebar, opens on Progress as a dashboard (streak + year heatmap, lifts and climbing in a grid, routine next to the last workouts), workout and exercise pages as a right-side panel, History two columns; Train and Settings stay one column | open |
 
-**Where things stand (2026-10-30):** stages 0-4a are merged; stage 4b is in review on `stage-4b-progress`. The app runs **only
+**Where things stand (2026-10-30):** stages 0-4b are merged; stage 4c (desktop) is in review on `stage-4c-desktop`. The app runs **only
 locally** (Docker + ngrok); nothing is on AWS yet (stages 6a-6c), so the WhatsApp history is only in
 the local DynamoDB (`load --local`), and anything logged in the app now stays local. Sergio tests on
 their phone through the ngrok URL and may be using the local app while the agent works.
 
-**Next: Sergio's feedback on 4b, then stage 4c** (the separate desktop design; see
-[docs/BACKLOG.md](docs/BACKLOG.md)). Load the `dataviz` skill
+**Next: Sergio's feedback on the desktop (4c), then stage 5a** (guest sandboxes and the owner
+passcode; see [docs/BACKLOG.md](docs/BACKLOG.md)). Load the `dataviz` skill
 before writing chart code. Visuals are plain SVG/HTML in `components/Progression.tsx` (no chart
 library). Day-type colors are CSS variables in `index.css` (`--chart-push/legs/pull/cardio`),
 checked with the dataviz palette validator in both modes.
@@ -324,12 +325,13 @@ cd backend && uv run python ../scripts/import_whatsapp.py load --local # stack m
 ## 7. UI conventions and gotchas
 
 - **Phone first; desktop is its own design.** Every screen is designed for 390x844 with the
-  bottom tabs. Until stage 4c, wider screens show that same phone layout, centered (fine for
-  testing, not the final desktop). Stage 4c builds a separate desktop experience from `lg:`
-  (1024px) up, designed from scratch for visitors and reviewers looking at progress: its own
-  navigation and page structure, a dashboard home, charts with room to breathe. Tablets
-  (768-1023px) keep the phone layout, comfortably widened. Keep data logic in `src/lib/` and
-  hooks so both layouts share it and only the views differ.
+  bottom tabs. From `lg:` (1024px, `useDesktop()` / `DESKTOP` in `hooks.ts`) the app has its own
+  layout (stage 4c): a left sidebar instead of the tabs, opening on Progress as a dashboard (the
+  year heatmap shows as many weeks as fit; lifts in 2 columns, 3 from `xl:`), `Screen` pages as a
+  panel on the right (click outside or Escape to close), History in two columns. Train and
+  Settings stay one centered column (logging happens on the phone). Tablets (768-1023px) keep the
+  phone layout. Same components and `src/lib/` logic for both; only classes and composition
+  differ.
 - Inputs are 16px on touch screens (`index.css`) so iOS doesn't zoom. Big tap targets: this is
   used between sets with sweaty hands. Hover states are only extras (touch has none).
 - **Dark mode** mirrors the Tailwind palette with CSS variables in `index.css` (copied from the

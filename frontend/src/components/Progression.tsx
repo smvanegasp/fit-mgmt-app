@@ -185,7 +185,7 @@ function SessionDots({ step, color, onOpen }: { step: Step; color: string; onOpe
 export function LiftCard({ lift, color, load, onOpen }: { lift: Lift; color: string; load: Load; onOpen: () => void }) {
   const current = lift.steps.at(-1);
   return (
-    <button type="button" onClick={onOpen} className="block w-full rounded-2xl border border-stone-200 bg-white p-4 text-left">
+    <button type="button" onClick={onOpen} className="flex w-full flex-col rounded-2xl border border-stone-200 bg-white p-4 text-left">
       <div className="flex items-center gap-2">
         <span className="min-w-0 flex-1 font-semibold">{lift.name}</span>
         <CaretRight size={14} className="shrink-0 text-stone-400" aria-hidden />
