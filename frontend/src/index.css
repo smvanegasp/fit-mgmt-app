@@ -19,6 +19,22 @@ body {
   font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
 }
 
+/* Chart colors, one per day type (Push, Legs, Pull; Cardio is a neutral gray). Checked for color
+   blindness against the card surface in both modes with the dataviz palette validator. */
+:root {
+  --chart-push: #2a78d6;
+  --chart-legs: #eb6834;
+  --chart-pull: #1baf7a;
+  --chart-cardio: #a8a29e;
+}
+
+:root.dark {
+  --chart-push: #3987e5;
+  --chart-legs: #d95926;
+  --chart-pull: #199e70;
+  --chart-cardio: #8a8a8a;
+}
+
 /* Dark mode: colors are mirrored (50 <-> 950, 100 <-> 900, ...), so every screen flips
    automatically. Grays come from Tailwind's neutral palette (true black and charcoal), with a few
    adjusted steps noted below. Generated from tailwindcss/theme.css; the "dark" class is set from

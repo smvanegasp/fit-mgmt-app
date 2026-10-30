@@ -9,14 +9,28 @@ for imported sessions and app ones alike.
 
 import re
 from collections import defaultdict
+from collections.abc import Iterator
+from dataclasses import dataclass
 from datetime import date, timedelta
-from typing import Any
+from typing import Any, Literal
 
 from app import db
 from app.labels import day_type
 from app.models import BestSet, DatedPhoto, DatedSets, Entry, ExerciseHistory, ExerciseSession, LastTime, Scheme, SessionType, Streak
 
 GOAL = 3
+
+
+@dataclass
+class GameStep:
+    """One session in the target game: "new" (first session, more weight, a deload, or the next
+    target after 3), "reached" (+1), "missed" (-1) or "light" (a light day, doesn't count); and the
+    target and count after it."""
+
+    date: str
+    result: Literal["new", "reached", "missed", "light"]
+    target: Scheme
+    times: int
 
 
 def workouts(space: str) -> list[dict[str, Any]]:
@@ -93,9 +107,17 @@ def written_target(text: str) -> tuple[Scheme, int, float | None] | None:
 
 
 def progression(sessions: list[tuple[str, Entry]]) -> Streak | None:
-    """Replay the target game over an exercise's (date, entry) sessions, oldest first. Where the
-    log has Sergio's own written target for the session's top weight, it's the truth: the
-    count syncs to it before the session's result is applied."""
+    """The target game after the last session (see replay)."""
+    last = None
+    for last in replay(sessions):
+        pass
+    return Streak(scheme=last.target, times=last.times, goal=GOAL) if last else None
+
+
+def replay(sessions: list[tuple[str, Entry]]) -> Iterator[GameStep]:
+    """Replay the target game over an exercise's (date, entry) sessions, oldest first, yielding
+    each session's result. Where the log has Sergio's own written target for the session's top
+    weight, it's the truth: the count syncs to it before the session's result is applied."""
     target: Scheme | None = None
     target_date = ""
     times = 0
@@ -114,21 +136,24 @@ def progression(sessions: list[tuple[str, Entry]]) -> Streak | None:
         stale = target is not None and date.fromisoformat(day) - date.fromisoformat(target_date) > STALE
         if target is None or weight > target_weight:
             target, times, target_date = main, 1, day  # first session, or went up
-            continue
-        if weight < target_weight * LIGHT_DAY and not stale:
-            continue
-        if weight < target_weight:
+            result = "new"
+        elif weight < target_weight * LIGHT_DAY and not stale:
+            result = "light"
+        elif weight < target_weight:
             target, times, target_date = main, 1, day  # deload, or the lighter work became the norm
-            continue
-        if reached(entry, target):
-            if times >= GOAL and main.total > target.total:
-                target, times = main, 1  # done 3 times, then more reps: the next target
-            else:
-                times += 1
+            result = "new"
         else:
-            times = max(0, times - 1)
-        target_date = day
-    return Streak(scheme=target, times=times, goal=GOAL) if target else None
+            if reached(entry, target):
+                result = "reached"
+                if times >= GOAL and main.total > target.total:
+                    target, times, result = main, 1, "new"  # done 3 times, then more reps: the next target
+                else:
+                    times += 1
+            else:
+                result = "missed"
+                times = max(0, times - 1)
+            target_date = day
+        yield GameStep(date=day, result=result, target=target, times=times)
 
 
 def best_drop(sessions: list[tuple[str, Entry]]) -> DatedSets | None:

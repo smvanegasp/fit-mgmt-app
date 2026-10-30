@@ -154,6 +154,43 @@ export interface ExerciseHistory {
   best?: { date: string; set: SetData };
 }
 
+/** A training day for the consistency calendar; `type` is today's day type (Push, Legs, Pull, Cardio). */
+export interface ProgressDay {
+  date: string;
+  workoutId: string;
+  label: string;
+  type: string;
+}
+
+/** One session of a lift: the top set (lb as written: plates for barbell lifts; or the most reps or seconds)
+ * and how the target game went. */
+export interface StrengthPoint {
+  date: string;
+  workoutId: string;
+  value: number;
+  reps?: number;
+  sets: string;
+  pr?: boolean;
+  game?: "new" | "reached" | "missed" | "light";
+  times?: number;
+}
+
+export interface Lift {
+  exerciseId: string;
+  name: string;
+  load: Load;
+  unit: "lb" | "reps" | "s";
+  /** The bar for barbell lifts: values are plates as written, value + barLb is the total. */
+  barLb: number;
+  /** Oldest first. */
+  sessions: StrengthPoint[];
+}
+
+export interface Progress {
+  days: ProgressDay[];
+  lifts: Lift[];
+}
+
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
   // FormData bodies set their own multipart Content-Type.
   const isForm = init?.body instanceof FormData;
@@ -200,6 +237,9 @@ export const api = {
     request<void>(`/exercises/${exerciseId}/notes/${noteId}`, { method: "DELETE" }),
 
   sessionTypes: () => request<SessionType[]>("/session-types"),
+
+  progress: () => request<Progress>("/progress"),
+  exerciseProgress: (id: string) => request<Lift>(`/exercises/${id}/progress`),
 
   listWorkouts: (limit = 20) => request<Workout[]>(`/workouts?limit=${limit}`),
   getWorkout: (id: string) => request<Workout>(`/workouts/${id}`),

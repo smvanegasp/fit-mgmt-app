@@ -60,6 +60,15 @@ export function useWorkouts(limit = 20) {
   return useQuery({ queryKey: ["workouts", limit], queryFn: () => api.listWorkouts(limit) });
 }
 
+// Under "workouts" so every save, delete, rename or merge that refreshes workouts refreshes these.
+export function useProgress() {
+  return useQuery({ queryKey: ["workouts", "progress"], queryFn: api.progress });
+}
+
+export function useExerciseProgress(exerciseId: string) {
+  return useQuery({ queryKey: ["workouts", "progress", exerciseId], queryFn: () => api.exerciseProgress(exerciseId) });
+}
+
 export function useWorkout(id: string) {
   return useQuery({ queryKey: ["workouts", "one", id], queryFn: () => api.getWorkout(id), retry: false });
 }

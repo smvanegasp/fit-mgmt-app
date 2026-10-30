@@ -2,10 +2,11 @@ import { ArrowsMerge, CaretRight, PencilSimple } from "@phosphor-icons/react";
 import { useState } from "react";
 
 import type { Exercise, Group } from "../api";
-import { useExerciseHistory, useExerciseSummary, useExercises, useMergeExercise, useUpdateExercise } from "../hooks";
+import { useExerciseHistory, useExerciseProgress, useExerciseSummary, useExercises, useMergeExercise, useUpdateExercise } from "../hooks";
 import { summarizeSets, weightText } from "../lib/sets";
-import { friendlyDate } from "../lib/time";
+import { friendlyDate, localIso } from "../lib/time";
 import { BottomSheet } from "./BottomSheet";
+import { GameLegend, StrengthChart, groupColor } from "./Charts";
 import { CueManager } from "./Cues";
 import { Ladder, TargetGame } from "./EntryCard";
 import { ExercisePicker, GROUP_NAMES } from "./ExercisePicker";
@@ -18,6 +19,7 @@ export function ExercisePage({ exerciseId, onClose }: { exerciseId: string; onCl
   const exercises = useExercises();
   const summary = useExerciseSummary(exerciseId);
   const history = useExerciseHistory(exerciseId);
+  const lift = useExerciseProgress(exerciseId);
   const screens = useScreens();
   const [managing, setManaging] = useState(false);
   const exercise = (exercises.data ?? []).find((e) => e.id === exerciseId) ?? summary.data?.exercise;
@@ -50,6 +52,16 @@ export function ExercisePage({ exerciseId, onClose }: { exerciseId: string; onCl
           </dl>
 
           {summary.data?.streak && <TargetGame streak={summary.data.streak} load={exercise.load} today={[]} />}
+          {(lift.data?.sessions.length ?? 0) >= 2 && (
+            <section className="rounded-2xl border border-stone-200 bg-white p-4">
+              <h2 className="font-semibold">{lift.data!.unit === "lb" ? "Top set" : lift.data!.unit === "s" ? "Longest set" : "Most reps"} over time</h2>
+              <div className="mt-1.5"><GameLegend /></div>
+              <div className="mt-2">
+                <StrengthChart lift={lift.data!} color={groupColor(exercise.group)} from={lift.data!.sessions[0].date}
+                  to={localIso().slice(0, 10)} onOpenWorkout={screens.openWorkout} />
+              </div>
+            </section>
+          )}
           {summary.data?.bestDrop && (
             <div className="rounded-xl bg-sky-50 px-3 py-2 text-sm">
               <div className="text-xs font-semibold tracking-wide text-sky-800 uppercase">

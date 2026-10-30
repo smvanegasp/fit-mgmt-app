@@ -12,13 +12,14 @@ the real training log.
 
 Built in stages alongside its sibling project, the
 [pantry app](https://github.com/smvanegasp/pantry-mgmt-app), and shares its architecture.
-**Status:** stage 0 (skeleton). The full plan is in [docs/BACKLOG.md](docs/BACKLOG.md).
+**Status:** logging, history and the first progress charts are built (stages 0-4a); it runs
+locally until the AWS stages. The full plan is in [docs/BACKLOG.md](docs/BACKLOG.md).
 
 ## Stack
 
 | Layer | Choice |
 |---|---|
-| Frontend | React 19, TypeScript, Vite, Tailwind CSS v4, TanStack Query, Phosphor icons |
+| Frontend | React 19, TypeScript, Vite, Tailwind CSS v4, TanStack Query, Phosphor icons; charts in plain SVG |
 | Backend | Python 3.12, FastAPI, boto3 (managed with uv) |
 | Data | DynamoDB, single table, partitioned by space (owner log or guest sandbox) |
 | Local dev | Docker Compose: API, DynamoDB Local, Vite dev server |

@@ -26,10 +26,27 @@ Sergio merges.
 
 ## Now
 
-Stages 0-3 merged (#1, #3, #4, #5, #6); no open PRs. Next: **stage 4a, Progress plots**, following
-the plot plan below (consistency calendar + streaks + workouts per week; strength per exercise with
-PRs; target-game dots). Then 4b (volume, drop sets, climbing, routine timeline, time), 4c (separate
+Stages 0-3 merged (#1, #3, #4, #5, #6, #7). **Stage 4a (Progress) is in review** on
+`stage-4a-progress`: Sergio tests it on their phone. Then 4b (volume, drop sets, climbing, routine timeline, time), 4c (separate
 desktop design), 5a guests and passcode, 5b welcome page, 6a-6c AWS, 7 production import.
+
+## Stage 4a: what's in it
+
+- **Tiles:** current and longest streak in **weeks** (a week counts with 3+ workouts; this week
+  doesn't break it while it's going), and workouts this year. The goal of 3 is `WEEKLY_GOAL` in
+  `lib/progress.ts` (Sergio to confirm).
+- **Range chips** (3 months, 6 months, 1 year, all time; default 6 months) scope everything below.
+- **Consistency:** a small calendar per month, newest first, training days colored by day type
+  (Push blue, Legs orange, Pull aqua, Cardio gray; tap a day to open the workout); workouts per
+  week as stacked bars with the goal line; tap or drag to read a week.
+- **Strength:** squat, deadlift, bench, dips, chin-ups. Line = top working set per session as
+  written (plates; the readout adds the bar; added weight for dips and chin-ups); ringed dots are
+  PRs; light days are gray dots off the line. Under it, one target-game dot per session (reached,
+  new target, missed, light day). A readout row shows the picked session (latest by default) and
+  opens it. The name opens the exercise page, which has the same chart for any exercise
+  (body-weight work plots the most reps in a set).
+- Charts are plain SVG, not Recharts (shared x scale for the line and the dots, touch readouts,
+  no dependency).
 
 ## Stage 3: what's in it
 

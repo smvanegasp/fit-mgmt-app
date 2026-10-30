@@ -3,7 +3,7 @@ import uuid
 
 from fastapi import APIRouter, Depends, HTTPException, status
 
-from app import db, history
+from app import db, history, progress
 from app.catalog import EXERCISES
 from app.models import (
     Exercise,
@@ -11,6 +11,7 @@ from app.models import (
     ExerciseHistory,
     ExerciseSummary,
     ExerciseUpdate,
+    Lift,
     MergeBody,
     Note,
     NoteCreate,
@@ -126,6 +127,12 @@ def exercise_history(exercise_id: str, space: str = Depends(current_space)) -> E
     """For the exercise page: every session, all photos, the best set."""
     get_exercise(space, exercise_id)
     return history.exercise_history(space, exercise_id)
+
+
+@router.get("/{exercise_id}/progress", response_model_exclude_none=True)
+def exercise_progress(exercise_id: str, space: str = Depends(current_space)) -> Lift:
+    """The exercise page's strength chart: the top set per session, PRs, target-game results."""
+    return progress.strength(history.workouts(space), get_exercise(space, exercise_id))
 
 
 @router.get("/{exercise_id}/summary", response_model_exclude_none=True)
