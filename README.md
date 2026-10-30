@@ -70,9 +70,9 @@ cd frontend && npm test && npm run build
 ## Repo map
 
 ```
-backend/        FastAPI app (app/) and pytest suite (tests/)
+backend/        FastAPI app (app/, incl. the WhatsApp importer) and pytest suite (tests/)
 frontend/       React app (src/pages, src/components, src/lib)
-scripts/        deploy helpers
+scripts/        deploy helpers, WhatsApp import CLI
 .github/        CI, deploy and Dependabot
 docs/           backlog and plan
 AGENTS.md       working guide for coding agents (context, rules, status)

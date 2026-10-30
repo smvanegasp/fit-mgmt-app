@@ -105,3 +105,28 @@ def query(space: str, sk_prefix: str) -> list[dict[str, Any]]:
 
 def delete(space: str, sk: str) -> None:
     get_table().delete_item(Key={"pk": _pk(space), "sk": sk})
+
+
+def put_many(space: str, rows: dict[str, dict[str, Any]]) -> None:
+    """Write many rows ({sk: data}) in batches of 25."""
+    with get_table().batch_writer() as batch:
+        for sk, data in rows.items():
+            batch.put_item(Item={**_to_dynamo(data), "pk": _pk(space), "sk": sk})
+
+
+def keys(space: str, sk_prefix: str) -> list[tuple[str, dict[str, Any]]]:
+    """(sk, data) for every row under a prefix; like query() but keeps the sort key."""
+    table = get_table()
+    condition = Key("pk").eq(_pk(space)) & Key("sk").begins_with(sk_prefix)
+    response = table.query(KeyConditionExpression=condition)
+    rows = response["Items"]
+    while "LastEvaluatedKey" in response:
+        response = table.query(KeyConditionExpression=condition, ExclusiveStartKey=response["LastEvaluatedKey"])
+        rows.extend(response["Items"])
+    return [(r["sk"], _from_dynamo(r)) for r in rows]
+
+
+def delete_many(space: str, sks: list[str]) -> None:
+    with get_table().batch_writer() as batch:
+        for sk in sks:
+            batch.delete_item(Key={"pk": _pk(space), "sk": sk})

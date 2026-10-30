@@ -18,8 +18,10 @@ services:
       DYNAMODB_ENDPOINT: http://dynamodb:8000
       TABLE_NAME: fit
       AUTO_CREATE_TABLE: "1"
+      S3_ENDPOINT: http://s3:9090
+      PHOTOS_BUCKET: fit-photos
       AWS_REGION: us-east-1
-      # DynamoDB Local accepts any credentials; these are not real keys.
+      # DynamoDB Local and S3Mock accept any credentials; these are not real keys.
       AWS_ACCESS_KEY_ID: local
       AWS_SECRET_ACCESS_KEY: local
       # Docker on Windows doesn't forward file-change events; poll for --reload.
@@ -27,6 +29,22 @@ services:
     command: uvicorn app.main:app --host 0.0.0.0 --port 8080 --reload
     depends_on:
       - dynamodb
+      - s3
+
+  # S3-compatible photo storage for local dev (S3 itself on AWS). Port 9190 lets the import
+  # script on the host upload photos.
+  s3:
+    image: adobe/s3mock:latest
+    # Root so it can write to the named volume.
+    user: root
+    environment:
+      COM_ADOBE_TESTING_S3MOCK_STORE_INITIAL_BUCKETS: fit-photos
+      COM_ADOBE_TESTING_S3MOCK_STORE_RETAIN_FILES_ON_EXIT: "true"
+      COM_ADOBE_TESTING_S3MOCK_STORE_ROOT: /data
+    volumes:
+      - s3_data:/data
+    ports:
+      - "9190:9090"
 
   dynamodb:
     image: amazon/dynamodb-local:latest
@@ -57,4 +75,5 @@ services:
 
 volumes:
   dynamodb_data:
+  s3_data:
   web_node_modules:
