@@ -34,7 +34,7 @@ export function CueList({ exerciseId, exerciseName, cues }: { exerciseId: string
         </button>
       </div>
       {shown.length === 0 && !adding && <p className="py-1 text-sm text-amber-900/70">No cues yet. Add what helps you lift better.</p>}
-      <ul className="space-y-1 py-1">
+      <ul className="list-disc space-y-1 py-1 pl-5 marker:text-amber-600">
         {shown.map((cue) => (
           <li key={cue.id} className="text-sm leading-snug text-amber-950">
             {cue.text}
@@ -129,6 +129,7 @@ function CueRow({ cue }: { cue: Note }) {
     <li className={`flex items-start gap-2 py-2.5 ${cue.hidden ? "opacity-50" : ""}`}>
       <div className="flex-1">
         <p className="text-sm">{cue.text}</p>
+        {cue.original && <p className="text-xs text-stone-500 italic">“{cue.original}”</p>}
         <p className="text-xs text-stone-500">
           Since {cue.date}
           {cue.sessions > 1 ? ` · written in ${cue.sessions} sessions` : ""}

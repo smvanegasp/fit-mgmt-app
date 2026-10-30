@@ -76,7 +76,7 @@ A mobile-first web app where Sergio logs their gym workouts and sees their progr
 |---|---|---|
 | 0 | Skeleton: FastAPI + React/Vite, Docker Compose, CI (tests, build, Docker, secret scan), deploy workflow (off until 6b), Dependabot, docs | #1 |
 | 1 | WhatsApp import: exercise catalog, chat parser, private corrections, review page, loader into DynamoDB + S3 (local), S3Mock in Compose | #4 |
-| 2 | Train tab: stopwatch (server start time), exercise picker, technique cues while training, last time + target streak, set logger with steppers, drop sets, climbing and runs, notes and photos, rest timer, finish / discard, edit or delete past workouts | open |
+| 2 | Train tab: day type + stopwatch with laps (a set ends a lap), picker (usual exercises for the day, category chips), English bullet cues, last time, target game (3 in a row, a miss takes one away), setup photos, set logger, drop sets, climbing and runs, notes and photos, 5-min rest timer, finish / discard, edit or delete past workouts | open |
 
 Next: **stage 3, History** (list by week, workout detail, exercise pages). Full plan in [docs/BACKLOG.md](docs/BACKLOG.md).
 
@@ -151,7 +151,9 @@ frontend/
 - **`EXERCISE#<id>`**: `name` (English), `group` (push, pull, legs, posterior, core, skill,
   cardio, climbing), `load`, `measure` (reps, seconds, run, climb), `barLb`, `aliases`, `source`
   (`catalog` from `app/catalog.py`, later `app` for ones Sergio creates).
-- **`WORKOUT#<yyyy-mm-dd>#<id>`**: one session. `id` (`<date>-<n>`), `startedAt`/`endedAt` (local
+- **`WORKOUT#<yyyy-mm-dd>#<id>`**: one session. `plan` (day type chosen at the start), `laps`
+  `[{at, label?}]` (stopwatch laps; logging a set ends one, labeled "Set 2 · Bench press"),
+  `id` (`<date>-<n>`), `startedAt`/`endedAt` (local
   time, no zone), `durationEstimated` (true for imports: first to last message), `label` ("Push",
   "Squat + Climb"...), `notes`, `photos` `[{key, caption}]`, `source` (`whatsapp` / `app`), and
   `entries` in order, each `{exerciseId, sets?, targets?, notes?, photos?, problems?, segments?,
@@ -161,12 +163,18 @@ frontend/
     `each`, and the **added** weight for `added` exercises (weighted dips and chin-ups; Sergio
     tracks only the added weight). `drop` marks drop-set ladders (90-70-45-25-0); `detail`
     describes complexes ("3 pull + 3 muscle + 3 dip + 3 pull") and ladders.
-  - **targets** `[{text, times?, kind?}]`: the previous goal Sergio writes in parentheses,
-    "(5x5 185 lbs 2 veces)" = hit twice so far. This is his progression system: repeat a target
-    until hit a few times, then add weight. Stage 2 should show "target, hit N times" while logging.
+  - **targets** `[{text, times?, kind?}]`: the previous goal Sergio wrote in parentheses,
+    "(5x5 185 lbs 2 veces)" = reached twice so far (imported sessions only).
+  - **The target game** (`app/history.py`, Sergio 2026-10-30): the target is the working sets at
+    a session's top weight; a session that reaches it (same total reps at that weight or more) adds
+    one, a miss takes one away (not a reset); 3 means go up. More weight or a small deload starts a
+    new target; a session >10% lighter is a light or comeback day and doesn't count (for up to 60
+    days); after 3, more reps at the same weight is the next target. Replayed over the whole
+    history; where the log has his written target for that weight, it syncs to his count first.
   - **problems** (bouldering) `[{grade, color?, result: sent|attempted, count?, attempts?, note?}]`;
     **segments** (treadmill) `[{mph, minutes}]` plus `distanceMi`.
-- **`NOTE#<exerciseId>#<date>#<id>`**: the technique log. `text`, `date` (first written),
+- **`NOTE#<exerciseId>#<date>#<id>`**: the technique log. `text` (English), `original` (what
+  Sergio wrote, when translated), `date` (first written),
   `lastSeen`, `sessions` (how many workouts repeat it). Imported cues are the ones written in 2+
   sessions plus hand-picked ones; per-session comments stay on the workout entry.
 - **`BODY#<date>`** `{weightLb}` · **`ROUTINE#<from>#<id>`** `{name, from, to, days[], notes,
@@ -197,7 +205,8 @@ frontend/
 | Area | Endpoints |
 |---|---|
 | Health | `GET /health` |
-| Exercises | `GET /exercises` (catalog + custom, with `lastDone`, `timesDone`) · `POST /exercises` · `GET /exercises/{id}/summary[?exclude=workoutId]` (cues, last, streak) |
+| Day types | `GET /session-types` (label, usual exercises in order, last date, sessions) |
+| Exercises | `GET /exercises` (catalog + custom, with `lastDone`, `timesDone`) · `POST /exercises` · `GET /exercises/{id}/summary[?exclude=workoutId]` (cues, last, streak = target game, photos) |
 | Cues | `POST /exercises/{id}/notes {text, date}` · `PATCH /exercises/{id}/notes/{noteId} {text?, hidden?}` · `DELETE` (same path) |
 | Workouts | `GET /workouts?limit=` (newest first) · `GET/PUT/DELETE /workouts/{id}` (PUT keeps id, date, source; label recomputed) |
 | In progress | `GET /active` · `POST /active {startedAt}` (keeps an existing one) · `PUT /active` (autosave; startedAt fixed) · `POST /active/finish {endedAt}` · `DELETE /active` |

@@ -5,7 +5,7 @@ from fastapi import APIRouter, Depends, HTTPException, status
 
 from app import db, history
 from app.catalog import EXERCISES
-from app.models import Exercise, ExerciseCreate, ExerciseSummary, Note, NoteCreate, NoteUpdate
+from app.models import Exercise, ExerciseCreate, ExerciseSummary, Note, NoteCreate, NoteUpdate, SessionType
 from app.space import current_space
 
 router = APIRouter(prefix="/api/exercises", tags=["exercises"])
@@ -62,8 +62,8 @@ def create_exercise(body: ExerciseCreate, space: str = Depends(current_space)) -
 def exercise_summary(exercise_id: str, exclude: str | None = None, space: str = Depends(current_space)) -> ExerciseSummary:
     """What the Train screen shows when an exercise is added: cues, last time, the streak."""
     exercise = get_exercise(space, exercise_id)
-    last, streak = history.summary(space, exercise_id, exclude=exclude)
-    return ExerciseSummary(exercise=exercise, cues=cues(space, exercise_id), last=last, streak=streak)
+    last, streak, photos = history.summary(space, exercise_id, exclude=exclude)
+    return ExerciseSummary(exercise=exercise, cues=cues(space, exercise_id), last=last, streak=streak, photos=photos)
 
 
 @router.post("/{exercise_id}/notes", status_code=status.HTTP_201_CREATED)
@@ -96,3 +96,12 @@ def update_note(exercise_id: str, note_id: str, body: NoteUpdate, space: str = D
 def delete_note(exercise_id: str, note_id: str, space: str = Depends(current_space)) -> None:
     sk, _ = _find_note(space, exercise_id, note_id)
     db.delete(space, sk)
+
+
+session_types_router = APIRouter(prefix="/api/session-types", tags=["exercises"])
+
+
+@session_types_router.get("")
+def list_session_types(space: str = Depends(current_space)) -> list[SessionType]:
+    """Kinds of training day with their usual exercises, for "Usual on Squat days"."""
+    return history.session_types(space)

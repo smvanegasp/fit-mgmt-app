@@ -41,6 +41,7 @@ async def require_cloudfront(request: Request, call_next):
 
 
 app.include_router(exercises.router)
+app.include_router(exercises.session_types_router)
 app.include_router(workouts.router)
 app.include_router(photos.router)
 

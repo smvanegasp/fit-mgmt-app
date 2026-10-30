@@ -2,7 +2,7 @@ import { useCallback, useEffect, useState } from "react";
 
 const KEY = "gym.rest";
 const LENGTH_KEY = "gym.restLength";
-export const REST_CHOICES = [60, 90, 120, 180, 240];
+export const REST_CHOICES = [60, 90, 120, 180, 240, 300];
 
 interface RestState {
   /** Epoch ms when the rest ends; kept in localStorage so it survives a reload or lock. */
@@ -31,7 +31,7 @@ function write(key: string, value: unknown) {
 /** The rest timer between sets: start (after logging a set), change the length, stop. */
 export function useRestTimer() {
   const [state, setState] = useState<RestState | null>(() => read<RestState | null>(KEY, null));
-  const [length, setLengthState] = useState<number>(() => read<number>(LENGTH_KEY, 120));
+  const [length, setLengthState] = useState<number>(() => read<number>(LENGTH_KEY, 300));
   const [now, setNow] = useState(() => Date.now());
 
   useEffect(() => {

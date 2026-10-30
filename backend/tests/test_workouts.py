@@ -10,10 +10,11 @@ def client() -> TestClient:
     return TestClient(app)
 
 
-def squat_day(workout_id: str, date: str, sets: list[dict], source: str = "whatsapp") -> None:
+def squat_day(workout_id: str, date: str, sets: list[dict], source: str = "whatsapp", photos: list | None = None) -> None:
+    entry = {"exerciseId": "squat", "sets": sets, **({"photos": photos} if photos else {})}
     db.put("main", f"WORKOUT#{date}#{workout_id}", {
         "id": workout_id, "date": date, "startedAt": f"{date}T19:00:00", "endedAt": f"{date}T19:40:00",
-        "label": "Squat", "source": source, "entries": [{"exerciseId": "squat", "sets": sets}],
+        "label": "Squat", "source": source, "entries": [entry],
     })
 
 
@@ -74,8 +75,8 @@ def test_workouts_list_most_recent_first(client: TestClient) -> None:
 
 
 def test_summary_shows_last_time_and_streak(client: TestClient) -> None:
-    squat_day("2026-10-06-1", "2026-10-06", [{"reps": 4, "weightLb": 180}] * 5)  # older, different scheme
-    squat_day("2026-10-12-1", "2026-10-12", FIVE_BY_FIVE)
+    squat_day("2026-10-06-1", "2026-10-06", [{"reps": 4, "weightLb": 180}] * 5)  # then a deload to 170
+    squat_day("2026-10-12-1", "2026-10-12", FIVE_BY_FIVE, photos=[{"key": "main/wa-1", "caption": "Rack at 7"}])
     squat_day("2026-10-16-1", "2026-10-16", [{"reps": 5, "weightLb": 170}] * 4 + [{"reps": 4, "weightLb": 170}])
     squat_day("2026-10-20-1", "2026-10-20", FIVE_BY_FIVE)
     squat_day("2026-10-23-1", "2026-10-23", FIVE_BY_FIVE)
@@ -85,9 +86,11 @@ def test_summary_shows_last_time_and_streak(client: TestClient) -> None:
     summary = client.get("/api/exercises/squat/summary").json()
     assert summary["exercise"]["name"] == "Back squat" and summary["exercise"]["barLb"] == 45
     assert summary["last"]["date"] == "2026-10-23"
-    assert summary["streak"] == {"scheme": {"count": 5, "reps": 5, "weightLb": 170, "each": False},
-                                 "times": 2}  # 10-16 missed one rep, so the streak is 10-20 and 10-23
+    # 10-12 reached it (1), 10-16 missed a rep (back to 0), 10-20 and 10-23 reached it (2).
+    assert summary["streak"] == {"scheme": {"sets": [5, 5, 5, 5, 5], "weightLb": 170, "each": False, "seconds": False},
+                                 "times": 2, "goal": 3}
     assert [c["text"] for c in summary["cues"]] == ["Concentración total"]
+    assert summary["photos"] == [{"key": "main/wa-1", "caption": "Rack at 7", "date": "2026-10-12"}]
     # While editing the 10-23 workout, "last time" is the one before it.
     assert client.get("/api/exercises/squat/summary?exclude=2026-10-23-1").json()["last"]["date"] == "2026-10-20"
 
@@ -128,3 +131,25 @@ def test_photos_upload_and_read(client: TestClient) -> None:
     assert key.startswith("main/")
     assert client.get(f"/api/photos/{key}?size=thumb").content == jpeg
     assert client.post("/api/photos", files={"photo": ("p.txt", b"hello"), "thumb": ("t.jpg", jpeg)}).status_code == 415
+
+
+def test_laps_and_plan_are_saved_with_the_workout(client: TestClient) -> None:
+    client.post("/api/active", json={"startedAt": "2026-10-30T18:00:00", "plan": "Push"})
+    client.put("/api/active", json={"startedAt": "2026-10-30T18:00:00", "plan": "Push",
+                                    "laps": [{"at": "2026-10-30T18:04:10", "label": "Set 1 · Weighted dips"}],
+                                    "entries": [{"exerciseId": "dips", "sets": [{"reps": 4, "weightLb": 115}]}]})
+    workout = client.post("/api/active/finish", json={"endedAt": "2026-10-30T18:30:00"}).json()
+    assert workout["plan"] == "Push" and workout["laps"] == [{"at": "2026-10-30T18:04:10", "label": "Set 1 · Weighted dips"}]
+    assert client.put("/api/active", json={"startedAt": "2026-10-30T18:00:00", "laps": [{"at": "soon"}]}).status_code == 422
+
+
+def test_session_types_list_usual_exercises_in_order(client: TestClient) -> None:
+    for day in ("2026-10-01", "2026-10-08", "2026-10-15"):
+        db.put("main", f"WORKOUT#{day}#{day}-1", {
+            "id": f"{day}-1", "date": day, "startedAt": f"{day}T19:00:00", "label": "Squat", "source": "app",
+            "entries": [{"exerciseId": "squat", "sets": [{"reps": 5, "weightLb": 170}]},
+                        {"exerciseId": "calf-raises", "sets": [{"reps": 10}]}],
+        })
+    types = {t["label"]: t for t in client.get("/api/session-types").json()}
+    assert types["Squat"]["exercises"] == ["squat", "calf-raises"]
+    assert types["Squat"]["lastDate"] == "2026-10-15" and types["Squat"]["sessions"] == 3

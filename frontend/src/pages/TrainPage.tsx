@@ -1,8 +1,8 @@
-import { ArrowLeft, Barbell, CaretRight, CheckCircle, Flag, Play, Trash } from "@phosphor-icons/react";
-import { useEffect, useState } from "react";
+import { ArrowLeft, CheckCircle, Flag, Play, Timer, Trash } from "@phosphor-icons/react";
+import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 
-import { api, type Workout, type WorkoutBody } from "../api";
+import { api, type Entry, type Exercise, type Workout, type WorkoutBody } from "../api";
 import { BottomSheet } from "../components/BottomSheet";
 import { InfoTip } from "../components/InfoTip";
 import { RestBar } from "../components/RestBar";
@@ -16,12 +16,14 @@ import {
   useFinishWorkout,
   useSaveActive,
   useSaveWorkout,
+  useSessionTypes,
   useStartWorkout,
   useWorkouts,
 } from "../hooks";
 import { formatDuration } from "../lib/duration";
+import { currentLap, lapRows } from "../lib/laps";
 import { useRestTimer } from "../lib/restTimer";
-import { nextUp, setCount } from "../lib/sets";
+import { nextUp, setCount, summarizeSets } from "../lib/sets";
 import { friendlyDate, localIso, secondsBetween } from "../lib/time";
 
 export function TrainPage() {
@@ -40,46 +42,70 @@ export function TrainPage() {
 
 // ------------------------------------------------------------------ before starting
 
+/** Day types offered at the start: the ones trained at least 3 times. */
+function useDayTypes() {
+  const types = useSessionTypes();
+  return (types.data ?? []).filter((t) => t.sessions >= 3).map((t) => t.label);
+}
+
 function Idle({ onEdit }: { onEdit: (w: Workout) => void }) {
   const start = useStartWorkout();
   const workouts = useWorkouts(30);
+  const dayTypes = useDayTypes();
   const today = localIso().slice(0, 10);
   const suggestion = workouts.data ? nextUp(workouts.data, today) : null;
-  const recent = (workouts.data ?? []).slice(0, 6);
+  const [picked, setPicked] = useState<string | null>(null);
+  const plan = picked ?? suggestion?.label ?? null;
+  const last = (workouts.data ?? []).slice(0, 5);
 
   return (
     <div className="pb-28">
-      <section className="mt-6 text-center">
-        <Barbell size={44} weight="fill" className="mx-auto text-emerald-600" aria-hidden />
-        <h2 className="mt-3 text-2xl font-semibold">Ready to train</h2>
-        {suggestion && (
-          <p className="mt-1 flex items-center justify-center gap-1 text-stone-600">
-            Next up: <span className="font-semibold text-stone-900">{suggestion.label}</span>
-            <span className="text-stone-500">(last {friendlyDate(suggestion.lastDate)})</span>
-            <InfoTip title="Next up">
-              The type of session you've gone longest without in the last three weeks, following your rotation.
-            </InfoTip>
-          </p>
+      <section className="mt-6">
+        <h2 className="text-2xl font-semibold">Ready to train</h2>
+        <p className="mt-1 flex items-center gap-1 text-stone-600">
+          What are you training today?
+          <InfoTip title="Day type">
+            Preselected: the day you've gone longest without in the last three weeks, following your rotation. It
+            decides which exercises the app suggests first.
+          </InfoTip>
+        </p>
+        {dayTypes.length > 0 && (
+          <div className="mt-3 flex flex-wrap gap-2" role="radiogroup" aria-label="Day type">
+            {dayTypes.map((label) => (
+              <button
+                key={label}
+                type="button"
+                role="radio"
+                aria-checked={plan === label}
+                onClick={() => setPicked(label)}
+                className={`rounded-full px-4 py-2 font-medium ${plan === label ? "bg-emerald-600 text-white" : "bg-white text-stone-700 ring-1 ring-stone-200"}`}
+              >
+                {label}
+                {suggestion?.label === label && <span className="ml-1.5 text-xs opacity-80">next up</span>}
+              </button>
+            ))}
+          </div>
         )}
         <button
           type="button"
-          onClick={() => start.mutate(localIso())}
+          onClick={() => start.mutate({ startedAt: localIso(), plan: plan ?? undefined })}
           disabled={start.isPending}
-          className="mt-6 inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-emerald-600 py-5 text-xl font-semibold text-white shadow-sm active:bg-emerald-700"
+          className="mt-5 inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-emerald-600 py-5 text-xl font-semibold text-white shadow-sm active:bg-emerald-700"
         >
-          <Play size={26} weight="fill" aria-hidden /> Start workout
+          <Play size={26} weight="fill" aria-hidden /> {plan ? `Start ${plan} workout` : "Start workout"}
         </button>
-        <p className="mt-2 text-sm text-stone-500">The stopwatch starts now and keeps running if you lock the phone.</p>
+        <p className="mt-2 text-center text-sm text-stone-500">The stopwatch starts now and keeps running if you lock the phone.</p>
         {start.error && <p className="mt-2 text-sm text-red-600">{start.error.message}</p>}
       </section>
 
-      {recent.length > 0 && (
+      {last.length > 0 && (
         <section className="mt-10">
-          <h2 className="mb-2 text-sm font-semibold tracking-wide text-stone-500 uppercase">Recent</h2>
+          <h2 className="text-lg font-semibold">Last workouts</h2>
+          <p className="mb-3 text-sm text-stone-500">Tap one to see or fix it.</p>
           <ul className="space-y-2">
-            {recent.map((w) => (
+            {last.map((w) => (
               <li key={w.id}>
-                <RecentCard workout={w} onClick={() => onEdit(w)} />
+                <WorkoutCard workout={w} onClick={() => onEdit(w)} />
               </li>
             ))}
           </ul>
@@ -89,71 +115,155 @@ function Idle({ onEdit }: { onEdit: (w: Workout) => void }) {
   );
 }
 
-function RecentCard({ workout, onClick }: { workout: Workout; onClick: () => void }) {
+const WEEKDAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+
+/** The main thing done for one exercise: its heaviest sets, best boulder, or distance. */
+function highlight(entry: Entry, exercise: Exercise | undefined): string | null {
+  if (!exercise) return null;
+  if (entry.problems?.length) {
+    const sent = entry.problems.filter((p) => p.result === "sent").map((p) => Number(p.grade.slice(1)));
+    return sent.length ? `${exercise.name} up to V${Math.max(...sent)}` : exercise.name;
+  }
+  if (entry.distanceMi) return `${exercise.name} ${entry.distanceMi} mi`;
+  const sets = (entry.sets ?? []).filter((s) => !s.drop);
+  if (!sets.length) return exercise.name;
+  const top = Math.max(...sets.map((s) => s.weightLb ?? 0));
+  const main = summarizeSets(sets.filter((s) => (s.weightLb ?? 0) === top), exercise.load);
+  return `${exercise.name} ${main}`;
+}
+
+function WorkoutCard({ workout, onClick }: { workout: Workout; onClick: () => void }) {
   const exercises = useExercises();
-  const names = new Map((exercises.data ?? []).map((e) => [e.id, e.name]));
+  const byId = new Map((exercises.data ?? []).map((e) => [e.id, e]));
   const minutes = workout.endedAt ? Math.round(secondsBetween(workout.startedAt, workout.endedAt) / 60) : null;
+  const day = new Date(`${workout.date}T12:00:00`);
+  const lines = (workout.entries ?? []).slice(0, 3).map((e) => highlight(e, byId.get(e.exerciseId))).filter(Boolean);
+  const more = (workout.entries?.length ?? 0) - lines.length;
+
   return (
-    <button type="button" onClick={onClick} className="flex w-full items-center gap-3 rounded-2xl border border-stone-200 bg-white p-4 text-left">
-      <div className="flex-1">
-        <div className="flex items-baseline gap-2">
+    <button type="button" onClick={onClick} className="flex w-full items-stretch gap-4 rounded-2xl border border-stone-200 bg-white p-3 text-left">
+      <div className="flex w-12 shrink-0 flex-col items-center justify-center rounded-xl bg-stone-100 py-1">
+        <span className="text-xs font-medium text-stone-500 uppercase">{WEEKDAYS[day.getDay()]}</span>
+        <span className="text-xl font-semibold">{day.getDate()}</span>
+      </div>
+      <div className="min-w-0 flex-1 py-0.5">
+        <div className="flex items-baseline justify-between gap-2">
           <span className="font-semibold">{workout.label}</span>
-          <span className="text-sm text-stone-500">
+          <span className="shrink-0 text-xs text-stone-500">
             {friendlyDate(workout.date)}
             {minutes ? ` · ${workout.durationEstimated ? "~" : ""}${minutes} min` : ""}
           </span>
         </div>
-        <p className="mt-0.5 line-clamp-1 min-h-5 text-sm text-stone-600">
-          {exercises.data && (workout.entries ?? []).map((e) => names.get(e.exerciseId) ?? "Exercise").join(", ")}
-        </p>
+        {exercises.data && (
+          <ul className="mt-0.5 text-sm text-stone-600">
+            {lines.map((line) => <li key={line} className="truncate">{line}</li>)}
+            {more > 0 && <li className="text-xs text-stone-500">+{more} more</li>}
+          </ul>
+        )}
       </div>
-      <CaretRight size={18} className="text-stone-400" aria-hidden />
     </button>
   );
 }
 
 // ------------------------------------------------------------------ the workout in progress
 
-function Stopwatch({ startedAt }: { startedAt: string }) {
+function useTick() {
   const [, tick] = useState(0);
   useEffect(() => {
     const id = window.setInterval(() => tick((n) => n + 1), 1000);
     return () => window.clearInterval(id);
   }, []);
-  return <span className="tabular-nums">{formatDuration(secondsBetween(startedAt))}</span>;
+}
+
+/** Total time, the running lap, and a Lap button, like the phone's stopwatch. */
+function Stopwatch({ body, onLap, onShowLaps }: { body: WorkoutBody; onLap: () => void; onShowLaps: () => void }) {
+  useTick();
+  const laps = body.laps ?? [];
+  return (
+    <>
+      <div className="min-w-0 flex-1">
+        <div className="text-3xl font-semibold tabular-nums" aria-label="Elapsed time">
+          {formatDuration(secondsBetween(body.startedAt))}
+        </div>
+        <button type="button" onClick={onShowLaps} className="text-sm text-stone-600 tabular-nums underline-offset-2 hover:underline">
+          Lap {laps.length + 1} · {formatDuration(currentLap(body.startedAt, laps))}
+        </button>
+      </div>
+      <button type="button" onClick={onLap} className="flex items-center gap-1.5 rounded-xl bg-white px-4 py-3 font-semibold text-stone-800 ring-1 ring-stone-300">
+        <Timer size={20} weight="fill" aria-hidden /> Lap
+      </button>
+    </>
+  );
+}
+
+function LapSheet({ body, onClose }: { body: WorkoutBody; onClose: () => void }) {
+  useTick();
+  const laps = body.laps ?? [];
+  return (
+    <BottomSheet title="Laps" onClose={onClose}>
+      <p className="mb-2 text-sm text-stone-500">Logging a set starts a new lap, so these are your work and rest times.</p>
+      <ol className="divide-y divide-stone-100 tabular-nums">
+        <li className="flex items-center gap-3 py-2.5 font-semibold text-emerald-700">
+          <span className="w-14">Lap {laps.length + 1}</span>
+          <span className="flex-1 text-sm font-normal">running</span>
+          <span>{formatDuration(currentLap(body.startedAt, laps))}</span>
+        </li>
+        {lapRows(body.startedAt, laps).map((row) => (
+          <li key={row.number} className="flex items-center gap-3 py-2.5">
+            <span className="w-14 text-stone-500">Lap {row.number}</span>
+            <span className="min-w-0 flex-1 truncate text-sm text-stone-600">{row.label ?? ""}</span>
+            <span className="font-medium">{formatDuration(row.seconds)}</span>
+          </li>
+        ))}
+      </ol>
+    </BottomSheet>
+  );
 }
 
 function ActiveWorkout({ initial }: { initial: WorkoutBody }) {
   const [body, setBody] = useState(initial);
+  // The latest version, so a set and its lap logged in the same tap build on each other.
+  const latest = useRef(initial);
   const autosave = useAutosave(useSaveActive());
   const rest = useRestTimer();
   const [finishing, setFinishing] = useState(false);
+  const [showLaps, setShowLaps] = useState(false);
 
   const change = (next: WorkoutBody) => {
+    latest.current = next;
     setBody(next);
     autosave(next);
   };
 
+  const lap = (label?: string) => {
+    const now = latest.current;
+    change({ ...now, laps: [...(now.laps ?? []), { at: localIso(), ...(label ? { label } : {}) }] });
+  };
+
   return (
     <div className="pb-44">
-      <header className="sticky top-0 z-10 -mx-4 mb-3 flex items-center gap-3 border-b border-stone-200 bg-stone-50/95 px-4 pt-[max(0.75rem,env(safe-area-inset-top))] pb-3 backdrop-blur">
-        <div className="flex-1">
-          <div className="text-xs font-medium tracking-wide text-stone-500 uppercase">Workout</div>
-          <div className="text-3xl font-semibold" aria-label="Elapsed time">
-            <Stopwatch startedAt={body.startedAt} />
-          </div>
-        </div>
+      <header className="sticky top-0 z-10 -mx-4 mb-3 flex items-center gap-2 border-b border-stone-200 bg-stone-50/95 px-4 pt-[max(0.75rem,env(safe-area-inset-top))] pb-3 backdrop-blur">
+        <Stopwatch body={body} onLap={() => lap()} onShowLaps={() => setShowLaps(true)} />
         <button
           type="button"
           onClick={() => setFinishing(true)}
-          className="flex items-center gap-2 rounded-xl bg-stone-900 px-4 py-3 font-semibold text-white"
+          className="flex items-center gap-1.5 rounded-xl bg-stone-900 px-4 py-3 font-semibold text-white"
         >
           <Flag size={20} weight="fill" aria-hidden /> Finish
         </button>
       </header>
 
-      <WorkoutEditor body={body} onChange={change} onSetLogged={() => rest.start()} />
+      {body.plan && <p className="mb-2 text-sm font-medium text-stone-500">{body.plan} day</p>}
+      <WorkoutEditor
+        body={body}
+        onChange={change}
+        onSetLogged={(label) => {
+          lap(label);
+          rest.start();
+        }}
+      />
       <RestBar timer={rest} />
+      {showLaps && <LapSheet body={body} onClose={() => setShowLaps(false)} />}
       {finishing && (
         <FinishSheet
           body={body}
@@ -161,7 +271,7 @@ function ActiveWorkout({ initial }: { initial: WorkoutBody }) {
           onDone={() => rest.stop()}
           // Make sure the last edit reached the server before finishing.
           beforeFinish={async () => {
-            await api.saveActive(body);
+            await api.saveActive(latest.current);
           }}
         />
       )}

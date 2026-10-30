@@ -27,6 +27,10 @@ export function useExerciseSummary(exerciseId: string, exclude?: string) {
   });
 }
 
+export function useSessionTypes() {
+  return useQuery({ queryKey: ["session-types"], queryFn: api.sessionTypes, staleTime: 5 * 60_000 });
+}
+
 export function useWorkouts(limit = 20) {
   return useQuery({ queryKey: ["workouts", limit], queryFn: () => api.listWorkouts(limit) });
 }

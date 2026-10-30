@@ -40,10 +40,23 @@ export function summarizeSets(sets: SetData[], load: Load): string {
   return parts.join(", ");
 }
 
-/** "5×5 @ 170" for a streak's scheme. */
+/** "5×4 @ 180" or "3×4, 1×3 @ 90" for a target. */
 export function schemeText(scheme: Scheme, load: Load): string {
-  const set: SetData = { reps: scheme.reps, seconds: scheme.seconds, weightLb: scheme.weightLb, each: scheme.each };
-  return summarizeSets([set], load).replace(/^1×/, `${scheme.count}×`);
+  const sets: SetData[] = scheme.sets.map((n) =>
+    scheme.seconds ? { seconds: n, weightLb: scheme.weightLb, each: scheme.each } : { reps: n, weightLb: scheme.weightLb, each: scheme.each },
+  );
+  const parts = summarizeSets(sets, load).split(", ");
+  // Same weight on every group: say it once at the end.
+  const weight = parts[0].includes(" @ ") ? parts[0].split(" @ ")[1] : "";
+  return parts.map((p) => p.split(" @ ")[0]).join(", ") + (weight ? ` @ ${weight}` : "");
+}
+
+/** Whether today's sets already reach the target: as many total reps (or seconds) at its weight or more. */
+export function reachesTarget(sets: SetData[], scheme: Scheme): boolean {
+  const done = sets
+    .filter((s) => !s.drop && !s.detail && (s.weightLb ?? 0) >= (scheme.weightLb ?? 0))
+    .reduce((sum, s) => sum + ((scheme.seconds ? s.seconds : s.reps) ?? 0), 0);
+  return done >= scheme.sets.reduce((a, b) => a + b, 0);
 }
 
 /**

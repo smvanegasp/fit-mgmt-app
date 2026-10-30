@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { ladderWeights, nextSet, nextUp, schemeText, summarizeSets, volume, weightText } from "./sets";
+import { ladderWeights, nextSet, nextUp, reachesTarget, schemeText, summarizeSets, volume, weightText } from "./sets";
 
 const barbell = { load: "barbell" as const, measure: "reps" as const, barLb: 45 };
 const added = { load: "added" as const, measure: "reps" as const, barLb: 0 };
@@ -33,7 +33,9 @@ describe("weightText and schemeText", () => {
     expect(weightText({ weightLb: 170 }, "barbell")).toBe("170");
     expect(weightText({ weightLb: 0 }, "added")).toBe("BW");
     expect(weightText({ weightLb: 10 }, "bodyweight")).toBe("");
-    expect(schemeText({ count: 5, reps: 5, weightLb: 170, each: false }, "barbell")).toBe("5×5 @ 170");
+    expect(schemeText({ sets: [5, 5, 5, 5, 5], weightLb: 170, each: false, seconds: false }, "barbell")).toBe("5×5 @ 170");
+    expect(schemeText({ sets: [4, 4, 4, 3], weightLb: 90, each: false, seconds: false }, "added")).toBe("3×4, 1×3 @ 90");
+    expect(schemeText({ sets: [7, 7], each: false, seconds: true }, "bodyweight")).toBe("2×7s");
   });
 });
 
@@ -93,5 +95,19 @@ describe("nextUp", () => {
 
   it("needs some history", () => {
     expect(nextUp([{ date: "2026-10-29", label: "Pull" }], "2026-10-30")).toBeNull();
+  });
+});
+
+describe("reachesTarget", () => {
+  const target = { sets: [4, 4, 4, 3], weightLb: 90, each: false, seconds: false };
+
+  it("counts total reps at the target weight or more", () => {
+    expect(reachesTarget([{ reps: 4, weightLb: 90 }, { reps: 4, weightLb: 90 }, { reps: 4, weightLb: 90 }], target)).toBe(false);
+    expect(reachesTarget(Array(4).fill({ reps: 4, weightLb: 90 }), target)).toBe(true);
+    expect(reachesTarget(Array(4).fill({ reps: 4, weightLb: 70 }), target)).toBe(false);
+  });
+
+  it("ignores drop sets", () => {
+    expect(reachesTarget([...Array(3).fill({ reps: 4, weightLb: 90 }), { reps: 6, weightLb: 90, drop: true }], target)).toBe(false);
   });
 });

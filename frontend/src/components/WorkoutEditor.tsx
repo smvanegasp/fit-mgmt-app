@@ -12,7 +12,8 @@ interface Props {
   onChange: (body: WorkoutBody) => void;
   /** Set when editing a saved workout. */
   workoutId?: string;
-  onSetLogged?: () => void;
+  /** A set was logged ("Set 2 · Weighted dips"). */
+  onSetLogged?: (label: string) => void;
 }
 
 /** The exercises of one workout, used both for the workout in progress and for saved ones. */
@@ -44,7 +45,7 @@ export function WorkoutEditor({ body, onChange, workoutId, onSetLogged }: Props)
             excludeWorkoutId={workoutId}
             onChange={(next) => setEntries(entries.map((e, j) => (j === i ? next : e)))}
             onRemove={() => setEntries(entries.filter((_, j) => j !== i))}
-            onSetLogged={() => onSetLogged?.()}
+            onSetLogged={(label) => onSetLogged?.(label)}
           />
         );
       })}
@@ -59,7 +60,9 @@ export function WorkoutEditor({ body, onChange, workoutId, onSetLogged }: Props)
 
       <WorkoutNotes body={body} onChange={onChange} />
 
-      {picking && <ExercisePicker onPick={add} onClose={() => setPicking(false)} inWorkout={entries.map((e) => e.exerciseId)} />}
+      {picking && (
+        <ExercisePicker onPick={add} onClose={() => setPicking(false)} inWorkout={entries.map((e) => e.exerciseId)} plan={body.plan} />
+      )}
     </div>
   );
 }

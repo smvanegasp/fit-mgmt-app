@@ -681,6 +681,15 @@ def parse_messages(messages: list[Message], corrections: dict[str, Any] | None =
             flags.append(f"technique cue not found in the chat for {exercise_id}: {text!r}")
     notes = _merge_grown_cues(notes)
     notes.sort(key=lambda n: (n["exerciseId"], n["date"]))
+    # The app is in English: cues get an English text, keeping what Sergio wrote as `original`.
+    translations = corrections.get("cueTranslations", {})
+    if translations:
+        for note in notes:
+            english = translations.get(note["text"])
+            if english is None:
+                flags.append(f"cue without a translation ({note['exerciseId']}): {note['text']!r}")
+            elif english != note["text"]:
+                note["original"], note["text"] = note["text"], english
 
     return {
         "workouts": workouts,

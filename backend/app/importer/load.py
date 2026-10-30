@@ -85,6 +85,7 @@ def build_rows(parsed: dict[str, Any], space: str) -> tuple[dict[str, dict[str, 
         rows[f"NOTE#{n['exerciseId']}#{n['date']}#{n['id']}"] = {
             "id": n["id"], "exerciseId": n["exerciseId"], "date": n["date"], "lastSeen": n["lastSeen"],
             "sessions": n["sessions"], "text": n["text"], "source": "whatsapp",
+            **({"original": n["original"]} if n.get("original") else {}),
         }
     for b in parsed["body"]:
         rows[f"BODY#{b['date']}"] = {"date": b["date"], "weightLb": b["weightLb"], "source": "whatsapp"}

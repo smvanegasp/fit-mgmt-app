@@ -73,12 +73,28 @@ class Entry(BaseModel):
         return notes
 
 
+class Lap(BaseModel):
+    """A stopwatch lap: when it ended and what it was ("Set 2 · Weighted dips"). Logging a set
+    ends a lap, so laps are the rest and work times between sets."""
+
+    at: str
+    label: str | None = Field(None, max_length=120)
+
+    @field_validator("at")
+    @classmethod
+    def _time(cls, value: str) -> str:
+        return _local_time(value) or value
+
+
 class WorkoutBody(BaseModel):
     """What the editor sends, for the workout in progress and for saved workouts."""
 
     startedAt: str
     endedAt: str | None = None
     label: str | None = Field(None, max_length=80)
+    # The day type chosen at the start ("Squat"); suggests the usual exercises.
+    plan: str | None = Field(None, max_length=40)
+    laps: list[Lap] = Field(default_factory=list, max_length=500)
     notes: list[str] = Field(default_factory=list, max_length=20)
     photos: list[Photo] = Field(default_factory=list, max_length=20)
     entries: list[Entry] = Field(default_factory=list, max_length=60)
@@ -135,6 +151,8 @@ class Note(BaseModel):
     sessions: int = 1
     hidden: bool = False
     source: Literal["whatsapp", "app"] = "app"
+    # What Sergio wrote, when the text shown is a translation.
+    original: str | None = None
 
 
 class NoteCreate(BaseModel):
@@ -148,20 +166,27 @@ class NoteUpdate(BaseModel):
 
 
 class Scheme(BaseModel):
-    """The main working sets of a session: 5 x 5 @ 170."""
+    """A target: the working sets at the session's top weight, e.g. 5x4 @ 180 or 3x4 + 1x3 @ 90.
+    `sets` holds the reps (or seconds) of each set; reaching it means as many total reps at
+    that weight or more."""
 
-    count: int
-    reps: float | None = None
-    seconds: int | None = None
+    sets: list[float]
     weightLb: float | None = None
     each: bool = False
+    seconds: bool = False
+
+    @property
+    def total(self) -> float:
+        return sum(self.sets)
 
 
 class Streak(BaseModel):
-    """The last session's main sets and how many sessions in a row reached them."""
+    """The target and its progress: +1 for a session that reaches it, -1 for one that misses.
+    At `goal` it's time to go up."""
 
     scheme: Scheme
     times: int
+    goal: int = 3
 
 
 class LastTime(BaseModel):
@@ -170,8 +195,23 @@ class LastTime(BaseModel):
     entry: Entry
 
 
+class DatedPhoto(Photo):
+    date: str
+
+
 class ExerciseSummary(BaseModel):
     exercise: Exercise
     cues: list[Note]
     last: LastTime | None
     streak: Streak | None
+    # Photos taken for this exercise (machine and rack setups), newest first.
+    photos: list[DatedPhoto] = Field(default_factory=list)
+
+
+class SessionType(BaseModel):
+    """A kind of training day ("Squat", "Push", "Climb") and its usual exercises in order."""
+
+    label: str
+    exercises: list[str]
+    lastDate: str
+    sessions: int

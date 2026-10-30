@@ -62,11 +62,20 @@ export interface Entry {
   minutes?: number;
 }
 
+/** A stopwatch lap: when it ended and what it was ("Set 2 · Weighted dips"). */
+export interface Lap {
+  at: string;
+  label?: string;
+}
+
 /** The workout in progress, or the editable part of a saved one. Times are local, no zone. */
 export interface WorkoutBody {
   startedAt: string;
   endedAt?: string;
   label?: string;
+  /** The day type chosen at the start ("Squat"). */
+  plan?: string;
+  laps?: Lap[];
   notes?: string[];
   photos?: Photo[];
   entries?: Entry[];
@@ -89,21 +98,40 @@ export interface Note {
   sessions: number;
   hidden: boolean;
   source: "whatsapp" | "app";
+  /** What Sergio wrote, when `text` is a translation. */
+  original?: string;
 }
 
+/** A target: reps (or seconds) of each working set at one weight, e.g. [4, 4, 4, 3] @ 90. */
 export interface Scheme {
-  count: number;
-  reps?: number;
-  seconds?: number;
+  sets: number[];
   weightLb?: number;
   each: boolean;
+  seconds: boolean;
+}
+
+export interface Streak {
+  scheme: Scheme;
+  /** +1 per session that reached it, -1 per miss; at `goal` it's time to go up. */
+  times: number;
+  goal: number;
+}
+
+export interface SessionType {
+  label: string;
+  /** Usual exercises, in the usual order. */
+  exercises: string[];
+  lastDate: string;
+  sessions: number;
 }
 
 export interface ExerciseSummary {
   exercise: Exercise;
   cues: Note[];
   last?: { workoutId: string; date: string; entry: Entry };
-  streak?: { scheme: Scheme; times: number };
+  streak?: Streak;
+  /** Photos taken for this exercise (setups), newest first. */
+  photos: (Photo & { date: string })[];
 }
 
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
@@ -147,13 +175,15 @@ export const api = {
   deleteNote: (exerciseId: string, noteId: string) =>
     request<void>(`/exercises/${exerciseId}/notes/${noteId}`, { method: "DELETE" }),
 
+  sessionTypes: () => request<SessionType[]>("/session-types"),
+
   listWorkouts: (limit = 20) => request<Workout[]>(`/workouts?limit=${limit}`),
   getWorkout: (id: string) => request<Workout>(`/workouts/${id}`),
   updateWorkout: (id: string, body: WorkoutBody) => request<Workout>(`/workouts/${id}`, json("PUT", body)),
   deleteWorkout: (id: string) => request<void>(`/workouts/${id}`, { method: "DELETE" }),
 
   getActive: () => request<WorkoutBody | null>("/active"),
-  startWorkout: (startedAt: string) => request<WorkoutBody>("/active", json("POST", { startedAt })),
+  startWorkout: (body: { startedAt: string; plan?: string }) => request<WorkoutBody>("/active", json("POST", body)),
   saveActive: (body: WorkoutBody) => request<WorkoutBody>("/active", json("PUT", body)),
   finishWorkout: (endedAt: string) => request<Workout>("/active/finish", json("POST", { endedAt })),
   discardWorkout: () => request<void>("/active", { method: "DELETE" }),

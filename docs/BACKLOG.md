@@ -67,6 +67,18 @@ stage 3 (History). Stage 1 is merged (#4): 179 imported sessions (2025-09-05 to 
 - Later: alert email (6a), passcode via `set_passcode.py` (5a), Hostinger access (6c), welcome
   note text and photo (5b).
 
+## Feedback round 1 on stage 2 (Sergio, 2026-10-30), done on the same PR
+
+| What Sergio said | Done |
+|---|---|
+| Stopwatch laps, he uses them a lot; logging a set should start a lap (rests 4-5 min) | Lap button + running lap; each set ends a lap labeled with it; lap list; saved with the workout |
+| "Recent" on the first page isn't clear | Day-type chips ("next up" preselected) + "Start Squat workout"; "Last workouts" cards with date, type, duration, main sets |
+| Keep in mind: bullets, all in English | Bullets; 50 cues translated (original kept, shown in the edit sheet) |
+| Target: goal is 3 in a row; a miss takes one away | The target game, replayed over history and synced to his written counts |
+| Adding exercises is too complex; better categories | Picker opens on "Usual on <day> days" in usual order; chips: Recent, Push, Pull, Legs, Hips & hamstrings, Core, Skills, Climb & run |
+| See the photos taken for an exercise (setups) | "Your photos" on each exercise card |
+| Rest: keep the countdown, up to 5 min, default 5 min | Choices 1-5 min, default 5:00 |
+
 ## Ideas and improvements
 
 None yet; add as they come up.

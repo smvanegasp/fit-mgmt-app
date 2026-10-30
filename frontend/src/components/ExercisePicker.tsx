@@ -1,21 +1,26 @@
-import { MagnifyingGlass, Plus } from "@phosphor-icons/react";
+import { Check, MagnifyingGlass, Plus } from "@phosphor-icons/react";
 import { useMemo, useState } from "react";
 
 import type { Exercise, Group, Load } from "../api";
-import { useCreateExercise, useExercises } from "../hooks";
+import { useCreateExercise, useExercises, useSessionTypes } from "../hooks";
 import { fuzzyMatch } from "../lib/search";
 import { friendlyDate } from "../lib/time";
 import { BottomSheet } from "./BottomSheet";
 
+/** Categories as chips. Climbing and cardio share one ("Climb & run"). */
+const CATEGORIES: { id: string; label: string; groups: Group[] }[] = [
+  { id: "push", label: "Push", groups: ["push"] },
+  { id: "pull", label: "Pull", groups: ["pull"] },
+  { id: "legs", label: "Legs", groups: ["legs"] },
+  { id: "hips", label: "Hips & hamstrings", groups: ["posterior"] },
+  { id: "core", label: "Core", groups: ["core"] },
+  { id: "skills", label: "Skills", groups: ["skill"] },
+  { id: "climb", label: "Climb & run", groups: ["climbing", "cardio"] },
+];
+
 export const GROUP_NAMES: Record<Group, string> = {
-  push: "Push",
-  pull: "Pull",
-  legs: "Legs",
-  posterior: "Posterior chain",
-  core: "Core",
-  skill: "Skills",
-  cardio: "Cardio",
-  climbing: "Climbing",
+  push: "Push", pull: "Pull", legs: "Legs", posterior: "Hips & hamstrings", core: "Core",
+  skill: "Skills", cardio: "Climb & run", climbing: "Climb & run",
 };
 
 const LOAD_NAMES: Record<Load, string> = {
@@ -30,90 +35,117 @@ const LOAD_NAMES: Record<Load, string> = {
 interface Props {
   onPick: (exercise: Exercise) => void;
   onClose: () => void;
-  /** Already in this workout: listed, but marked. */
+  /** Already in this workout: marked, and left out of "Usual". */
   inWorkout: string[];
+  /** The day type chosen at the start ("Squat"): opens on its usual exercises. */
+  plan?: string;
 }
 
-export function ExercisePicker({ onPick, onClose, inWorkout }: Props) {
+export function ExercisePicker({ onPick, onClose, inWorkout, plan }: Props) {
   const exercises = useExercises();
+  const types = useSessionTypes();
   const [query, setQuery] = useState("");
   const [creating, setCreating] = useState(false);
 
   const all = exercises.data ?? [];
-  const matches = useMemo(
-    () => all.filter((e) => fuzzyMatch(query, e.name, ...e.aliases)),
-    [all, query],
-  );
-  const recent = useMemo(
-    () =>
-      query
-        ? []
-        : all.filter((e) => e.lastDone).sort((a, b) => (b.lastDone ?? "").localeCompare(a.lastDone ?? "")).slice(0, 8),
-    [all, query],
-  );
-  const byGroup = useMemo(() => {
-    const groups = new Map<Group, Exercise[]>();
-    for (const e of matches) groups.set(e.group, [...(groups.get(e.group) ?? []), e]);
-    return [...groups.entries()].sort(
-      (a, b) => Object.keys(GROUP_NAMES).indexOf(a[0]) - Object.keys(GROUP_NAMES).indexOf(b[0]),
-    );
-  }, [matches]);
+  const byId = useMemo(() => new Map(all.map((e) => [e.id, e])), [all]);
+  const usual = (types.data ?? []).find((t) => t.label === plan)?.exercises ?? [];
+  const usualLeft = usual.filter((id) => !inWorkout.includes(id) && byId.has(id));
+  const [tab, setTab] = useState<string>(usualLeft.length > 0 ? "usual" : "recent");
 
-  const row = (e: Exercise) => (
-    <li key={e.id}>
-      <button
-        type="button"
-        onClick={() => onPick(e)}
-        className="flex w-full items-center justify-between gap-3 rounded-lg px-2 py-3 text-left active:bg-stone-100"
-      >
-        <span className="font-medium">{e.name}</span>
-        <span className="shrink-0 text-xs text-stone-500">
-          {inWorkout.includes(e.id) ? "In this workout" : e.lastDone ? friendlyDate(e.lastDone) : ""}
-        </span>
-      </button>
-    </li>
-  );
+  const list = useMemo(() => {
+    if (query.trim()) return all.filter((e) => fuzzyMatch(query, e.name, ...e.aliases));
+    if (tab === "usual") return usualLeft.map((id) => byId.get(id)!);
+    if (tab === "recent")
+      return all.filter((e) => e.lastDone).sort((a, b) => (b.lastDone ?? "").localeCompare(a.lastDone ?? "")).slice(0, 12);
+    const groups = CATEGORIES.find((c) => c.id === tab)?.groups ?? [];
+    // Most used first within a category.
+    return all.filter((e) => groups.includes(e.group)).sort((a, b) => b.timesDone - a.timesDone || a.name.localeCompare(b.name));
+  }, [all, byId, query, tab, usualLeft]);
+
+  const tabs = [
+    ...(usual.length > 0 ? [{ id: "usual", label: `Usual on ${plan} days` }] : []),
+    { id: "recent", label: "Recent" },
+    ...CATEGORIES,
+  ];
+
+  if (creating) {
+    return (
+      <BottomSheet title="New exercise" onClose={onClose}>
+        <CreateExercise name={query} onCreated={onPick} onCancel={() => setCreating(false)} />
+      </BottomSheet>
+    );
+  }
 
   return (
     <BottomSheet title="Add exercise" onClose={onClose}>
-      {creating ? (
-        <CreateExercise name={query} onCreated={onPick} onCancel={() => setCreating(false)} />
-      ) : (
-        <>
-          <div className="relative">
-            <MagnifyingGlass size={18} className="absolute top-1/2 left-3 -translate-y-1/2 text-stone-400" aria-hidden />
-            <input
-              type="search"
-              aria-label="Search exercises"
-              placeholder="Search (bench, press banca, dips...)"
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-              className="w-full rounded-xl border border-stone-200 bg-white py-2.5 pr-3 pl-9"
-            />
-          </div>
-          {exercises.isLoading && <p className="py-6 text-center text-stone-500">Loading...</p>}
-          {recent.length > 0 && (
-            <section className="mt-4">
-              <h3 className="px-2 text-xs font-semibold tracking-wide text-stone-500 uppercase">Recent</h3>
-              <ul>{recent.map(row)}</ul>
-            </section>
-          )}
-          {byGroup.map(([group, list]) => (
-            <section key={group} className="mt-4">
-              <h3 className="px-2 text-xs font-semibold tracking-wide text-stone-500 uppercase">{GROUP_NAMES[group]}</h3>
-              <ul>{list.map(row)}</ul>
-            </section>
+      <div className="relative">
+        <MagnifyingGlass size={18} className="absolute top-1/2 left-3 -translate-y-1/2 text-stone-400" aria-hidden />
+        <input
+          type="search"
+          aria-label="Search exercises"
+          placeholder="Search (bench, press banca, dips...)"
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+          className="w-full rounded-xl border border-stone-200 bg-white py-2.5 pr-3 pl-9"
+        />
+      </div>
+
+      {!query.trim() && (
+        <div className="-mx-4 mt-3 flex gap-2 overflow-x-auto px-4 pb-1" role="tablist" aria-label="Categories">
+          {tabs.map((t) => (
+            <button
+              key={t.id}
+              type="button"
+              role="tab"
+              aria-selected={tab === t.id}
+              onClick={() => setTab(t.id)}
+              className={`shrink-0 rounded-full px-3.5 py-2 text-sm font-medium whitespace-nowrap ${
+                tab === t.id ? "bg-emerald-600 text-white" : "bg-stone-100 text-stone-700"
+              }`}
+            >
+              {t.label}
+            </button>
           ))}
-          <button
-            type="button"
-            onClick={() => setCreating(true)}
-            className="mt-4 flex w-full items-center justify-center gap-2 rounded-xl border border-dashed border-stone-300 py-3 font-medium text-emerald-700"
-          >
-            <Plus size={18} weight="bold" aria-hidden />
-            {query.trim() ? `Create "${query.trim()}"` : "Create an exercise"}
-          </button>
-        </>
+        </div>
       )}
+
+      {exercises.isLoading && <p className="py-6 text-center text-stone-500">Loading...</p>}
+      {tab === "usual" && !query.trim() && usualLeft.length === 0 && (
+        <p className="py-4 text-center text-sm text-stone-500">All your usual {plan} exercises are in. Pick from another tab.</p>
+      )}
+      <ul className="mt-2 divide-y divide-stone-100">
+        {list.map((e) => (
+          <li key={e.id}>
+            <button
+              type="button"
+              onClick={() => onPick(e)}
+              className="flex w-full items-center gap-3 px-1 py-3.5 text-left active:bg-stone-100"
+            >
+              <span className="flex-1">
+                <span className="block font-medium">{e.name}</span>
+                {query.trim() && <span className="text-xs text-stone-500">{GROUP_NAMES[e.group]}</span>}
+              </span>
+              {inWorkout.includes(e.id) ? (
+                <span className="flex items-center gap-1 text-xs text-emerald-700">
+                  <Check size={14} weight="bold" aria-hidden /> Added
+                </span>
+              ) : (
+                <span className="text-xs text-stone-500">{e.lastDone ? friendlyDate(e.lastDone) : "New"}</span>
+              )}
+            </button>
+          </li>
+        ))}
+      </ul>
+
+      <button
+        type="button"
+        onClick={() => setCreating(true)}
+        className="mt-3 flex w-full items-center justify-center gap-2 rounded-xl border border-dashed border-stone-300 py-3 font-medium text-emerald-700"
+      >
+        <Plus size={18} weight="bold" aria-hidden />
+        {query.trim() ? `Create "${query.trim()}"` : "Create an exercise"}
+      </button>
     </BottomSheet>
   );
 }
@@ -138,10 +170,10 @@ function CreateExercise({ name: initial, onCreated, onCancel }: { name: string; 
           className="mt-1 w-full rounded-lg border border-stone-200 px-3 py-2" />
       </label>
       <label className="block">
-        <span className="text-sm font-medium text-stone-600">Group</span>
+        <span className="text-sm font-medium text-stone-600">Category</span>
         <select value={group} onChange={(e) => setGroup(e.target.value as Group)} className="mt-1 w-full rounded-lg border border-stone-200 bg-white px-3 py-2">
-          {Object.entries(GROUP_NAMES).filter(([g]) => g !== "cardio" && g !== "climbing").map(([g, label]) => (
-            <option key={g} value={g}>{label}</option>
+          {CATEGORIES.filter((c) => c.id !== "climb").map((c) => (
+            <option key={c.id} value={c.groups[0]}>{c.label}</option>
           ))}
         </select>
       </label>

@@ -1,9 +1,9 @@
-import { ArrowsDownUp, Check, NotePencil, Target, Trash, X } from "@phosphor-icons/react";
+import { ArrowsDownUp, Check, Images, NotePencil, Target, Trash, X } from "@phosphor-icons/react";
 import { useEffect, useState } from "react";
 
-import type { Entry, Exercise, Photo, Problem, SetData } from "../api";
+import type { Entry, Exercise, Photo, Problem, SetData, Streak } from "../api";
 import { useExerciseSummary } from "../hooks";
-import { ladderWeights, nextSet, schemeText, summarizeSets, weightText } from "../lib/sets";
+import { ladderWeights, nextSet, reachesTarget, schemeText, summarizeSets, weightText } from "../lib/sets";
 import { friendlyDate } from "../lib/time";
 import { BottomSheet } from "./BottomSheet";
 import { CueList } from "./Cues";
@@ -18,8 +18,8 @@ interface Props {
   excludeWorkoutId?: string;
   onChange: (entry: Entry) => void;
   onRemove: () => void;
-  /** A set was logged: start the rest timer. */
-  onSetLogged: () => void;
+  /** A set was logged ("Set 2 · Weighted dips"): new lap, rest timer. */
+  onSetLogged: (label: string) => void;
 }
 
 export function EntryCard({ entry, exercise, excludeWorkoutId, onChange, onRemove, onSetLogged }: Props) {
@@ -54,19 +54,14 @@ export function EntryCard({ entry, exercise, excludeWorkoutId, onChange, onRemov
           {summarizeSets(last.entry.sets ?? [], exercise.load) || "no sets"}
         </p>
       )}
-      {streak && (
-        <p className="mt-1 flex items-center gap-1.5 text-sm text-emerald-800">
-          <Target size={16} weight="fill" aria-hidden />
-          <span>
-            Target {schemeText(streak.scheme, exercise.load)}
-            {" · "}
-            {streak.times === 1 ? "done once" : `done ${streak.times} times in a row`}
-          </span>
-          <InfoTip title="Target">
-            Your main sets from last time, and how many sessions in a row you reached them. Repeat until it feels
-            solid, then add weight.
-          </InfoTip>
-        </p>
+      {streak && <TargetGame streak={streak} load={exercise.load} today={entry.sets ?? []} />}
+      {summary.data && summary.data.photos.length > 0 && (
+        <div className="mt-2">
+          <div className="flex items-center gap-1.5 text-xs font-semibold tracking-wide text-stone-500 uppercase">
+            <Images size={14} weight="fill" aria-hidden /> Your photos
+          </div>
+          <PhotoStrip photos={summary.data.photos.map((p) => ({ ...p, caption: p.caption ?? friendlyDate(p.date) }))} />
+        </div>
       )}
 
       {exercise.measure === "climb" ? (
@@ -82,11 +77,45 @@ export function EntryCard({ entry, exercise, excludeWorkoutId, onChange, onRemov
   );
 }
 
+// ------------------------------------------------------------------ the target game
+
+/** Sergio's game: reach the target 3 sessions in a row (a miss takes one away), then go up. */
+function TargetGame({ streak, load, today }: { streak: Streak; load: Exercise["load"]; today: SetData[] }) {
+  const reachedToday = today.length > 0 && reachesTarget(today, streak.scheme);
+  const done = streak.times >= streak.goal;
+  return (
+    <div className="mt-2 flex items-center gap-3 rounded-xl bg-emerald-50 px-3 py-2 text-emerald-900">
+      <Target size={20} weight="fill" className="shrink-0 text-emerald-700" aria-hidden />
+      <div className="min-w-0 flex-1">
+        <div className="text-sm font-semibold">Target {schemeText(streak.scheme, load)}</div>
+        <div className="text-xs">
+          {done ? `${streak.times} in a row: time to go up` : `${streak.times} of ${streak.goal} in a row`}
+          {reachedToday && <span className="font-semibold"> · reached today</span>}
+        </div>
+      </div>
+      <div className="flex gap-1" aria-label={`${streak.times} of ${streak.goal}`}>
+        {Array.from({ length: streak.goal }, (_, i) => (
+          <span
+            key={i}
+            className={`size-3 rounded-full ${
+              i < streak.times ? "bg-emerald-600" : i === streak.times && reachedToday ? "bg-emerald-300" : "border-2 border-emerald-300"
+            }`}
+          />
+        ))}
+      </div>
+      <InfoTip title="Target">
+        Reach these sets 3 sessions in a row, then go up. A session that misses takes one away. Reaching it means the same
+        total reps at this weight or more.
+      </InfoTip>
+    </div>
+  );
+}
+
 // ------------------------------------------------------------------ lifting
 
 
 function SetLog({ entry, exercise, lastSets, onChange, onSetLogged }: {
-  entry: Entry; exercise: Exercise; lastSets?: SetData[]; onChange: (e: Entry) => void; onSetLogged: () => void;
+  entry: Entry; exercise: Exercise; lastSets?: SetData[]; onChange: (e: Entry) => void; onSetLogged: (label: string) => void;
 }) {
   const sets = entry.sets ?? [];
   const [editing, setEditing] = useState<number | null>(null);
@@ -103,13 +132,11 @@ function SetLog({ entry, exercise, lastSets, onChange, onSetLogged }: {
 
   function save() {
     const next = [...sets];
-    if (editing === null) {
-      next.push(draft);
-      onSetLogged();
-    } else {
-      next[editing] = { ...next[editing], ...draft };
-    }
+    if (editing === null) next.push(draft);
+    else next[editing] = { ...next[editing], ...draft };
+    // Save the set first, then start the lap (the lap builds on the saved workout).
     onChange({ ...entry, sets: next });
+    if (editing === null) onSetLogged(`Set ${next.length} · ${exercise.name}`);
     setEditing(null);
   }
 
@@ -205,7 +232,7 @@ function SetLog({ entry, exercise, lastSets, onChange, onSetLogged }: {
           onLog={(ladder) => {
             onChange({ ...entry, sets: [...sets, ...ladder] });
             setDropOpen(false);
-            onSetLogged();
+            onSetLogged(`Drop set · ${exercise.name}`);
           }}
         />
       )}
