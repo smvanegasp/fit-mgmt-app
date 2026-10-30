@@ -26,9 +26,18 @@ Sergio merges.
 
 ## Now
 
-Stage 2 PR open (Train tab). Waiting for Sergio to try it at the gym through ngrok. Next is
-stage 3 (History). Stage 1 is merged (#4): 179 imported sessions (2025-09-05 to 2026-10-29),
-1,783 sets, 51 technique cues, 15 photos, 3 routine eras, in the local stack.
+Stage 3 PR open (History). Waiting for Sergio's look on his phone. Next: stage 4a (Progress).
+
+## Stage 3: what's in it
+
+- History tab, **Workouts**: weeks ("This week", "Last week", "Oct 12 – 18") with counts, cards with
+  the main sets; filters by day type (Push, Legs, Pull, Cardio) and by exercise.
+- **Workout detail** (read view): date, time, duration, each exercise (sets and drop set apart,
+  boulders, distance), notes, photos, laps (folded); Edit opens the editor; tap an exercise to open
+  its page. The Train tab's "Last workouts" open the same view.
+- **Exercise page**: sessions, since, best set; the target game; best drop set; the full cue list
+  (edit, hide, add; originals shown); all photos; every session (tap to open it). Pencil: rename,
+  change category, or merge a duplicate into another exercise (sessions and cues move over).
 
 ### Stage 1: interpretations Sergio confirmed
 
@@ -110,6 +119,7 @@ None yet; add as they come up.
 
 ## Done
 
+- 2026-10-30: Stage 2 Train tab merged (#5), after four feedback rounds.
 - 2026-10-29: Stage 1 WhatsApp import merged (#4).
 - 2026-10-29: Stage 1 decisions: bar = plates + 45 lb; weighted dips/chin-ups track added weight
   only; English exercise names; bouldering and treadmill included.

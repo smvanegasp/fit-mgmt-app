@@ -3,7 +3,7 @@ import { useState, type FormEvent } from "react";
 
 import type { Note } from "../api";
 import { useAddNote, useDeleteNote, useUpdateNote } from "../hooks";
-import { localIso } from "../lib/time";
+import { friendlyDate, localIso } from "../lib/time";
 import { BottomSheet } from "./BottomSheet";
 
 const SHOWN = 3;
@@ -88,16 +88,26 @@ function AddCue({ exerciseId, onDone }: { exerciseId: string; onDone: () => void
 function CueSheet({ exerciseName, exerciseId, cues, onClose }: { exerciseName: string; exerciseId: string; cues: Note[]; onClose: () => void }) {
   return (
     <BottomSheet title={`Cues: ${exerciseName}`} onClose={onClose}>
-      <p className="mb-3 text-sm text-stone-500">
+      <CueManager exerciseId={exerciseId} cues={cues} />
+    </BottomSheet>
+  );
+}
+
+/** Every cue with edit / hide / delete, and a box to add one. */
+export function CueManager({ exerciseId, cues }: { exerciseId: string; cues: Note[] }) {
+  return (
+    <>
+      <p className="mb-2 text-sm text-stone-500">
         Hidden cues stay in the log but don't show while training. The most repeated come first.
       </p>
+      {cues.length === 0 && <p className="py-2 text-sm text-stone-500">No cues yet.</p>}
       <ul className="divide-y divide-stone-100">
         {orderCues(cues).map((cue) => <CueRow key={cue.id} cue={cue} />)}
       </ul>
       <div className="mt-3">
         <AddCue exerciseId={exerciseId} onDone={() => undefined} />
       </div>
-    </BottomSheet>
+    </>
   );
 }
 
@@ -131,7 +141,7 @@ function CueRow({ cue }: { cue: Note }) {
         <p className="text-sm">{cue.text}</p>
         {cue.original && <p className="text-xs text-stone-500 italic">“{cue.original}”</p>}
         <p className="text-xs text-stone-500">
-          Since {cue.date}
+          Since {friendlyDate(cue.date)}
           {cue.sessions > 1 ? ` · written in ${cue.sessions} sessions` : ""}
         </p>
       </div>

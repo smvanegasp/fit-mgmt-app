@@ -39,9 +39,12 @@ interface Props {
   inWorkout: string[];
   /** The day type chosen at the start ("Squat"): opens on its usual exercises. */
   plan?: string;
+  title?: string;
+  /** Offer "Create an exercise" (not when just choosing a filter). */
+  allowCreate?: boolean;
 }
 
-export function ExercisePicker({ onPick, onClose, inWorkout, plan }: Props) {
+export function ExercisePicker({ onPick, onClose, inWorkout, plan, title = "Add exercise", allowCreate = true }: Props) {
   const exercises = useExercises();
   const types = useSessionTypes();
   const [query, setQuery] = useState("");
@@ -85,7 +88,7 @@ export function ExercisePicker({ onPick, onClose, inWorkout, plan }: Props) {
   }
 
   return (
-    <BottomSheet title="Add exercise" onClose={onClose}>
+    <BottomSheet title={title} onClose={onClose}>
       <div className="relative">
         <MagnifyingGlass size={18} className="absolute top-1/2 left-3 -translate-y-1/2 text-stone-400" aria-hidden />
         <input
@@ -145,14 +148,14 @@ export function ExercisePicker({ onPick, onClose, inWorkout, plan }: Props) {
         ))}
       </ul>
 
-      <button
+      {allowCreate && <button
         type="button"
         onClick={() => setCreating(true)}
         className="mt-3 flex w-full items-center justify-center gap-2 rounded-xl border border-dashed border-stone-300 py-3 font-medium text-blue-700"
       >
         <Plus size={18} weight="bold" aria-hidden />
         {query.trim() ? `Create "${query.trim()}"` : "Create an exercise"}
-      </button>
+      </button>}
     </BottomSheet>
   );
 }

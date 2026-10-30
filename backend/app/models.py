@@ -133,6 +133,18 @@ class Exercise(BaseModel):
     source: Literal["catalog", "app"] = "catalog"
     lastDone: str | None = None
     timesDone: int = 0
+    # Merged into another exercise (its sessions and cues moved there): kept for old ids, not listed.
+    hidden: bool = False
+    mergedInto: str | None = None
+
+
+class ExerciseUpdate(BaseModel):
+    name: str | None = Field(None, min_length=1, max_length=80)
+    group: Group | None = None
+
+
+class MergeBody(BaseModel):
+    into: str = Field(max_length=80)
 
 
 class ExerciseCreate(BaseModel):
@@ -222,3 +234,25 @@ class SessionType(BaseModel):
     exercises: list[str]
     lastDate: str
     sessions: int
+
+
+class ExerciseSession(BaseModel):
+    workoutId: str
+    date: str
+    label: str
+    entry: Entry
+
+
+class BestSet(BaseModel):
+    """The heaviest set (most reps at that weight); for body-weight work, the most reps."""
+
+    date: str
+    set: SetData
+
+
+class ExerciseHistory(BaseModel):
+    """Everything about one exercise for its page: every session (newest first) and all photos."""
+
+    sessions: list[ExerciseSession]
+    photos: list[DatedPhoto]
+    best: BestSet | None = None

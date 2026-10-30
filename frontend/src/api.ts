@@ -15,6 +15,8 @@ export interface Exercise {
   source: "catalog" | "app";
   lastDone: string | null;
   timesDone: number;
+  hidden?: boolean;
+  mergedInto?: string;
 }
 
 export interface SetData {
@@ -136,6 +138,20 @@ export interface ExerciseSummary {
   bestDrop?: { date: string; sets: SetData[] };
 }
 
+export interface ExerciseSession {
+  workoutId: string;
+  date: string;
+  label: string;
+  entry: Entry;
+}
+
+/** Everything for an exercise page: every session (newest first), all photos, the best set. */
+export interface ExerciseHistory {
+  sessions: ExerciseSession[];
+  photos: (Photo & { date: string })[];
+  best?: { date: string; set: SetData };
+}
+
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
   // FormData bodies set their own multipart Content-Type.
   const isForm = init?.body instanceof FormData;
@@ -168,6 +184,10 @@ export const api = {
   listExercises: () => request<Exercise[]>("/exercises"),
   createExercise: (body: Pick<Exercise, "name" | "group" | "load" | "measure">) =>
     request<Exercise>("/exercises", json("POST", body)),
+  updateExercise: (id: string, patch: { name?: string; group?: Group }) =>
+    request<Exercise>(`/exercises/${id}`, json("PATCH", patch)),
+  mergeExercise: (id: string, into: string) => request<Exercise>(`/exercises/${id}/merge`, json("POST", { into })),
+  exerciseHistory: (id: string) => request<ExerciseHistory>(`/exercises/${id}/history`),
   exerciseSummary: (id: string, exclude?: string) =>
     request<ExerciseSummary>(`/exercises/${id}/summary${exclude ? `?exclude=${encodeURIComponent(exclude)}` : ""}`),
   addNote: (exerciseId: string, text: string, date: string) =>

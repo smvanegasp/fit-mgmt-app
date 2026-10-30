@@ -77,9 +77,10 @@ A mobile-first web app where Sergio logs their gym workouts and sees their progr
 |---|---|---|
 | 0 | Skeleton: FastAPI + React/Vite, Docker Compose, CI (tests, build, Docker, secret scan), deploy workflow (off until 6b), Dependabot, docs | #1 |
 | 1 | WhatsApp import: exercise catalog, chat parser, private corrections, review page, loader into DynamoDB + S3 (local), S3Mock in Compose | #4 |
-| 2 | Train tab: day type + stopwatch with laps (a set ends a lap), picker (usual exercises for the day, category chips), English bullet cues, last time, target game (3 in a row, a miss takes one away), setup photos, "Last time" with sets and drop set apart, best drop set, set logger, drop sets, climbing and runs, notes and photos, finish / discard (no rest timer: Sergio times rest with laps), edit or delete past workouts | open |
+| 2 | Train tab: day type + stopwatch with laps (a set ends a lap), picker (usual exercises for the day, category chips), English bullet cues, last time, target game (3 in a row, a miss takes one away), setup photos, "Last time" with sets and drop set apart, best drop set, set logger, drop sets, climbing and runs, notes and photos, finish / discard (no rest timer: Sergio times rest with laps), edit or delete past workouts | #5 |
+| 3 | History: workouts by week with day-type and exercise filters, workout detail (read, then edit), exercise pages (target, best set, best drop, cues, photos, every session), rename and merge exercises | open |
 
-Next: **stage 3, History** (list by week, workout detail, exercise pages). Full plan in [docs/BACKLOG.md](docs/BACKLOG.md).
+Next: **stage 4a, Progress** (consistency calendar, streaks, strength charts). Full plan in [docs/BACKLOG.md](docs/BACKLOG.md).
 
 ## 4. Architecture
 
@@ -136,13 +137,15 @@ backend/
 frontend/
   src/App.tsx               tabs Train / History / Progress / Settings
   src/api.ts, hooks.ts      API client and TanStack Query hooks
-  src/pages/                TrainPage (idle: next up, start, recent; active workout; edit saved),
-                            HistoryPage, ProgressPage, SettingsPage
-  src/components/           WorkoutEditor, EntryCard (set logger, drop sets, climbing, run, notes),
+  src/pages/                TrainPage (idle: day type, start, last workouts; active workout),
+                            HistoryPage (Workouts by week + filters / Exercises), ProgressPage, SettingsPage
+  src/components/           Screens (stack of full-screen pages: useScreens().openWorkout / openExercise),
+                            Screen, WorkoutDetail, ExercisePage, EditWorkout, WorkoutCard,
+                            WorkoutEditor, EntryCard (set logger, drop sets, climbing, run, notes),
                             Cues (checklist + manage sheet), ExercisePicker, Stepper,
                             Photos, BottomSheet, InfoTip (both from the pantry), ComingSoon
   src/lib/                  pure logic + tests: sets (summaries, next set, ladder, volume, next up),
-                            time (local ISO), laps, duration, search (fuzzy), images, theme
+                            time (local ISO), weeks (week grouping, long dates), laps, duration, search (fuzzy), images, theme
 ```
 
 ### Data model (DynamoDB, one table `fit`, `pk`/`sk`)
@@ -212,6 +215,7 @@ frontend/
 |---|---|
 | Health | `GET /health` |
 | Day types | `GET /session-types` (label, usual exercises in order, last date, sessions) |
+| Exercise page | `GET /exercises/{id}/history` (sessions newest first, all photos, best set) · `PATCH /exercises/{id} {name?, group?}` (old name stays an alias) · `POST /exercises/{id}/merge {into}` (sessions and cues move; the duplicate is hidden) |
 | Exercises | `GET /exercises` (catalog + custom, with `lastDone`, `timesDone`) · `POST /exercises` · `GET /exercises/{id}/summary[?exclude=workoutId]` (cues, last, streak = target game, photos, bestDrop) |
 | Cues | `POST /exercises/{id}/notes {text, date}` · `PATCH /exercises/{id}/notes/{noteId} {text?, hidden?}` · `DELETE` (same path) |
 | Workouts | `GET /workouts?limit=` (newest first) · `GET/PUT/DELETE /workouts/{id}` (PUT keeps id, date, source; label recomputed) |

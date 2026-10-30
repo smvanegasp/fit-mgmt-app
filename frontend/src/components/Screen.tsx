@@ -1,0 +1,44 @@
+import { ArrowLeft } from "@phosphor-icons/react";
+import { useEffect, type ReactNode } from "react";
+import { createPortal } from "react-dom";
+
+interface Props {
+  title: string;
+  subtitle?: ReactNode;
+  onBack: () => void;
+  /** Buttons on the right of the header (Edit, Done). */
+  actions?: ReactNode;
+  children: ReactNode;
+}
+
+/** A full-screen page over the tabs, with a back button. Screens can stack (detail, then edit). */
+export function Screen({ title, subtitle, onBack, actions, children }: Props) {
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => e.key === "Escape" && onBack();
+    document.addEventListener("keydown", onKey);
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.removeEventListener("keydown", onKey);
+      document.body.style.overflow = "";
+    };
+  }, [onBack]);
+
+  return createPortal(
+    <div className="fixed inset-0 z-30 overflow-y-auto bg-stone-50" role="dialog" aria-modal="true" aria-label={title}>
+      <div className="mx-auto max-w-lg px-4 pb-16">
+        <header className="sticky top-0 z-10 -mx-4 mb-3 flex items-center gap-2 border-b border-stone-200 bg-stone-50/95 px-4 pt-[max(0.75rem,env(safe-area-inset-top))] pb-3 backdrop-blur">
+          <button type="button" onClick={onBack} className="rounded-full p-2 text-stone-700" aria-label="Back">
+            <ArrowLeft size={22} weight="bold" aria-hidden />
+          </button>
+          <div className="min-w-0 flex-1">
+            <div className="truncate font-semibold">{title}</div>
+            {subtitle && <div className="truncate text-sm text-stone-500">{subtitle}</div>}
+          </div>
+          {actions}
+        </header>
+        {children}
+      </div>
+    </div>,
+    document.body,
+  );
+}
