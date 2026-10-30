@@ -69,3 +69,20 @@ def test_body_weight_work_climbs_by_reps(client: TestClient) -> None:
 
 def test_unknown_exercise_is_404(client: TestClient) -> None:
     assert client.get("/api/exercises/nope/progress").status_code == 404
+
+
+def test_routines_newest_first_with_their_sessions(client: TestClient) -> None:
+    db.put("main", "ROUTINE#2026-09-01#a", {"id": "a", "name": "Old plan", "from": "2026-09-01", "to": "2026-09-30",
+                                            "days": ["Push", "Legs"], "notes": "Three days", "source": "whatsapp"})
+    db.put("main", "ROUTINE#2026-10-01#b", {"id": "b", "name": "New plan", "from": "2026-10-01", "to": None,
+                                            "days": ["Push", "Legs", "Pull"], "notes": "", "source": "whatsapp",
+                                            "photos": [{"key": "main/wa-1"}]})
+    day("2026-09-15", "Push", [])
+    day("2026-09-30", "Legs", [])
+    day("2026-10-02", "Pull", [])
+    routines = client.get("/api/progress").json()["routines"]
+    assert [(r["name"], r["from"], r.get("to"), r["sessions"]) for r in routines] == [
+        ("New plan", "2026-10-01", None, 1),
+        ("Old plan", "2026-09-01", "2026-09-30", 2),
+    ]
+    assert routines[0]["photos"] == [{"key": "main/wa-1"}] and routines[1]["notes"] == "Three days"

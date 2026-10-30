@@ -1,9 +1,11 @@
 import { CaretRight, Check } from "@phosphor-icons/react";
 import { useState } from "react";
 
-import type { Group, Lift, Load, Scheme, Step } from "../api";
-import { DAY_TYPES, stepDates, type DayType } from "../lib/progress";
+import type { ExerciseSession, Group, Lift, Load, Scheme, Step } from "../api";
+import { climbing, dropLadders } from "../lib/kinds";
+import { DAY_TYPES, shortDate, stepDates, type DayType } from "../lib/progress";
 import { schemeText } from "../lib/sets";
+import { Ladder } from "./EntryCard";
 import { InfoTip } from "./InfoTip";
 
 export const TYPE_COLOR: Record<DayType, string> = {
@@ -200,5 +202,99 @@ export function LiftCard({ lift, color, load, onOpen }: { lift: Lift; color: str
         <p className="mt-1 text-sm text-stone-500">Not done yet.</p>
       )}
     </button>
+  );
+}
+
+// ------------------------------------------------------------------ drop sets
+
+/** Exercise page (dips, chin-ups): each drop-set ladder's total reps as a bar, newest first; the
+ * best one's weights and reps in full. Tap a row to open that workout. */
+export function DropSets({ sessions, color, today, onOpenWorkout }: {
+  sessions: ExerciseSession[]; color: string; today: string; onOpenWorkout: (id: string) => void;
+}) {
+  const [all, setAll] = useState(false);
+  const ladders = dropLadders(sessions);
+  if (ladders.length === 0) return null;
+  const best = ladders.find((l) => l.best)!;
+  const max = best.total;
+  const shown = all ? ladders : ladders.slice(0, 6);
+  return (
+    <section className="rounded-2xl border border-stone-200 bg-white p-4">
+      <h2 className="flex items-center gap-1 font-semibold">
+        Drop sets
+        <InfoTip title="Drop sets">Total reps of each drop-set ladder, newest first. The longer the bar, the more reps.</InfoTip>
+      </h2>
+      <div className="mt-2 text-sm">
+        <span className="text-stone-500">Best · {shortDate(best.date, today)} · </span>
+        <span className="font-semibold">{best.total} reps</span>
+        <div className="mt-1"><Ladder sets={best.sets} /></div>
+      </div>
+      <ul className="mt-3 space-y-0.5">
+        {shown.map((l) => (
+          <li key={l.workoutId}>
+            <button type="button" onClick={() => onOpenWorkout(l.workoutId)} className="flex w-full items-center gap-3 py-1.5 text-left text-sm">
+              <span className="w-16 shrink-0 text-stone-500">{shortDate(l.date)}</span>
+              <span className="h-2.5 flex-1">
+                <span className="block h-full rounded-r" style={{ width: `${(l.total / max) * 100}%`, background: color }} />
+              </span>
+              <span className="w-14 shrink-0 text-right tabular-nums">
+                {l.total}{l.best && <Check size={12} weight="bold" className="ml-0.5 inline" aria-label="best" />}
+              </span>
+            </button>
+          </li>
+        ))}
+      </ul>
+      {ladders.length > 6 && (
+        <button type="button" onClick={() => setAll(!all)} className="mt-1 w-full py-2 text-sm font-medium text-blue-700">
+          {all ? "Show fewer" : `Show all ${ladders.length}`}
+        </button>
+      )}
+    </section>
+  );
+}
+
+// ------------------------------------------------------------------ climbing
+
+/** Sends (solid) and attempts (light) per grade, hardest on top: the grade pyramid. */
+export function GradePyramid({ sessions, color }: { sessions: ExerciseSession[]; color: string }) {
+  const { grades } = climbing(sessions);
+  const max = Math.max(1, ...grades.map((g) => g.sent + g.attempted));
+  return (
+    <ul className="space-y-1">
+      {grades.map((g) => (
+        <li key={g.grade} className="flex items-center gap-2 text-sm">
+          <span className="w-7 shrink-0 font-medium">{g.grade}</span>
+          <span className="flex h-3 flex-1">
+            {g.sent > 0 && <span className="h-full rounded-l" style={{ width: `${(g.sent / max) * 100}%`, background: color }} />}
+            {g.attempted > 0 && (
+              <span className={`h-full bg-stone-300 ${g.sent ? "ml-0.5" : "rounded-l"} rounded-r`} style={{ width: `${(g.attempted / max) * 100}%` }} />
+            )}
+          </span>
+          <span className="w-24 shrink-0 text-right text-xs text-stone-500 tabular-nums">
+            {g.sent} sent{g.attempted ? ` · ${g.attempted} tried` : ""}
+          </span>
+        </li>
+      ))}
+    </ul>
+  );
+}
+
+/** Exercise page (bouldering): the hardest send and the grade pyramid. */
+export function Climbing({ sessions, color, today }: { sessions: ExerciseSession[]; color: string; today: string }) {
+  const { grades, hardest } = climbing(sessions);
+  if (grades.length === 0) return null;
+  return (
+    <section className="rounded-2xl border border-stone-200 bg-white p-4">
+      <h2 className="flex items-center gap-1 font-semibold">
+        Grades
+        <InfoTip title="Grades">Problems per grade, hardest on top: solid is sent, light is tried and not sent yet.</InfoTip>
+      </h2>
+      {hardest && (
+        <p className="mt-1 text-sm text-stone-600">
+          Hardest send <span className="font-semibold text-stone-900">{hardest.grade}</span> (first on {shortDate(hardest.date, today)})
+        </p>
+      )}
+      <div className="mt-3"><GradePyramid sessions={sessions} color={color} /></div>
+    </section>
   );
 }

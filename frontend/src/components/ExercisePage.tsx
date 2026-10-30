@@ -10,7 +10,7 @@ import { CueManager } from "./Cues";
 import { Ladder, TargetGame } from "./EntryCard";
 import { ExercisePicker, GROUP_NAMES } from "./ExercisePicker";
 import { PhotoStrip } from "./Photos";
-import { ProgressionLadder, groupColor } from "./Progression";
+import { Climbing, DropSets, ProgressionLadder, groupColor } from "./Progression";
 import { Screen } from "./Screen";
 import { useScreens } from "./Screens";
 
@@ -27,6 +27,7 @@ export function ExercisePage({ exerciseId, onClose }: { exerciseId: string; onCl
   const exercise = (exercises.data ?? []).find((e) => e.id === exerciseId) ?? summary.data?.exercise;
   const sessions = history.data?.sessions ?? [];
   const best = history.data?.best;
+  const today = localIso().slice(0, 10);
 
   return (
     <Screen
@@ -60,19 +61,13 @@ export function ExercisePage({ exerciseId, onClose }: { exerciseId: string; onCl
           )}
 
           {lift.data && lift.data.steps.length > 0 ? (
-            <ProgressionLadder lift={lift.data} color={groupColor(exercise.group)} load={exercise.load} today={localIso().slice(0, 10)}
+            <ProgressionLadder lift={lift.data} color={groupColor(exercise.group)} load={exercise.load} today={today}
               onOpenWorkout={screens.openWorkout} />
           ) : (
             summary.data?.streak && <TargetGame streak={summary.data.streak} load={exercise.load} today={[]} />
           )}
-          {summary.data?.bestDrop && (
-            <div className="rounded-xl bg-sky-50 px-3 py-2 text-sm">
-              <div className="text-xs font-semibold tracking-wide text-sky-800 uppercase">
-                Best drop set · {friendlyDate(summary.data.bestDrop.date)}
-              </div>
-              <div className="mt-1"><Ladder sets={summary.data.bestDrop.sets} /></div>
-            </div>
-          )}
+          <DropSets sessions={sessions} color={groupColor(exercise.group)} today={today} onOpenWorkout={screens.openWorkout} />
+          {exercise.measure === "climb" && <Climbing sessions={sessions} color={groupColor(exercise.group)} today={today} />}
 
           <section className="rounded-2xl border border-stone-200 bg-white p-4">
             <h2 className="mb-1 font-semibold">Keep in mind</h2>

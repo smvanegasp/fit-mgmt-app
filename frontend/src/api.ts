@@ -197,9 +197,24 @@ export interface Lift {
   steps: Step[];
 }
 
+/** A routine era: the plan followed from one date to another (no `to` = the current one). */
+export interface Routine {
+  id: string;
+  name: string;
+  from: string;
+  to?: string;
+  days: string[];
+  notes: string;
+  photos: Photo[];
+  /** Workouts logged in the era. */
+  sessions: number;
+}
+
 export interface Progress {
   days: ProgressDay[];
   lifts: Lift[];
+  /** Newest first. */
+  routines: Routine[];
 }
 
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
