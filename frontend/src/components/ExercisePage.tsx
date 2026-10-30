@@ -6,15 +6,16 @@ import { useExerciseHistory, useExerciseProgress, useExerciseSummary, useExercis
 import { summarizeSets, weightText } from "../lib/sets";
 import { friendlyDate, localIso } from "../lib/time";
 import { BottomSheet } from "./BottomSheet";
-import { GameLegend, StrengthChart, groupColor } from "./Charts";
 import { CueManager } from "./Cues";
 import { Ladder, TargetGame } from "./EntryCard";
 import { ExercisePicker, GROUP_NAMES } from "./ExercisePicker";
 import { PhotoStrip } from "./Photos";
+import { ProgressionLadder, groupColor } from "./Progression";
 import { Screen } from "./Screen";
 import { useScreens } from "./Screens";
 
-/** Everything about one exercise: target, best set, technique cues, photos, every session. */
+/** The home for one exercise: its progression (targets, the current one on top), technique cues,
+ * photos and sessions. Other places show a summary and link here. */
 export function ExercisePage({ exerciseId, onClose }: { exerciseId: string; onClose: () => void }) {
   const exercises = useExercises();
   const summary = useExerciseSummary(exerciseId);
@@ -22,6 +23,7 @@ export function ExercisePage({ exerciseId, onClose }: { exerciseId: string; onCl
   const lift = useExerciseProgress(exerciseId);
   const screens = useScreens();
   const [managing, setManaging] = useState(false);
+  const [allSessions, setAllSessions] = useState(false);
   const exercise = (exercises.data ?? []).find((e) => e.id === exerciseId) ?? summary.data?.exercise;
   const sessions = history.data?.sessions ?? [];
   const best = history.data?.best;
@@ -41,26 +43,27 @@ export function ExercisePage({ exerciseId, onClose }: { exerciseId: string; onCl
     >
       {exercise && (
         <div className="space-y-3">
-          <dl className="grid grid-cols-3 gap-2 text-center">
-            <Tile label="Sessions" value={String(sessions.length)} />
-            <Tile label="Since" value={sessions.length ? monthYear(sessions.at(-1)!.date) : "-"} />
-            <Tile
-              label="Best set"
-              value={best ? `${best.set.seconds ? `${best.set.seconds}s` : `${best.set.reps}`}${weightText(best.set, exercise.load) ? ` × ${weightText(best.set, exercise.load)}` : ""}` : "-"}
-              hint={best ? friendlyDate(best.date) : undefined}
-            />
-          </dl>
+          {sessions.length > 0 && (
+            <p className="px-1 text-sm text-stone-600">
+              {sessions.length} {sessions.length === 1 ? "session" : "sessions"} since {monthYear(sessions.at(-1)!.date)}
+              {best && (
+                <>
+                  {" · best set "}
+                  <span className="font-semibold text-stone-900">
+                    {best.set.seconds ? `${best.set.seconds}s` : best.set.reps}
+                    {weightText(best.set, exercise.load) ? ` × ${weightText(best.set, exercise.load)}` : ""}
+                  </span>
+                  {` (${friendlyDate(best.date)})`}
+                </>
+              )}
+            </p>
+          )}
 
-          {summary.data?.streak && <TargetGame streak={summary.data.streak} load={exercise.load} today={[]} />}
-          {(lift.data?.sessions.length ?? 0) >= 2 && (
-            <section className="rounded-2xl border border-stone-200 bg-white p-4">
-              <h2 className="font-semibold">{lift.data!.unit === "lb" ? "Top set" : lift.data!.unit === "s" ? "Longest set" : "Most reps"} over time</h2>
-              <div className="mt-1.5"><GameLegend /></div>
-              <div className="mt-2">
-                <StrengthChart lift={lift.data!} color={groupColor(exercise.group)} from={lift.data!.sessions[0].date}
-                  to={localIso().slice(0, 10)} onOpenWorkout={screens.openWorkout} />
-              </div>
-            </section>
+          {lift.data && lift.data.steps.length > 0 ? (
+            <ProgressionLadder lift={lift.data} color={groupColor(exercise.group)} load={exercise.load} today={localIso().slice(0, 10)}
+              onOpenWorkout={screens.openWorkout} />
+          ) : (
+            summary.data?.streak && <TargetGame streak={summary.data.streak} load={exercise.load} today={[]} />
           )}
           {summary.data?.bestDrop && (
             <div className="rounded-xl bg-sky-50 px-3 py-2 text-sm">
@@ -84,11 +87,11 @@ export function ExercisePage({ exerciseId, onClose }: { exerciseId: string; onCl
           )}
 
           <section className="rounded-2xl border border-stone-200 bg-white p-4">
-            <h2 className="font-semibold">Every session</h2>
+            <h2 className="font-semibold">Sessions</h2>
             {history.isLoading && <p className="py-3 text-sm text-stone-500">Loading...</p>}
             {!history.isLoading && sessions.length === 0 && <p className="py-3 text-sm text-stone-500">Not done yet.</p>}
             <ul className="mt-1 divide-y divide-stone-100">
-              {sessions.map((s) => {
+              {(allSessions ? sessions : sessions.slice(0, 5)).map((s) => {
                 const work = (s.entry.sets ?? []).filter((x) => !x.drop);
                 const drop = (s.entry.sets ?? []).filter((x) => x.drop);
                 return (
@@ -111,6 +114,11 @@ export function ExercisePage({ exerciseId, onClose }: { exerciseId: string; onCl
                 );
               })}
             </ul>
+            {sessions.length > 5 && (
+              <button type="button" onClick={() => setAllSessions(!allSessions)} className="mt-1 w-full py-2 text-sm font-medium text-blue-700">
+                {allSessions ? "Show fewer" : `Show all ${sessions.length}`}
+              </button>
+            )}
           </section>
         </div>
       )}
@@ -126,15 +134,6 @@ function monthYear(day: string): string {
   return `${MONTHS[Number(day.slice(5, 7)) - 1]} ${day.slice(0, 4)}`;
 }
 
-function Tile({ label, value, hint }: { label: string; value: string; hint?: string }) {
-  return (
-    <div className="rounded-xl bg-white px-2 py-3 ring-1 ring-stone-200">
-      <dt className="text-xs text-stone-500">{label}</dt>
-      <dd className="text-lg font-semibold tabular-nums">{value}</dd>
-      {hint && <dd className="text-xs text-stone-500">{hint}</dd>}
-    </div>
-  );
-}
 
 const GROUPS: Group[] = ["push", "pull", "legs", "core", "cardio"];
 

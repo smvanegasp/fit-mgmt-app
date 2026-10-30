@@ -1,4 +1,4 @@
-import { ArrowsDownUp, Check, Images, NotePencil, Target, Trash, X } from "@phosphor-icons/react";
+import { ArrowsDownUp, CaretDown, CaretRight, Check, Images, NotePencil, Trash, X } from "@phosphor-icons/react";
 import { useEffect, useState } from "react";
 
 import type { Entry, Exercise, Photo, Problem, Scheme, SetData, Streak } from "../api";
@@ -9,6 +9,8 @@ import { BottomSheet } from "./BottomSheet";
 import { CueList } from "./Cues";
 import { InfoTip } from "./InfoTip";
 import { PhotoButton, PhotoStrip } from "./Photos";
+import { GameDots, SetGlyph } from "./Progression";
+import { useScreens } from "./Screens";
 import { Stepper } from "./Stepper";
 
 interface Props {
@@ -25,13 +27,19 @@ interface Props {
 export function EntryCard({ entry, exercise, excludeWorkoutId, onChange, onRemove, onSetLogged }: Props) {
   const summary = useExerciseSummary(exercise.id, excludeWorkoutId);
   const [confirmRemove, setConfirmRemove] = useState(false);
+  const [photosOpen, setPhotosOpen] = useState(false);
+  const screens = useScreens();
   const last = summary.data?.last;
   const streak = summary.data?.streak;
 
   return (
     <article className="rounded-2xl border border-stone-200 bg-white p-4">
       <header className="flex items-start gap-2">
-        <h2 className="flex-1 text-lg leading-tight font-semibold">{exercise.name}</h2>
+        {/* Everything else about the exercise (its progression, all cues, every session) is one tap away. */}
+        <button type="button" onClick={() => screens.openExercise(exercise.id)} className="flex min-w-0 flex-1 items-center gap-1 text-left">
+          <h2 className="text-lg leading-tight font-semibold">{exercise.name}</h2>
+          <CaretRight size={14} className="shrink-0 text-stone-400" aria-hidden />
+        </button>
         {confirmRemove ? (
           <span className="flex items-center gap-1">
             <button type="button" onClick={onRemove} className="rounded-lg bg-stone-900 px-2.5 py-1 text-sm font-medium text-white">Remove</button>
@@ -54,10 +62,12 @@ export function EntryCard({ entry, exercise, excludeWorkoutId, onChange, onRemov
       {streak && <TargetGame streak={streak} load={exercise.load} today={entry.sets ?? []} />}
       {summary.data && summary.data.photos.length > 0 && (
         <div className="mt-2">
-          <div className="flex items-center gap-1.5 text-xs font-semibold tracking-wide text-stone-500 uppercase">
-            <Images size={14} weight="fill" aria-hidden /> Your photos
-          </div>
-          <PhotoStrip photos={summary.data.photos.map((p) => ({ ...p, caption: p.caption ?? friendlyDate(p.date) }))} />
+          <button type="button" onClick={() => setPhotosOpen(!photosOpen)} aria-expanded={photosOpen}
+            className="flex items-center gap-1.5 py-1 text-xs font-semibold tracking-wide text-stone-500 uppercase">
+            <Images size={14} weight="fill" aria-hidden /> Your photos ({summary.data.photos.length})
+            <CaretDown size={12} className={photosOpen ? "rotate-180" : ""} aria-hidden />
+          </button>
+          {photosOpen && <PhotoStrip photos={summary.data.photos.map((p) => ({ ...p, caption: p.caption ?? friendlyDate(p.date) }))} />}
         </div>
       )}
 
@@ -128,7 +138,7 @@ export function TargetGame({ streak, load, today }: { streak: Streak; load: Exer
   const done = streak.times >= streak.goal;
   return (
     <div className="mt-2 flex items-center gap-3 rounded-xl bg-blue-50 px-3 py-2 text-blue-900">
-      <Target size={20} weight="fill" className="shrink-0 text-blue-700" aria-hidden />
+      <SetGlyph sets={streak.scheme.sets} max={Math.max(...streak.scheme.sets)} color="var(--color-blue-600)" />
       <div className="min-w-0 flex-1">
         <div className="text-sm font-semibold">Target {schemeText(streak.scheme, load)}</div>
         <div className="text-xs">
@@ -136,16 +146,7 @@ export function TargetGame({ streak, load, today }: { streak: Streak; load: Exer
           {reachedToday && <span className="font-semibold"> · reached today</span>}
         </div>
       </div>
-      <div className="flex gap-1" aria-label={`${streak.times} of ${streak.goal}`}>
-        {Array.from({ length: streak.goal }, (_, i) => (
-          <span
-            key={i}
-            className={`size-3 rounded-full ${
-              i < streak.times ? "bg-blue-600" : i === streak.times && reachedToday ? "bg-blue-300" : "border-2 border-blue-300"
-            }`}
-          />
-        ))}
-      </div>
+      <GameDots times={streak.times + (reachedToday && !done ? 1 : 0)} goal={streak.goal} />
       <InfoTip title="Target">
         Reach these sets 3 sessions in a row, then go up. A session that misses takes one away. Reaching it means the same
         total reps at this weight or more.

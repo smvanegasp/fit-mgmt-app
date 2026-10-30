@@ -32,21 +32,20 @@ desktop design), 5a guests and passcode, 5b welcome page, 6a-6c AWS, 7 productio
 
 ## Stage 4a: what's in it
 
-- **Tiles:** current and longest streak in **weeks** (a week counts with 3+ workouts; this week
-  doesn't break it while it's going), and workouts this year. The goal of 3 is `WEEKLY_GOAL` in
-  `lib/progress.ts` (Sergio to confirm).
-- **Range chips** (3 months, 6 months, 1 year, all time; default 6 months) scope everything below.
-- **Consistency:** a small calendar per month, newest first, training days colored by day type
-  (Push blue, Legs orange, Pull aqua, Cardio gray; tap a day to open the workout); workouts per
-  week as stacked bars with the goal line; tap or drag to read a week.
-- **Strength:** squat, deadlift, bench, dips, chin-ups. Line = top working set per session as
-  written (plates; the readout adds the bar; added weight for dips and chin-ups); ringed dots are
-  PRs; light days are gray dots off the line. Under it, one target-game dot per session (reached,
-  new target, missed, light day). A readout row shows the picked session (latest by default) and
-  opens it. The name opens the exercise page, which has the same chart for any exercise
-  (body-weight work plots the most reps in a set).
-- Charts are plain SVG, not Recharts (shared x scale for the line and the dots, touch readouts,
-  no dependency).
+- **Consistency** (one view): the streak in weeks (a week counts with 3+ workouts; this week
+  doesn't break it while it's going; `WEEKLY_GOAL` in `lib/progress.ts`, Sergio to confirm), then
+  the last 12 weeks as rows of 7 days colored by day type (Push blue, Legs orange, Pull aqua,
+  Cardio gray; tap a day to open it) with the count and a check per week; "Show earlier weeks".
+- **Strength:** squat, deadlift, bench, dips, chin-ups as **progression ladders**: each target is a
+  set glyph (columns = sets, squares = reps, weight under it), so more sets, more reps and more
+  weight all show. Tap a lift for its page.
+- **Exercise page:** a summary line (sessions, since, best set), the full ladder (current target on
+  top with its count; past targets with dates, one dot per session that opens it, "3 of 3"), drop
+  set, cues, photos, the last 5 sessions (show all).
+- **Elsewhere:** Train shows "This week: N of 3 · streak" (opens Progress) and only the last
+  workout; the workout card's exercise name opens its page; its photos fold away; the target there
+  uses the same set glyph and dots.
+- Plain SVG/HTML, no chart library.
 
 ## Stage 3: what's in it
 
@@ -132,6 +131,13 @@ desktop design), 5a guests and passcode, 5b welcome page, 6a-6c AWS, 7 productio
 | Run is cardio; weekly cardio from now on (Peloton run or walk) | Cardio day type and category; new exercises Peloton run and Walk (distance + minutes) |
 | Red isn't good; try blue | Blue accent (light and dark), red only for errors and delete |
 | Notes weren't translated, and editing showed a mismatch | All 171 imported texts translated (notes, captions, climbing notes) via a private table; editing a past workout now shows its target and "last time" as of that date |
+
+## Feedback round 1 on stage 4a (Sergio, 2026-10-30)
+
+| What Sergio said | Done |
+|---|---|
+| Charts are too complex; progress in sets and reps doesn't show | Line charts replaced by progression ladders: each target as a set glyph (columns = sets, squares = reps) |
+| The same information in several places; link instead, keep it simple, don't repeat | One home per thing: exercise page (progression, cues, photos, sessions), Progress (consistency), History (workouts); Train and the workout card link there. Calendar, weekly bars, tiles and range chips merged into one weeks view |
 
 ## Feedback round 1 on stage 3 (Sergio, 2026-10-30)
 

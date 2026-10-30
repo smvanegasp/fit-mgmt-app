@@ -271,31 +271,31 @@ class ProgressDay(BaseModel):
     type: str
 
 
-class StrengthPoint(BaseModel):
-    """One session of an exercise: its top set and how the target game went."""
-
+class StepSession(BaseModel):
     date: str
     workoutId: str
-    # Top-set weight in lb as written (plates for barbell lifts, like the rest of the app; per hand
-    # for dumbbells; the added weight for weighted dips and chin-ups), or the most reps (or
-    # seconds) in a set for body-weight work.
-    value: float
-    # Reps (or seconds) of the best set at that value, and the working sets ("5x4").
-    reps: float | None = None
-    sets: str = ""
-    pr: bool = False
-    game: Literal["new", "reached", "missed", "light"] | None = None
-    times: int | None = None
+    # "new" = the session that set this target (counts as the first time).
+    result: Literal["new", "reached", "missed"]
+
+
+class Step(BaseModel):
+    """One rung of an exercise's progression ladder: a target and the sessions spent on it, until
+    more sets, more reps or more weight made the next one. Light days aren't listed."""
+
+    scheme: Scheme
+    sessions: list[StepSession]
+    # The count when the step ended (or now, for the current one); 3 = done, time to go up.
+    times: int
 
 
 class Lift(BaseModel):
     exerciseId: str
     name: str
     load: Load
-    unit: Literal["lb", "reps", "s"]
-    # The bar for barbell lifts (value + barLb = the total lifted).
+    # The bar for barbell lifts (weights are plates as written; + barLb = the total lifted).
     barLb: float = 0
-    sessions: list[StrengthPoint]
+    # Oldest first; the last one is the current target.
+    steps: list[Step]
 
 
 class Progress(BaseModel):

@@ -88,7 +88,7 @@ A mobile-first web app where Sergio logs their gym workouts and sees their progr
 | 1 | WhatsApp import: exercise catalog, chat parser, private corrections, review page, loader into DynamoDB + S3 (local), S3Mock in Compose | #4 |
 | 2 | Train tab: day type + stopwatch with laps (a set ends a lap), picker (usual exercises for the day, category chips), English bullet cues, last time, target game (3 in a row, a miss takes one away), setup photos, "Last time" with sets and drop set apart, best drop set, set logger, drop sets, climbing and runs, notes and photos, finish / discard (no rest timer: Sergio times rest with laps), edit or delete past workouts | #5 |
 | 3 | History: one workout per day, grouped by week with day-type filters; workout detail (read, then edit) with estimated times; exercise pages (target, best set, best drop, cues, photos, every session); rename and merge exercises; everything in English | #6 |
-| 4a | Progress: week streaks (goal 3 a week), range chips, month calendars colored by day type, workouts per week (stacked, goal line), strength lines for the five main lifts with PRs and target-game dots; the same chart on every exercise page | open |
+| 4a | Progress: one consistency view (weeks as rows of days colored by day type, count per week, streak of weeks with 3+), the five main lifts as progression ladders (set glyphs: columns = sets, squares = reps); full ladder on every exercise page; one home per piece of information, linked from the rest | open |
 
 **Where things stand (2026-10-30):** stages 0-3 are merged; stage 4a (Progress) is in review on `stage-4a-progress`. The app runs **only
 locally** (Docker + ngrok); nothing is on AWS yet (stages 6a-6c), so the WhatsApp history is only in
@@ -97,10 +97,15 @@ their phone through the ngrok URL and may be using the local app while the agent
 
 **Next: Sergio's feedback on 4a, then stage 4b** (volume, drop sets, climbing, routine timeline,
 time; see "Stage 4: plot plan" in [docs/BACKLOG.md](docs/BACKLOG.md)). Load the `dataviz` skill
-before writing chart code. Charts are plain SVG in `components/Charts.tsx` (no chart library: the
-strength line and the target-game dots share one x scale, and a readout row under each chart
-replaces floating tooltips, which suits touch). Chart colors are CSS variables in `index.css`
-(`--chart-push/legs/pull/cardio`), checked with the dataviz palette validator in both modes.
+before writing chart code. Visuals are plain SVG/HTML in `components/Progression.tsx` (no chart
+library). Day-type colors are CSS variables in `index.css` (`--chart-push/legs/pull/cardio`),
+checked with the dataviz palette validator in both modes.
+
+**One home per thing (Sergio, 2026-10-30: "don't repeat yourself").** Each piece of information
+lives in one place and the others link to it: an exercise's progression, cues, photos and sessions
+live on its **exercise page** (the workout card and Progress link there); consistency lives on
+**Progress** (Train shows "This week: 2 of 3 · streak" linking there via `useGoTo()`); workouts
+live in **History** (Train shows only the last one). Prefer a link or a fold-out over a second copy.
 
 ## 4. Architecture
 
@@ -144,11 +149,11 @@ backend/
   app/db.py                 DynamoDB single table: put/get/query/delete, batches; Decimal <-> int/float
   app/storage.py            S3 photos (copied from the pantry)
   app/models.py             Pydantic shapes: SetData, Entry, Problem, Segment, WorkoutBody, Workout,
-                            Exercise, Note, Scheme/Streak, ExerciseSummary, Progress/Lift/StrengthPoint
+                            Exercise, Note, Scheme/Streak, ExerciseSummary, Progress/Lift/Step
   app/history.py            last session per exercise, main-set scheme, the target game (replay yields
                             each session's result), usage counts
-  app/progress.py           Progress tab: training days with day type; top set per session, PRs,
-                            target-game results (MAIN_LIFTS)
+  app/progress.py           Progress tab: training days with day type; each exercise's progression
+                            ladder (one step per target, from the target-game replay; MAIN_LIFTS)
   app/labels.py             session labels ("Push", "Squat + Climb"); shared with the importer
   app/space.py              current_space(): "main" until stage 5a (then the pantry version)
   app/routers/              exercises (list, create, summary, cues, progress), workouts (saved + ACTIVE),
@@ -162,17 +167,18 @@ frontend/
   src/App.tsx               tabs Train / History / Progress / Settings
   src/api.ts, hooks.ts      API client and TanStack Query hooks
   src/pages/                TrainPage (idle: day type, start, last workouts; active workout),
-                            HistoryPage (Workouts by week + filters / Exercises), ProgressPage (streaks,
-                            range, calendar, weekly bars, strength cards), SettingsPage
+                            HistoryPage (Workouts by week + filters / Exercises), ProgressPage (consistency
+                            weeks + streak, lift ladders), SettingsPage
   src/components/           Screens (stack of full-screen pages: useScreens().openWorkout / openExercise),
                             Screen, WorkoutDetail, ExercisePage, EditWorkout, WorkoutCard,
                             WorkoutEditor, EntryCard (set logger, drop sets, climbing, run, notes),
                             Cues (checklist + manage sheet), ExercisePicker, Stepper,
                             Photos, BottomSheet, InfoTip (both from the pantry), ComingSoon,
-                            Charts (StrengthChart, WeeklyBars, legends; plain SVG)
+                            Progression (SetGlyph, GameDots, ProgressionLadder, LiftCard, day-type
+                            colors), Nav (useGoTo: switch tabs from a page)
   src/lib/                  pure logic + tests: sets (summaries, next set, ladder, volume, next up),
                             time (local ISO), weeks (week grouping, long dates), laps, duration, search (fuzzy), images, theme,
-                            progress (ranges, weekly counts, streaks, calendar months, axis ticks)
+                            progress (week rows and counts, streaks, step dates)
 ```
 
 ### Data model (DynamoDB, one table `fit`, `pk`/`sk`)
@@ -244,7 +250,7 @@ frontend/
 | Area | Endpoints |
 |---|---|
 | Health | `GET /health` |
-| Progress | `GET /progress` (days with day type; the main lifts' top set per session, PRs, target-game results) · `GET /exercises/{id}/progress` (one exercise; plates as written, `barLb` for the total) |
+| Progress | `GET /progress` (days with day type; the main lifts' progression ladders) · `GET /exercises/{id}/progress` (one exercise's ladder: `steps` of `{scheme, sessions, times}`, oldest first) |
 | Day types | `GET /session-types` (label, usual exercises in order, last date, sessions) |
 | Exercise page | `GET /exercises/{id}/history` (sessions newest first, all photos, best set) · `PATCH /exercises/{id} {name?, group?}` (old name stays an alias) · `POST /exercises/{id}/merge {into}` (sessions and cues move; the duplicate is hidden) |
 | Exercises | `GET /exercises` (catalog + custom, with `lastDone`, `timesDone`) · `POST /exercises` · `GET /exercises/{id}/summary[?exclude=workoutId]` (cues, last, streak = target game, photos, bestDrop) |

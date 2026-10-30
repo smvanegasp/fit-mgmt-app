@@ -1,74 +1,36 @@
-"""What the Progress tab plots: training days for the consistency calendar, and each lift's top
-set per session with its PRs and target-game results."""
+"""What the Progress tab and exercise pages show: training days for the consistency weeks, and each
+exercise's progression ladder (the targets Sergio worked through, built from the target game)."""
 
 from typing import Any
 
 from app.history import merged_entry, replay, workouts
 from app.labels import day_type
-from app.models import Entry, Exercise, Lift, Progress, ProgressDay, SetData, StrengthPoint
+from app.models import Exercise, Lift, Progress, ProgressDay, Step, StepSession
 
-# The small multiples on the Progress tab.
+# The lifts on the Progress tab.
 MAIN_LIFTS = ["squat", "deadlift", "bench-press", "dips", "chin-ups"]
 
-WEIGHTED = {"barbell", "dumbbell", "machine", "added"}
 
-
-def _working(entry: Entry) -> list[SetData]:
-    """Working sets: drop sets and complexes aside."""
-    return [s for s in entry.sets if not s.drop and not s.detail and (s.reps is not None or s.seconds is not None)]
-
-
-def unit(exercise: Exercise, entries: list[Entry]) -> str:
-    """lb for weighted lifts ever done with weight; otherwise the most reps (or seconds) in a set
-    ("Weighted pull-ups" done only at body weight plot reps)."""
-    if exercise.load in WEIGHTED and any(s.weightLb for e in entries for s in _working(e)):
-        return "lb"
-    return "s" if exercise.measure == "seconds" else "reps"
-
-
-def _scheme_text(reps: list[float]) -> str:
-    """[4, 4, 4, 4] -> "4x4"; [4, 4, 3] -> "4, 4, 3"."""
-    numbers = [f"{r:g}" for r in reps]
-    return f"{len(numbers)}x{numbers[0]}" if len(set(numbers)) == 1 else ", ".join(numbers)
-
-
-def top_set(entry: Entry, exercise: Exercise, measure: str) -> tuple[float, float | None, str] | None:
-    """(value, reps at it, working sets at it) for a session, or None when nothing counts: the
-    heaviest working set (as written: plates for barbell lifts) for weighted lifts, the most reps (or seconds) otherwise.
-    A weighted lift done without weight that day isn't plotted."""
-    work = _working(entry)
-    if not work:
-        return None
-    if measure == "lb":
-        top = max(s.weightLb or 0 for s in work)
-        if not top:
-            return None
-        at_top = [s.reps or s.seconds or 0 for s in work if (s.weightLb or 0) == top]
-        return top, max(at_top), _scheme_text(at_top)
-    counts = [(s.seconds if measure == "s" else s.reps) or 0 for s in work]
-    return max(counts), None, _scheme_text(counts)
-
-
-def strength(every: list[dict[str, Any]], exercise: Exercise) -> Lift:
+def ladder(every: list[dict[str, Any]], exercise: Exercise) -> Lift:
+    """One step per target: a new step starts when the target changes (more weight, more sets or
+    reps after 3, a deload, or a target Sergio wrote down). Coming back to the same target after a
+    break stays on its step. Light days are left out."""
     done = [(w, e) for w in every if (e := merged_entry(w, exercise.id)) is not None]
-    measure = unit(exercise, [e for _, e in done])
-    games = {step.date: step for step in replay([(w["date"], e) for w, e in done])}
-    points: list[StrengthPoint] = []
-    best = None
-    for workout, entry in done:
-        top = top_set(entry, exercise, measure)
-        if top is None:
+    ids = {w["date"]: w["id"] for w, _ in done}
+    steps: list[Step] = []
+    weighted = exercise.load in ("barbell", "dumbbell", "machine", "added")
+    for game in replay([(w["date"], e) for w, e in done]):
+        # A weighted lift done at body weight that day is a light day too.
+        if game.result == "light" or (weighted and not game.target.weightLb):
             continue
-        value, reps, sets = top
-        step = games.get(workout["date"])
-        points.append(StrengthPoint(
-            date=workout["date"], workoutId=workout["id"], value=value, reps=reps, sets=sets,
-            pr=best is not None and value > best,
-            game=step.result if step else None, times=step.times if step else None,
-        ))
-        best = value if best is None else max(best, value)
+        session = StepSession(date=game.date, workoutId=ids[game.date], result=game.result)
+        if not steps or steps[-1].scheme != game.target:
+            steps.append(Step(scheme=game.target, sessions=[session], times=game.times))
+        else:
+            steps[-1].sessions.append(session)
+            steps[-1].times = game.times
     bar = exercise.barLb if exercise.load == "barbell" else 0
-    return Lift(exerciseId=exercise.id, name=exercise.name, load=exercise.load, unit=measure, barLb=bar, sessions=points)
+    return Lift(exerciseId=exercise.id, name=exercise.name, load=exercise.load, barLb=bar, steps=steps)
 
 
 def progress(space: str, exercises: dict[str, Exercise]) -> Progress:
@@ -78,5 +40,5 @@ def progress(space: str, exercises: dict[str, Exercise]) -> Progress:
                     type=day_type(w.get("label") or "Workout"))
         for w in every
     ]
-    lifts = [strength(every, exercises[x]) for x in MAIN_LIFTS if x in exercises]
+    lifts = [ladder(every, exercises[x]) for x in MAIN_LIFTS if x in exercises]
     return Progress(days=days, lifts=lifts)

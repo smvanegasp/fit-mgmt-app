@@ -162,28 +162,23 @@ export interface ProgressDay {
   type: string;
 }
 
-/** One session of a lift: the top set (lb as written: plates for barbell lifts; or the most reps or seconds)
- * and how the target game went. */
-export interface StrengthPoint {
-  date: string;
-  workoutId: string;
-  value: number;
-  reps?: number;
-  sets: string;
-  pr?: boolean;
-  game?: "new" | "reached" | "missed" | "light";
-  times?: number;
+/** One rung of an exercise's progression ladder: a target and the sessions spent on it ("new" is
+ * the session that set it). Light days aren't listed. */
+export interface Step {
+  scheme: Scheme;
+  sessions: { date: string; workoutId: string; result: "new" | "reached" | "missed" }[];
+  /** The count when the step ended (or now, for the current one); 3 = done. */
+  times: number;
 }
 
 export interface Lift {
   exerciseId: string;
   name: string;
   load: Load;
-  unit: "lb" | "reps" | "s";
-  /** The bar for barbell lifts: values are plates as written, value + barLb is the total. */
+  /** The bar for barbell lifts: weights are plates as written. */
   barLb: number;
-  /** Oldest first. */
-  sessions: StrengthPoint[];
+  /** Oldest first; the last one is the current target. */
+  steps: Step[];
 }
 
 export interface Progress {

@@ -1,4 +1,4 @@
-"""The Progress tab: training days, and each lift's top set with PRs and target-game results."""
+"""The Progress tab and exercise pages: training days, and each exercise's progression ladder."""
 
 import pytest
 from fastapi.testclient import TestClient
@@ -33,40 +33,38 @@ def test_days_map_old_names_to_todays_day_types(client: TestClient) -> None:
     assert days[0]["label"] == "Squat + Climb" and days[0]["workoutId"] == "2026-10-01-1"
 
 
-def test_squat_line_shows_plates_and_marks_prs_and_the_target_game(client: TestClient) -> None:
-    day("2026-10-01", "Legs", [squat((5, 4, 135), (3, 8, 105))])
-    day("2026-10-05", "Legs", [squat((5, 4, 135))])
-    day("2026-10-09", "Legs", [squat((4, 4, 135), (1, 3, 135))])  # missed
-    day("2026-10-12", "Legs", [squat((3, 6, 105))])  # light day
-    day("2026-10-15", "Legs", [squat((5, 4, 140))])  # went up: a PR
+def test_the_ladder_shows_more_reps_then_more_weight(client: TestClient) -> None:
+    day("2026-09-01", "Legs", [squat((5, 3, 135))])
+    day("2026-09-04", "Legs", [squat((5, 3, 135))])
+    day("2026-09-08", "Legs", [squat((5, 3, 135), (3, 8, 105))])  # 3 of 3
+    day("2026-09-11", "Legs", [squat((5, 4, 135))])  # more reps: the next target
+    day("2026-09-14", "Legs", [squat((3, 6, 105))])  # light day: left out
+    day("2026-09-18", "Legs", [squat((4, 4, 135), (1, 3, 135))])  # missed
+    day("2026-09-22", "Legs", [squat((5, 4, 140))])  # more weight
     lifts = {x["exerciseId"]: x for x in client.get("/api/progress").json()["lifts"]}
     assert list(lifts) == ["squat", "deadlift", "bench-press", "dips", "chin-ups"]
-    assert lifts["deadlift"]["sessions"] == []
-    line = lifts["squat"]
-    assert line["unit"] == "lb" and line["name"] == "Back squat" and line["barLb"] == 45
-    got = [(p["value"], p["reps"], p["sets"], p.get("pr", False), p["game"], p["times"]) for p in line["sessions"]]
-    assert got == [
-        (135, 4, "5x4", False, "new", 1),
-        (135, 4, "5x4", False, "reached", 2),
-        (135, 4, "4, 4, 4, 4, 3", False, "missed", 1),
-        (105, 6, "3x6", False, "light", 1),
-        (140, 4, "5x4", True, "new", 1),
+    assert lifts["deadlift"]["steps"] == []
+    squat_ladder = lifts["squat"]
+    assert squat_ladder["barLb"] == 45
+    got = [
+        (s["scheme"]["weightLb"], s["scheme"]["sets"], [x["result"] for x in s["sessions"]], s["times"])
+        for s in squat_ladder["steps"]
     ]
+    assert got == [
+        (135, [3] * 5, ["new", "reached", "reached"], 3),
+        (135, [4] * 5, ["new", "missed"], 0),
+        (140, [4] * 5, ["new"], 1),
+    ]
+    assert squat_ladder["steps"][1]["sessions"][1] == {"date": "2026-09-18", "workoutId": "2026-09-18-1", "result": "missed"}
 
 
-def test_body_weight_work_plots_the_most_reps(client: TestClient) -> None:
-    day("2026-10-01", "Pull", [{"exerciseId": "pull-ups", "sets": [{"reps": 8}, {"reps": 10}, {"reps": 7}]}])
-    day("2026-10-04", "Pull", [{"exerciseId": "pull-ups", "sets": [{"reps": 11}, {"reps": 9}, {"reps": 12, "drop": True}]}])
-    line = client.get("/api/exercises/pull-ups/progress").json()
-    assert line["unit"] == "reps"
-    assert [(p["value"], p["sets"], p.get("pr", False)) for p in line["sessions"]] == [(10, "8, 10, 7", False), (11, "11, 9", True)]
-
-
-def test_weighted_lift_done_without_weight_is_left_out(client: TestClient) -> None:
-    day("2026-10-01", "Push", [{"exerciseId": "dips", "sets": [{"reps": 4, "weightLb": 90}] * 3}])
-    day("2026-10-03", "Push", [{"exerciseId": "dips", "sets": [{"reps": 4}] * 4}])
-    line = client.get("/api/exercises/dips/progress").json()
-    assert [(p["date"], p["value"]) for p in line["sessions"]] == [("2026-10-01", 90)]
+def test_body_weight_work_climbs_by_reps(client: TestClient) -> None:
+    day("2026-10-01", "Pull", [{"exerciseId": "front-raise", "sets": [{"reps": 5}] * 3}])
+    day("2026-10-04", "Pull", [{"exerciseId": "front-raise", "sets": [{"reps": 6}] * 3}])
+    steps = client.get("/api/exercises/front-raise/progress").json()["steps"]
+    assert [(s["scheme"]["sets"], [x["result"] for x in s["sessions"]], s["times"]) for s in steps] == [
+        ([5, 5, 5], ["new", "reached"], 2),
+    ]
 
 
 def test_unknown_exercise_is_404(client: TestClient) -> None:

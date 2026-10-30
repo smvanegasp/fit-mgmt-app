@@ -131,8 +131,8 @@ def exercise_history(exercise_id: str, space: str = Depends(current_space)) -> E
 
 @router.get("/{exercise_id}/progress", response_model_exclude_none=True)
 def exercise_progress(exercise_id: str, space: str = Depends(current_space)) -> Lift:
-    """The exercise page's strength chart: the top set per session, PRs, target-game results."""
-    return progress.strength(history.workouts(space), get_exercise(space, exercise_id))
+    """The exercise page's progression ladder: each target and the sessions spent on it."""
+    return progress.ladder(history.workouts(space), get_exercise(space, exercise_id))
 
 
 @router.get("/{exercise_id}/summary", response_model_exclude_none=True)
