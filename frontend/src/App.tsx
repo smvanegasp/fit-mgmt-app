@@ -15,7 +15,7 @@ const TABS: readonly { id: "train" | "history" | "progress" | "settings"; label:
 
 type Tab = (typeof TABS)[number]["id"];
 
-const PAGES: Record<Tab, () => React.JSX.Element> = {
+const PAGES: Record<Tab, () => React.JSX.Element | null> = {
   train: TrainPage,
   history: HistoryPage,
   progress: ProgressPage,

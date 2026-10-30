@@ -7,6 +7,7 @@ from fastapi.responses import JSONResponse
 
 from app import db, ssm, storage
 from app.config import on_aws, origin_secret
+from app.routers import exercises, photos, workouts
 
 
 @asynccontextmanager
@@ -37,6 +38,11 @@ async def require_cloudfront(request: Request, call_next):
     ):
         return JSONResponse({"detail": "Forbidden"}, status_code=403)
     return await call_next(request)
+
+
+app.include_router(exercises.router)
+app.include_router(workouts.router)
+app.include_router(photos.router)
 
 
 @app.get("/api/health")

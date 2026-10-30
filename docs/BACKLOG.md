@@ -26,9 +26,9 @@ Sergio merges.
 
 ## Now
 
-Stage 1 PR open: the WhatsApp history parses into 179 sessions (2025-09-05 to 2026-10-29),
-450 exercise entries, 1,783 sets, 51 technique cues, 15 photos, 3 routine eras, loaded into the
-local stack. Sergio confirmed the guesses below (2026-10-29); next is stage 2.
+Stage 2 PR open (Train tab). Waiting for Sergio to try it at the gym through ngrok. Next is
+stage 3 (History). Stage 1 is merged (#4): 179 imported sessions (2025-09-05 to 2026-10-29),
+1,783 sets, 51 technique cues, 15 photos, 3 routine eras, in the local stack.
 
 ### Stage 1: interpretations Sergio confirmed
 
@@ -44,18 +44,19 @@ local stack. Sergio confirmed the guesses below (2026-10-29); next is stage 2.
 - Imported session times run from the first to the last message (warm-up not included).
 - 2025-11-11 "Chin ups 1x5 45 lbs" sent the day after the pull session: kept on 2025-11-11.
 
-## Stage 2 notes (from the import)
+## Stage 2: what's in it
 
-- **Technique cues while training (Sergio, 2026-10-29):** the technique log is a checklist of
-  things that make the exercise go better ("asegurar bien las manos en el agarre"), built up over
-  time. When Sergio starts an exercise, show its cues right there, **super concise** (one line
-  each, a few at a time, expandable), and let him add a new cue in a tap, edit or hide old ones.
-  Imported cues: 51, already trimmed (grown cues keep their longest version; duplicates and
-  superseded ones left out via `notTechnique`).
-- Show the **target** and how many times it was hit ("5x5 @ 170, 2 of 3") when picking an
-  exercise; that's how Sergio decides to add weight.
-- Drop-set ladders (dips, chin-ups) need a quick way to log 4-5 descending weights.
-- Bouldering: grade, color, sent / attempts. Treadmill: speed steps or just distance + time.
+- Start: stopwatch from a server-side start time (survives locking and reloads), "Next up" from
+  the rotation, recent workouts (tap to edit or delete).
+- Each exercise: **technique cues** (Sergio, 2026-10-29: the checklist of things that make the
+  lift go better, shown when he starts the exercise; top 3 by how often they were written, more
+  on tap, add / edit / hide), "Last" session, **target streak** computed from history ("Target
+  5×5 @ 170, done 2 times in a row": the last session's first group of working sets and how many
+  sessions in a row reached it), set logger with big steppers pre-filled from the last set or
+  last session, drop-set ladder (last time's weights and reps filled in), notes and photos.
+- Bouldering (grade, hold color, sent / tried, count) and treadmill (distance, minutes).
+- Rest timer after each set (length remembered, buzzes when over), autosave, finish or discard.
+- Not in this stage: History tab, exercise pages, charts (stages 3 and 4).
 
 ## Needs Sergio
 
@@ -72,6 +73,7 @@ None yet; add as they come up.
 
 ## Done
 
+- 2026-10-29: Stage 1 WhatsApp import merged (#4).
 - 2026-10-29: Stage 1 decisions: bar = plates + 45 lb; weighted dips/chin-ups track added weight
   only; English exercise names; bouldering and treadmill included.
 - 2026-10-29: Plan updates: phone first with a separate desktop design in stage 4c, exercise

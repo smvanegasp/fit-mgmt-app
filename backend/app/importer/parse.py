@@ -33,7 +33,9 @@ from typing import Any
 
 from app.catalog import BY_ID, EXERCISES
 from app.importer.chat import Message
+from app.labels import session_label
 
+NAMES = {e.id: e.name for e in EXERCISES}
 KG_TO_LB = 2.20462
 SESSION_GAP = timedelta(hours=2)
 # A note written on its own right after an exercise belongs to that exercise.
@@ -548,35 +550,6 @@ def _entries_from_json(session: Session, message: Message, entries: list[dict[st
             entry.distance_mi = data["distanceMi"]
 
 
-def label_for(entries: list[Entry]) -> str:
-    """A short name for the session from its main lifting group (most sets), plus climbing /
-    running."""
-    groups = {
-        "Push": {"dips", "bench-press", "smith-bench-press", "dumbbell-bench-press", "overhead-press", "bar-dips"},
-        "Squat": {"squat", "smith-squat", "pistol-squat"},
-        "Deadlift": {"deadlift", "rdl", "reverse-leg-curl"},
-        "Pull": {"chin-ups", "pull-ups", "muscle-up-complex", "wide-pull-ups", "close-pull-ups", "french-chin-ups"},
-        "Front lever": {"front-raise", "full-front-raise", "advanced-tuck-hold", "half-tuck-front-lever-raise",
-                        "l-sit-tuck-planche", "high-pull-ups"},
-    }
-    parts: list[str] = []
-    sets_per_group: dict[str, int] = {}
-    for entry in entries:
-        name = next((g for g, ids in groups.items() if entry.exercise_id in ids), None)
-        if name:
-            sets_per_group[name] = sets_per_group.get(name, 0) + len(entry.sets)
-    if sets_per_group:
-        # Ties go to the group logged first (dicts keep insertion order).
-        parts.append(max(sets_per_group, key=lambda g: sets_per_group[g]))
-    if any(e.exercise_id == "bouldering" for e in entries):
-        parts.append("Climb")
-    if any(e.exercise_id == "treadmill" for e in entries):
-        parts.append("Run")
-    if not parts and entries:
-        parts.append(BY_ID[entries[0].exercise_id].name)
-    return " + ".join(parts) or "Workout"
-
-
 def _cues(text: str) -> list[str]:
     parts = re.split(r"(?<=[.!])\s+|\n+", text)
     return [p.strip(" .") for p in parts if len(normalize(p)) >= 8]
@@ -685,7 +658,7 @@ def parse_messages(messages: list[Message], corrections: dict[str, Any] | None =
             "startedAt": session.started.isoformat(),
             "endedAt": session.ended.isoformat(),
             "durationEstimated": True,
-            "label": label_for(session.entries),
+            "label": session_label([(e.exercise_id, len(e.sets)) for e in session.entries], NAMES),
             "source": "whatsapp",
             "notes": session.notes,
             "photos": session.photos,
