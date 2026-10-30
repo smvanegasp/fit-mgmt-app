@@ -22,6 +22,7 @@ from app.catalog import EXERCISES
 PHOTO_MAX = 1600
 THUMB_MAX = 400
 IMPORTED_PREFIXES = ("WORKOUT#", "NOTE#", "BODY#", "ROUTINE#")
+KEPT_NOTE_FIELDS = ("hidden", "section", "rank")
 
 
 def exercise_rows() -> dict[str, dict[str, Any]]:
@@ -87,6 +88,7 @@ def build_rows(parsed: dict[str, Any], space: str) -> tuple[dict[str, dict[str, 
             "id": n["id"], "exerciseId": n["exerciseId"], "date": n["date"], "lastSeen": n["lastSeen"],
             "sessions": n["sessions"], "text": n["text"], "source": "whatsapp",
             **({"original": n["original"]} if n.get("original") else {}),
+            **{k: n[k] for k in ("section", "rank") if n.get(k) is not None},
         }
     for b in parsed["body"]:
         rows[f"BODY#{b['date']}"] = {"date": b["date"], "weightLb": b["weightLb"], "source": "whatsapp"}
@@ -109,6 +111,13 @@ def load(parsed: dict[str, Any], space: str, photos_dir: Path) -> dict[str, int]
         if data.get("source") == "whatsapp" and sk not in rows
     ]
     db.delete_many(space, stale)
+    # Choices made in the app about imported cues (hidden, their section and order) survive a
+    # re-import, unless the corrections set them.
+    existing = dict(db.keys(space, "NOTE#"))
+    for sk, row in rows.items():
+        for field in KEPT_NOTE_FIELDS:
+            if sk in existing and field in existing[sk] and field not in row:
+                row[field] = existing[sk][field]
     db.put_many(space, {**exercise_rows(), **rows})
     return {
         "workouts": len(parsed["workouts"]),

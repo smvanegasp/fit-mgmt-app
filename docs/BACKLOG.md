@@ -92,6 +92,8 @@ desktop design), 5a guests and passcode, 5b welcome page, 6a-6c AWS, 7 productio
   media** (the photos are part of the technique log); put the `.zip` (or the `.txt` plus media
   files) in `private/` at the repo root. Android caps exports with media at the most recent
   ~10,000 messages; if the chat is longer, also export **Without media** for the full text.
+- Now: a **Groq API key** in `backend/.env` as `GROQ_API_KEY=...` (Sergio adds it; then
+  `docker compose up -d api`). Without it the cue check stays off.
 - Later: alert email (6a), passcode via `set_passcode.py` (5a), Hostinger access (6c), welcome
   note text and photo (5b).
 
@@ -132,6 +134,19 @@ desktop design), 5a guests and passcode, 5b welcome page, 6a-6c AWS, 7 productio
 | Red isn't good; try blue | Blue accent (light and dark), red only for errors and delete |
 | Notes weren't translated, and editing showed a mismatch | All 171 imported texts translated (notes, captions, climbing notes) via a private table; editing a past workout now shows its target and "last time" as of that date |
 
+## Feedback round 2 on stage 4a (Sergio, 2026-10-30)
+
+| What Sergio said | Done |
+|---|---|
+| Show the last two workouts on the first page | Train: "Last workouts" with the two newest |
+| When a workout starts, see the last one of the same type (a toggle) | "Push day · last one Oct 23" under the stopwatch opens the last workout of that day type |
+| Notes and photos too prominent; a toggle or buttons | One quiet row under the sets: Note, Photo, Setup photos (folded) |
+| History: toggle categories to scroll faster | Exercises: categories fold (with counts); searching opens them |
+| Keep in mind: subtler colors, at the bottom | Gray, at the bottom of each exercise card |
+| Remove workout notes and photos | Gone from the editor; old ones still show on the workout |
+| An LLM (gpt-oss-120b on Groq) to see if a note should update the cues | The cue check: after a note, a suggestion to add or reword a cue (accept / no thanks); needs `GROQ_API_KEY` |
+| Group the cues and order them by importance, only with the cues they have | Sections Setup, Brace & breathe, Lift; ranked by the agent (50 cues, none new or reworded); the key cue of each section shows, the rest on tap |
+
 ## Feedback round 1 on stage 4a (Sergio, 2026-10-30)
 
 | What Sergio said | Done |
@@ -166,7 +181,8 @@ desktop design), 5a guests and passcode, 5b welcome page, 6a-6c AWS, 7 productio
 
 ## Ideas and improvements
 
-None yet; add as they come up.
+- Stage 5a: turn the cue check off for guest sandboxes (it costs per call and guests could spam it),
+  or rate-limit it. Stage 6a: `GROQ_API_KEY` as SSM `/fit/GROQ_API_KEY`.
 
 ## Done
 

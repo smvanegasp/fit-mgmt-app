@@ -1,7 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useCallback, useEffect, useRef } from "react";
 
-import { api, type Group, type Note, type WorkoutBody } from "./api";
+import { api, type CueSection, type Group, type Note, type NotePatch, type WorkoutBody } from "./api";
 
 export function useHealth() {
   return useQuery({ queryKey: ["health"], queryFn: api.health });
@@ -192,14 +192,14 @@ function useNoteMutation<T>(fn: (vars: T) => Promise<unknown>, exerciseOf: (vars
 
 export function useAddNote() {
   return useNoteMutation(
-    (v: { exerciseId: string; text: string; date: string }) => api.addNote(v.exerciseId, v.text, v.date),
+    (v: { exerciseId: string; text: string; date: string; section?: CueSection }) => api.addNote(v.exerciseId, v.text, v.date, v.section),
     (v) => v.exerciseId,
   );
 }
 
 export function useUpdateNote() {
   return useNoteMutation(
-    (v: { note: Note; patch: { text?: string; hidden?: boolean } }) => api.updateNote(v.note.exerciseId, v.note.id, v.patch),
+    (v: { note: Note; patch: NotePatch }) => api.updateNote(v.note.exerciseId, v.note.id, v.patch),
     (v) => v.note.exerciseId,
   );
 }

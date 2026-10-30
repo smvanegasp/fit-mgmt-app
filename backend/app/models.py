@@ -8,6 +8,8 @@ from pydantic import BaseModel, Field, field_validator
 
 from app.catalog import Group, Load, Measure
 
+CueSection = Literal["setup", "brace", "lift"]
+
 LOCAL_TIME = re.compile(r"^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}(:\d{2})?$")
 
 
@@ -168,16 +170,39 @@ class Note(BaseModel):
     source: Literal["whatsapp", "app"] = "app"
     # What Sergio wrote, when the text shown is a translation.
     original: str | None = None
+    # Where the cue fits while training (setup, then brace and breathe, then the lift) and its
+    # importance there (1 = most important). Unset for cues nobody has placed yet.
+    section: CueSection | None = None
+    rank: int | None = None
 
 
 class NoteCreate(BaseModel):
     text: str = Field(min_length=1, max_length=300)
     date: str = Field(pattern=r"^\d{4}-\d{2}-\d{2}$")
+    section: CueSection | None = None
 
 
 class NoteUpdate(BaseModel):
     text: str | None = Field(None, min_length=1, max_length=300)
     hidden: bool | None = None
+    section: CueSection | None = None
+    rank: int | None = Field(None, ge=1, le=100)
+
+
+class CueCheck(BaseModel):
+    """A note Sergio wrote today, to check against the exercise's cues."""
+
+    note: str = Field(min_length=1, max_length=1000)
+
+
+class CueSuggestion(BaseModel):
+    """What the cue check proposes; nothing changes until Sergio accepts it. `add`: a new cue;
+    `update`: new wording for `noteId`; `none`: just a comment about today."""
+
+    action: Literal["add", "update", "none"]
+    noteId: str | None = None
+    text: str | None = Field(None, max_length=300)
+    section: CueSection | None = None
 
 
 class Scheme(BaseModel):

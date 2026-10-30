@@ -22,8 +22,8 @@ import {
 import { formatDuration } from "../lib/duration";
 import { currentLap, lapRows } from "../lib/laps";
 import { WEEKLY_GOAL, streaks, weekCounts } from "../lib/progress";
-import { heavyNext, nextUp, setCount } from "../lib/sets";
-import { localIso, secondsBetween } from "../lib/time";
+import { dayType, heavyNext, nextUp, setCount } from "../lib/sets";
+import { friendlyDate, localIso, secondsBetween } from "../lib/time";
 import { weekStart } from "../lib/weeks";
 
 export function TrainPage() {
@@ -56,7 +56,7 @@ function Idle({ onOpen }: { onOpen: (w: Workout) => void }) {
   const [picked, setPicked] = useState<string | null>(null);
   const plan = picked ?? suggestion?.label ?? null;
   const heavy = workouts.data ? heavyNext(workouts.data) : null;
-  const last = workouts.data?.[0];
+  const last = (workouts.data ?? []).slice(0, 2);
 
   return (
     <div className="pb-28">
@@ -108,11 +108,11 @@ function Idle({ onOpen }: { onOpen: (w: Workout) => void }) {
         {start.error && <p className="mt-2 text-sm text-red-600">{start.error.message}</p>}
       </section>
 
-      {last && (
+      {last.length > 0 && (
         <section className="mt-10 space-y-2">
           <WeekLink today={today} />
-          <h2 className="pt-2 text-sm font-semibold tracking-wide text-stone-500 uppercase">Last workout</h2>
-          <WorkoutCard workout={last} onClick={() => onOpen(last)} />
+          <h2 className="pt-2 text-sm font-semibold tracking-wide text-stone-500 uppercase">Last workouts</h2>
+          {last.map((w) => <WorkoutCard key={w.id} workout={w} onClick={() => onOpen(w)} />)}
         </section>
       )}
     </div>
@@ -241,7 +241,7 @@ function ActiveWorkout({ initial }: { initial: WorkoutBody }) {
         {lapsOpen && <LapList body={body} />}
       </header>
 
-      {body.plan && <p className="mb-2 text-sm font-medium text-stone-500">{body.plan} day</p>}
+      {body.plan && <LastOfType plan={body.plan} />}
       <WorkoutEditor
         body={body}
         onChange={change}
@@ -258,6 +258,25 @@ function ActiveWorkout({ initial }: { initial: WorkoutBody }) {
           }}
         />
       )}
+    </div>
+  );
+}
+
+/** "Push day" with the last Push workout one tap away (folded), to see what was done last time. */
+function LastOfType({ plan }: { plan: string }) {
+  const workouts = useWorkouts(30);
+  const screens = useScreens();
+  const [open, setOpen] = useState(false);
+  const last = (workouts.data ?? []).find((w) => dayType(w.label) === plan);
+  if (!last) return <p className="mb-2 text-sm font-medium text-stone-500">{plan} day</p>;
+  return (
+    <div className="mb-3">
+      <button type="button" onClick={() => setOpen(!open)} aria-expanded={open}
+        className="flex w-full items-center gap-1.5 py-1 text-left text-sm font-medium text-stone-500">
+        {plan} day · last one {friendlyDate(last.date)}
+        <CaretDown size={14} className={`ml-auto ${open ? "rotate-180" : ""}`} aria-hidden />
+      </button>
+      {open && <div className="mt-1"><WorkoutCard workout={last} onClick={() => screens.openWorkout(last.id)} /></div>}
     </div>
   );
 }

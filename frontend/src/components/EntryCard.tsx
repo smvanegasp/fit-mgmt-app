@@ -1,10 +1,11 @@
-import { ArrowsDownUp, CaretDown, CaretRight, Check, Images, NotePencil, Trash, X } from "@phosphor-icons/react";
+import { ArrowsDownUp, CaretDown, CaretRight, Check, Images, Lightbulb, NotePencil, Trash, X } from "@phosphor-icons/react";
+import { useQuery } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
 
-import type { Entry, Exercise, Photo, Problem, Scheme, SetData, Streak } from "../api";
-import { useExerciseSummary } from "../hooks";
+import { api, type CueSection, type Entry, type Exercise, type Note, type Photo, type Problem, type Scheme, type SetData, type Streak } from "../api";
+import { useAddNote, useExerciseSummary, useUpdateNote } from "../hooks";
 import { ladderWeights, nextSet, reachesTarget, schemeText, summarizeSets, weightText } from "../lib/sets";
-import { friendlyDate } from "../lib/time";
+import { friendlyDate, localIso } from "../lib/time";
 import { BottomSheet } from "./BottomSheet";
 import { CueList } from "./Cues";
 import { InfoTip } from "./InfoTip";
@@ -27,7 +28,6 @@ interface Props {
 export function EntryCard({ entry, exercise, excludeWorkoutId, onChange, onRemove, onSetLogged }: Props) {
   const summary = useExerciseSummary(exercise.id, excludeWorkoutId);
   const [confirmRemove, setConfirmRemove] = useState(false);
-  const [photosOpen, setPhotosOpen] = useState(false);
   const screens = useScreens();
   const last = summary.data?.last;
   const streak = summary.data?.streak;
@@ -54,22 +54,10 @@ export function EntryCard({ entry, exercise, excludeWorkoutId, onChange, onRemov
         )}
       </header>
 
-      {summary.data && <CueList exerciseId={exercise.id} exerciseName={exercise.name} cues={summary.data.cues} />}
-
       {last && exercise.measure !== "climb" && exercise.measure !== "run" && (
         <LastTime date={last.date} sets={last.entry.sets ?? []} load={exercise.load} best={summary.data?.bestDrop} />
       )}
       {streak && <TargetGame streak={streak} load={exercise.load} today={entry.sets ?? []} />}
-      {summary.data && summary.data.photos.length > 0 && (
-        <div className="mt-2">
-          <button type="button" onClick={() => setPhotosOpen(!photosOpen)} aria-expanded={photosOpen}
-            className="flex items-center gap-1.5 py-1 text-xs font-semibold tracking-wide text-stone-500 uppercase">
-            <Images size={14} weight="fill" aria-hidden /> Your photos ({summary.data.photos.length})
-            <CaretDown size={12} className={photosOpen ? "rotate-180" : ""} aria-hidden />
-          </button>
-          {photosOpen && <PhotoStrip photos={summary.data.photos.map((p) => ({ ...p, caption: p.caption ?? friendlyDate(p.date) }))} />}
-        </div>
-      )}
 
       {exercise.measure === "climb" ? (
         <ClimbLog entry={entry} onChange={onChange} />
@@ -80,7 +68,8 @@ export function EntryCard({ entry, exercise, excludeWorkoutId, onChange, onRemov
           onChange={onChange} onSetLogged={onSetLogged} />
       )}
 
-      <EntryNotes entry={entry} onChange={onChange} />
+      <EntryNotes entry={entry} exercise={exercise} cues={summary.data?.cues ?? []} setupPhotos={summary.data?.photos ?? []} onChange={onChange} />
+      {summary.data && <CueList exerciseId={exercise.id} exerciseName={exercise.name} cues={summary.data.cues} />}
     </article>
   );
 }
@@ -423,9 +412,15 @@ function RunLog({ entry, onChange }: { entry: Entry; onChange: (e: Entry) => voi
 
 // ------------------------------------------------------------------ notes and photos for this exercise today
 
-function EntryNotes({ entry, onChange }: { entry: Entry; onChange: (e: Entry) => void }) {
+/** A quiet row of tools under the sets: a note or photo for today, and the setup photos taken
+ * before (folded). A new note goes through the cue check, which may suggest updating the cues. */
+function EntryNotes({ entry, exercise, cues, setupPhotos, onChange }: {
+  entry: Entry; exercise: Exercise; cues: Note[]; setupPhotos: (Photo & { date: string })[]; onChange: (e: Entry) => void;
+}) {
   const [writing, setWriting] = useState(false);
+  const [photosOpen, setPhotosOpen] = useState(false);
   const [text, setText] = useState("");
+  const [checking, setChecking] = useState<string | null>(null);
   const notes = entry.notes ?? [];
   const photos = entry.photos ?? [];
 
@@ -445,11 +440,15 @@ function EntryNotes({ entry, onChange }: { entry: Entry; onChange: (e: Entry) =>
         </ul>
       )}
       <PhotoStrip photos={photos} onRemove={(p: Photo) => onChange({ ...entry, photos: photos.filter((x) => x.key !== p.key) })} />
+      {checking && <CueCheckCard exercise={exercise} cues={cues} note={checking} onDone={() => setChecking(null)} />}
       {writing ? (
         <form
           onSubmit={(e) => {
             e.preventDefault();
-            if (text.trim()) onChange({ ...entry, notes: [...notes, text.trim()] });
+            if (text.trim()) {
+              onChange({ ...entry, notes: [...notes, text.trim()] });
+              setChecking(text.trim());
+            }
             setText("");
             setWriting(false);
           }}
@@ -460,14 +459,66 @@ function EntryNotes({ entry, onChange }: { entry: Entry; onChange: (e: Entry) =>
           <button className="rounded-lg bg-blue-600 px-3 text-sm font-medium text-white">Save</button>
         </form>
       ) : (
-        <div className="flex items-center gap-1">
+        <div className="flex flex-wrap items-center gap-1">
           <button type="button" onClick={() => setWriting(true)}
             className="flex items-center gap-1.5 rounded-lg px-2 py-1.5 text-sm font-medium text-stone-600 active:bg-stone-100">
             <NotePencil size={18} weight="fill" aria-hidden /> Note
           </button>
           <PhotoButton onAdded={(p) => onChange({ ...entry, photos: [...photos, p] })} />
+          {setupPhotos.length > 0 && (
+            <button type="button" onClick={() => setPhotosOpen(!photosOpen)} aria-expanded={photosOpen}
+              className="flex items-center gap-1.5 rounded-lg px-2 py-1.5 text-sm font-medium text-stone-600 active:bg-stone-100">
+              <Images size={18} weight="fill" aria-hidden /> Setup photos ({setupPhotos.length})
+              <CaretDown size={12} className={photosOpen ? "rotate-180" : ""} aria-hidden />
+            </button>
+          )}
         </div>
       )}
+      {photosOpen && <PhotoStrip photos={setupPhotos.map((p) => ({ ...p, caption: p.caption ?? friendlyDate(p.date) }))} />}
+    </div>
+  );
+}
+
+const SECTION_NAMES: Record<CueSection, string> = { setup: "Setup", brace: "Brace & breathe", lift: "Lift" };
+
+/** Asks the cue check about a note just written and offers its suggestion: add a cue or reword
+ * one. Shows nothing when there's nothing to change or the check is off. */
+function CueCheckCard({ exercise, cues, note, onDone }: { exercise: Exercise; cues: Note[]; note: string; onDone: () => void }) {
+  const check = useQuery({
+    queryKey: ["cue-check", exercise.id, note],
+    queryFn: () => api.checkCue(exercise.id, note),
+    retry: false,
+    staleTime: Infinity,
+  });
+  const add = useAddNote();
+  const update = useUpdateNote();
+  const suggestion = check.data;
+  const old = suggestion?.action === "update" ? cues.find((c) => c.id === suggestion.noteId) : undefined;
+
+  if (check.isLoading) return <p className="mt-1 text-xs text-stone-400">Checking your cues...</p>;
+  if (!suggestion || suggestion.action === "none" || !suggestion.text || (suggestion.action === "update" && !old)) return null;
+
+  async function accept() {
+    if (!suggestion?.text) return;
+    if (old) await update.mutateAsync({ note: old, patch: { text: suggestion.text, ...(suggestion.section ? { section: suggestion.section } : {}) } });
+    else await add.mutateAsync({ exerciseId: exercise.id, text: suggestion.text, date: localIso().slice(0, 10), section: suggestion.section ?? undefined });
+    onDone();
+  }
+
+  return (
+    <div className="mt-2 rounded-xl border border-stone-200 px-3 py-2 text-sm">
+      <div className="flex items-center gap-1.5 text-xs font-medium text-stone-500">
+        <Lightbulb size={14} weight="fill" aria-hidden />
+        {old ? "Update a cue?" : "Add to Keep in mind?"}
+        {suggestion.section && <span className="text-stone-400">· {SECTION_NAMES[suggestion.section]}</span>}
+      </div>
+      {old && <p className="mt-1 text-stone-400 line-through">{old.text}</p>}
+      <p className="mt-0.5 text-stone-800">{suggestion.text}</p>
+      <div className="mt-2 flex gap-2">
+        <button type="button" onClick={accept} disabled={add.isPending || update.isPending}
+          className="rounded-lg bg-blue-600 px-3 py-1.5 text-sm font-medium text-white">{old ? "Update" : "Add"}</button>
+        <button type="button" onClick={onDone} className="rounded-lg px-3 py-1.5 text-sm font-medium text-stone-600">No thanks</button>
+      </div>
     </div>
   );
 }

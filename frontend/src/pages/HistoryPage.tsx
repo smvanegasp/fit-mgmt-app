@@ -1,4 +1,4 @@
-import { CaretRight, MagnifyingGlass } from "@phosphor-icons/react";
+import { CaretDown, CaretRight, MagnifyingGlass } from "@phosphor-icons/react";
 import { useMemo, useState } from "react";
 
 import type { Exercise, Group } from "../api";
@@ -94,6 +94,9 @@ function Exercises() {
   const screens = useScreens();
   const [query, setQuery] = useState("");
   const [showAll, setShowAll] = useState(false);
+  // Categories fold so the list is quick to scroll; searching opens them all.
+  const [open, setOpen] = useState<Set<string>>(new Set());
+  const toggle = (name: string) => setOpen((o) => new Set(o.has(name) ? [...o].filter((x) => x !== name) : [...o, name]));
 
   const groups = useMemo(() => {
     const list = (exercises.data ?? []).filter(
@@ -117,23 +120,32 @@ function Exercises() {
       </div>
       {exercises.isLoading && <p className="py-10 text-center text-stone-500">Loading...</p>}
       {groups.map(([name, items]) => (
-        <section key={name} className="mt-5">
-          <h2 className="mb-1 text-sm font-semibold tracking-wide text-stone-500 uppercase">{name}</h2>
-          <ul className="divide-y divide-stone-100 rounded-2xl border border-stone-200 bg-white">
-            {items.map((e) => (
-              <li key={e.id}>
-                <button type="button" onClick={() => screens.openExercise(e.id)} className="flex w-full items-center gap-3 px-4 py-3 text-left">
-                  <span className="min-w-0 flex-1">
-                    <span className="block font-medium">{e.name}</span>
-                    <span className="text-xs text-stone-500">
-                      {e.timesDone ? `${e.timesDone} ${e.timesDone === 1 ? "session" : "sessions"} · last ${friendlyDate(e.lastDone!)}` : "Not done yet"}
+        <section key={name} className="mt-3">
+          <h2>
+            <button type="button" onClick={() => toggle(name)} aria-expanded={!!query || open.has(name)}
+              className="flex w-full items-center gap-2 py-2 text-left text-sm font-semibold tracking-wide text-stone-500 uppercase">
+              {name}
+              <span className="font-normal normal-case">· {items.length}</span>
+              <CaretDown size={14} className={`ml-auto ${query || open.has(name) ? "rotate-180" : ""}`} aria-hidden />
+            </button>
+          </h2>
+          {(query || open.has(name)) && (
+            <ul className="divide-y divide-stone-100 rounded-2xl border border-stone-200 bg-white">
+              {items.map((e) => (
+                <li key={e.id}>
+                  <button type="button" onClick={() => screens.openExercise(e.id)} className="flex w-full items-center gap-3 px-4 py-3 text-left">
+                    <span className="min-w-0 flex-1">
+                      <span className="block font-medium">{e.name}</span>
+                      <span className="text-xs text-stone-500">
+                        {e.timesDone ? `${e.timesDone} ${e.timesDone === 1 ? "session" : "sessions"} · last ${friendlyDate(e.lastDone!)}` : "Not done yet"}
+                      </span>
                     </span>
-                  </span>
-                  <CaretRight size={16} className="text-stone-400" aria-hidden />
-                </button>
-              </li>
-            ))}
-          </ul>
+                    <CaretRight size={16} className="text-stone-400" aria-hidden />
+                  </button>
+                </li>
+              ))}
+            </ul>
+          )}
         </section>
       ))}
       {!query && (

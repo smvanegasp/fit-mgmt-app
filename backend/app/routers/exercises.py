@@ -1,11 +1,14 @@
 import re
 import uuid
 
+import httpx
 from fastapi import APIRouter, Depends, HTTPException, status
 
-from app import db, history, progress
+from app import cue_check, db, history, progress
 from app.catalog import EXERCISES
 from app.models import (
+    CueCheck,
+    CueSuggestion,
     Exercise,
     ExerciseCreate,
     ExerciseHistory,
@@ -148,9 +151,21 @@ def exercise_summary(exercise_id: str, exclude: str | None = None, space: str = 
 def add_note(exercise_id: str, body: NoteCreate, space: str = Depends(current_space)) -> Note:
     get_exercise(space, exercise_id)
     note = Note(id=uuid.uuid4().hex[:12], exerciseId=exercise_id, text=body.text.strip(), date=body.date,
-                lastSeen=body.date, source="app")
+                lastSeen=body.date, source="app", section=body.section)
     db.put(space, f"NOTE#{exercise_id}#{note.date}#{note.id}", note.model_dump())
     return note
+
+
+@router.post("/{exercise_id}/cue-check")
+def check_cue(exercise_id: str, body: CueCheck, space: str = Depends(current_space)) -> CueSuggestion:
+    """Whether today's note should add or reword a cue (a suggestion; Sergio accepts it or not)."""
+    exercise = get_exercise(space, exercise_id)
+    try:
+        return cue_check.check(exercise, cues(space, exercise_id), body.note)
+    except cue_check.CueCheckOff:
+        raise HTTPException(status.HTTP_503_SERVICE_UNAVAILABLE, "The cue check is off (no GROQ_API_KEY)") from None
+    except httpx.HTTPError:
+        raise HTTPException(status.HTTP_502_BAD_GATEWAY, "The cue check didn't answer; try again later") from None
 
 
 def _find_note(space: str, exercise_id: str, note_id: str) -> tuple[str, Note]:

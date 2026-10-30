@@ -67,6 +67,10 @@ cd frontend && npm test && npm run build
   the repo; parsed workouts are written straight to the database.
 - On AWS, secrets live in SSM Parameter Store (SecureString) and the API only accepts requests
   that come through CloudFront.
+- One optional AI feature: when a note is written on an exercise, the API sends that note and the
+  exercise's current cues to gpt-oss-120b on Groq, which suggests adding or rewording a cue. The
+  owner accepts or ignores the suggestion; nothing changes on its own. Without `GROQ_API_KEY` it
+  is off.
 
 ## Repo map
 

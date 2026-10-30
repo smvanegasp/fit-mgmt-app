@@ -43,7 +43,10 @@ A mobile-first web app where Sergio logs their gym workouts and sees their progr
   (one line per cue, newest wording only).
 - **Everything in English** (Sergio insists): imported notes go through `private/note_translations.json`
   and cues through `cueTranslations`; never show Spanish in the UI (originals are stored, not shown).
-- **Units:** pounds (lb). No AI in the app. Decisions from stage 1 (2026-10-29): barbell weights
+- **Units:** pounds (lb). **One AI feature** (Sergio, 2026-10-30): the cue check. When a note is
+  written on an exercise, gpt-oss-120b on Groq (`app/cue_check.py`) suggests adding a cue or
+  rewording one, using only Sergio's words; nothing changes until they accept. It's off without
+  `GROQ_API_KEY`. Decisions from stage 1 (2026-10-29): barbell weights
   are written as plates and the app adds a 45 lb bar for totals; weighted dips and chin-ups track
   only the added weight; exercise names are English (Spanish spellings are aliases; notes stay
   as written, mostly Spanish); **bouldering and treadmill runs are part of the app** alongside
@@ -152,6 +155,7 @@ backend/
                             Exercise, Note, Scheme/Streak, ExerciseSummary, Progress/Lift/Step
   app/history.py            last session per exercise, main-set scheme, the target game (replay yields
                             each session's result), usage counts
+  app/cue_check.py          the cue check: a note -> add / reword a cue (gpt-oss-120b on Groq)
   app/progress.py           Progress tab: training days with day type; each exercise's progression
                             ladder (one step per target, from the target-game replay; MAIN_LIFTS)
   app/labels.py             session labels ("Push", "Squat + Climb"); shared with the importer
@@ -178,7 +182,7 @@ frontend/
                             colors), Nav (useGoTo: switch tabs from a page)
   src/lib/                  pure logic + tests: sets (summaries, next set, ladder, volume, next up),
                             time (local ISO), weeks (week grouping, long dates), laps, duration, search (fuzzy), images, theme,
-                            progress (week rows and counts, streaks, step dates)
+                            progress (week rows and counts, streaks, step dates), cues (sections and order)
 ```
 
 ### Data model (DynamoDB, one table `fit`, `pk`/`sk`)
@@ -219,8 +223,11 @@ frontend/
     **segments** (treadmill) `[{mph, minutes}]` plus `distanceMi`.
 - **`NOTE#<exerciseId>#<date>#<id>`**: the technique log. `text` (English), `original` (what
   Sergio wrote, when translated), `date` (first written),
-  `lastSeen`, `sessions` (how many workouts repeat it). Imported cues are the ones written in 2+
-  sessions plus hand-picked ones; per-session comments stay on the workout entry.
+  `lastSeen`, `sessions` (how many workouts repeat it), `section` (`setup`, `brace`, `lift`: the
+  order they matter while training) and `rank` (importance within it; placed by the agent from
+  Sergio's own cues, kept in the corrections' `cueOrder`). Imported cues are the ones written in 2+
+  sessions plus hand-picked ones; per-session comments stay on the workout entry. Re-importing keeps
+  `hidden`, `section` and `rank` set in the app.
 - **`BODY#<date>`** `{weightLb}` · **`ROUTINE#<from>#<id>`** `{name, from, to, days[], notes,
   photos}` (the routine eras, for the evolution timeline) · later `ACTIVE` (workout in progress,
   server-side `startedAt`) and `SETTINGS`.
@@ -237,7 +244,7 @@ frontend/
 - `parse` translates every shown text (notes, captions, climbing notes) to English with
   `private/note_translations.json`, and applies `private/corrections.json` (git-ignored): `start`, per-message rewrites keyed by
   `"YYYY-MM-DD HH:MM:SS"` (string = new text, `null` = drop, `{entries: [...]}` = given
-  directly), `photos` (drop / attach), `textFixes` (typo fixes applied to every message first), `technique` (extra cues), `notTechnique` (repeated
+  directly), `photos` (drop / attach), `textFixes` (typo fixes applied to every message first), `technique` (extra cues), `cueOrder` (cue sections and order by English text), `notTechnique` (repeated
   comments that aren't cues), `routines` (the eras, written by the agent from the chat and the
   2-week rotation photo). Fix parser rules for patterns, corrections for one-offs.
 - Check `private/import/review.html` (chat next to result) after any parser change.
@@ -254,7 +261,7 @@ frontend/
 | Day types | `GET /session-types` (label, usual exercises in order, last date, sessions) |
 | Exercise page | `GET /exercises/{id}/history` (sessions newest first, all photos, best set) · `PATCH /exercises/{id} {name?, group?}` (old name stays an alias) · `POST /exercises/{id}/merge {into}` (sessions and cues move; the duplicate is hidden) |
 | Exercises | `GET /exercises` (catalog + custom, with `lastDone`, `timesDone`) · `POST /exercises` · `GET /exercises/{id}/summary[?exclude=workoutId]` (cues, last, streak = target game, photos, bestDrop) |
-| Cues | `POST /exercises/{id}/notes {text, date}` · `PATCH /exercises/{id}/notes/{noteId} {text?, hidden?}` · `DELETE` (same path) |
+| Cues | `POST /exercises/{id}/notes {text, date, section?}` · `PATCH /exercises/{id}/notes/{noteId} {text?, hidden?, section?, rank?}` · `DELETE` (same path) · `POST /exercises/{id}/cue-check {note}` (suggestion `{action: add|update|none, noteId?, text?, section?}`; 503 without `GROQ_API_KEY`) |
 | Workouts | `GET /workouts?limit=` (newest first) · `GET/PUT/DELETE /workouts/{id}` (PUT keeps id, date, source; label recomputed) |
 | In progress | `GET /active` · `POST /active {startedAt}` (keeps an existing one) · `PUT /active` (autosave; startedAt fixed) · `POST /active/finish {endedAt}` · `DELETE /active` |
 | Photos | `POST /photos` (multipart photo + thumb, resized on the phone) · `GET /photos/{space}/{id}[?size=thumb]` |
@@ -297,7 +304,9 @@ cd backend && uv run python ../scripts/import_whatsapp.py load --local # stack m
   tests with made-up lines); parsed workouts go straight into DynamoDB, never into a seed file in
   git. The chat also has non-training messages (to-do lists, links, a birthday list): the
   importer drops them, and they must never be quoted in commits, PRs or docs.
-- `backend/.env` (git-ignored) will hold `PASSCODE_HASH` and `SESSION_SECRET` (stage 5a). **Never
+- `backend/.env` (git-ignored) holds `GROQ_API_KEY` (the cue check; Compose reads it when the `api`
+  container is created, so run `docker compose up -d api` after adding it) and will hold
+  `PASSCODE_HASH` and `SESSION_SECRET` (stage 5a). **Never
   print, cat or paste secrets.** Never ask Sergio to paste a key or passcode into chat; they run
   the scripts or edit `.env` themself. On AWS they are SSM SecureStrings under `/fit/`.
 - AWS access: profile **`gym`** (IAM user `gym-deployer`, AdministratorAccess, same account
