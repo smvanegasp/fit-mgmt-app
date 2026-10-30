@@ -67,7 +67,8 @@ A mobile-first web app where Sergio logs their gym workouts and sees their progr
   needs them (credentials, exports, DNS).
 - **UI style:** no emojis anywhere. Phosphor icons (`@phosphor-icons/react`, `weight="fill"`).
   Add an `InfoTip` (copy from the pantry) wherever a feature isn't obvious. Black/charcoal dark
-  mode. Emerald accent.
+  mode. Blue accent (Tailwind blue, mirrored in `index.css` for dark mode; Sergio, 2026-10-30, after
+  trying red), so it looks different from the pantry. Red is only for errors and delete.
 - **Python** with **uv** (`uv sync`, `uv run pytest`, `uv add`). **Node 22+** (Vite 8).
 
 ## 3. Status
@@ -75,9 +76,10 @@ A mobile-first web app where Sergio logs their gym workouts and sees their progr
 | Stage | What | PR |
 |---|---|---|
 | 0 | Skeleton: FastAPI + React/Vite, Docker Compose, CI (tests, build, Docker, secret scan), deploy workflow (off until 6b), Dependabot, docs | #1 |
-| 1 | WhatsApp import: exercise catalog, chat parser, private corrections, review page, loader into DynamoDB + S3 (local), S3Mock in Compose | open |
+| 1 | WhatsApp import: exercise catalog, chat parser, private corrections, review page, loader into DynamoDB + S3 (local), S3Mock in Compose | #4 |
+| 2 | Train tab: day type + stopwatch with laps (a set ends a lap), picker (usual exercises for the day, category chips), English bullet cues, last time, target game (3 in a row, a miss takes one away), setup photos, "Last time" with sets and drop set apart, best drop set, set logger, drop sets, climbing and runs, notes and photos, finish / discard (no rest timer: Sergio times rest with laps), edit or delete past workouts | open |
 
-Next: **stage 2, logging** (Train tab). Full plan in [docs/BACKLOG.md](docs/BACKLOG.md).
+Next: **stage 3, History** (list by week, workout detail, exercise pages). Full plan in [docs/BACKLOG.md](docs/BACKLOG.md).
 
 ## 4. Architecture
 
@@ -120,6 +122,12 @@ backend/
   app/ssm.py                SSM /fit/* -> environment variables at startup (SSM_PREFIX)
   app/db.py                 DynamoDB single table: put/get/query/delete, batches; Decimal <-> int/float
   app/storage.py            S3 photos (copied from the pantry)
+  app/models.py             Pydantic shapes: SetData, Entry, Problem, Segment, WorkoutBody, Workout,
+                            Exercise, Note, Scheme/Streak, ExerciseSummary
+  app/history.py            last session per exercise, main-set scheme, streak, usage counts
+  app/labels.py             session labels ("Push", "Squat + Climb"); shared with the importer
+  app/space.py              current_space(): "main" until stage 5a (then the pantry version)
+  app/routers/              exercises (list, create, summary, cues), workouts (saved + ACTIVE), photos
   app/catalog.py            built-in exercise catalog: English names, group, load type, bar
                             weight, aliases (Spanish, shorthand, typos)
   app/importer/             chat.py (export -> messages), parse.py (messages -> workouts, notes,
@@ -128,19 +136,29 @@ backend/
 frontend/
   src/App.tsx               tabs Train / History / Progress / Settings
   src/api.ts, hooks.ts      API client and TanStack Query hooks
-  src/pages/                TrainPage, HistoryPage, ProgressPage, SettingsPage
-  src/components/           ComingSoon (placeholder)
-  src/lib/                  pure logic + tests: duration (stopwatch text), theme
+  src/pages/                TrainPage (idle: next up, start, recent; active workout; edit saved),
+                            HistoryPage, ProgressPage, SettingsPage
+  src/components/           WorkoutEditor, EntryCard (set logger, drop sets, climbing, run, notes),
+                            Cues (checklist + manage sheet), ExercisePicker, Stepper,
+                            Photos, BottomSheet, InfoTip (both from the pantry), ComingSoon
+  src/lib/                  pure logic + tests: sets (summaries, next set, ladder, volume, next up),
+                            time (local ISO), laps, duration, search (fuzzy), images, theme
 ```
 
 ### Data model (DynamoDB, one table `fit`, `pk`/`sk`)
 
+- **Day types** (Sergio, 2026-10-30): **Push, Legs, Pull, Cardio**. Squat and deadlift share Legs
+  (heavy squat + lighter deadlift, alternating); front lever and climbing are Pull; cardio is once a
+  week (Peloton run or walk). `labels.py`: new sessions use these names; imported sessions keep
+  theirs (Squat, Deadlift, Front lever, Climb, Run) and map to today's types via `day_type`.
 - `pk = SPACE#main` is Sergio's log; `SPACE#sb-<unixExpiry>-<hex>` is a guest sandbox (stage 5a;
   rows carry `ttl`).
 - **`EXERCISE#<id>`**: `name` (English), `group` (push, pull, legs, posterior, core, skill,
   cardio, climbing), `load`, `measure` (reps, seconds, run, climb), `barLb`, `aliases`, `source`
   (`catalog` from `app/catalog.py`, later `app` for ones Sergio creates).
-- **`WORKOUT#<yyyy-mm-dd>#<id>`**: one session. `id` (`<date>-<n>`), `startedAt`/`endedAt` (local
+- **`WORKOUT#<yyyy-mm-dd>#<id>`**: one session. `plan` (day type chosen at the start), `laps`
+  `[{at, label?}]` (stopwatch laps; logging a set ends one, labeled "Set 2 · Bench press"),
+  `id` (`<date>-<n>`), `startedAt`/`endedAt` (local
   time, no zone), `durationEstimated` (true for imports: first to last message), `label` ("Push",
   "Squat + Climb"...), `notes`, `photos` `[{key, caption}]`, `source` (`whatsapp` / `app`), and
   `entries` in order, each `{exerciseId, sets?, targets?, notes?, photos?, problems?, segments?,
@@ -150,12 +168,18 @@ frontend/
     `each`, and the **added** weight for `added` exercises (weighted dips and chin-ups; Sergio
     tracks only the added weight). `drop` marks drop-set ladders (90-70-45-25-0); `detail`
     describes complexes ("3 pull + 3 muscle + 3 dip + 3 pull") and ladders.
-  - **targets** `[{text, times?, kind?}]`: the previous goal Sergio writes in parentheses,
-    "(5x5 185 lbs 2 veces)" = hit twice so far. This is his progression system: repeat a target
-    until hit a few times, then add weight. Stage 2 should show "target, hit N times" while logging.
+  - **targets** `[{text, times?, kind?}]`: the previous goal Sergio wrote in parentheses,
+    "(5x5 185 lbs 2 veces)" = reached twice so far (imported sessions only).
+  - **The target game** (`app/history.py`, Sergio 2026-10-30): the target is the working sets at
+    a session's top weight; a session that reaches it (same total reps at that weight or more) adds
+    one, a miss takes one away (not a reset); 3 means go up. More weight or a small deload starts a
+    new target; a session >10% lighter is a light or comeback day and doesn't count (for up to 60
+    days); after 3, more reps at the same weight is the next target. Replayed over the whole
+    history; where the log has his written target for that weight, it syncs to his count first.
   - **problems** (bouldering) `[{grade, color?, result: sent|attempted, count?, attempts?, note?}]`;
     **segments** (treadmill) `[{mph, minutes}]` plus `distanceMi`.
-- **`NOTE#<exerciseId>#<date>#<id>`**: the technique log. `text`, `date` (first written),
+- **`NOTE#<exerciseId>#<date>#<id>`**: the technique log. `text` (English), `original` (what
+  Sergio wrote, when translated), `date` (first written),
   `lastSeen`, `sessions` (how many workouts repeat it). Imported cues are the ones written in 2+
   sessions plus hand-picked ones; per-session comments stay on the workout entry.
 - **`BODY#<date>`** `{weightLb}` · **`ROUTINE#<from>#<id>`** `{name, from, to, days[], notes,
@@ -171,7 +195,8 @@ frontend/
 
 - Source: Sergio's self-chat "Mi grupo", exported with media (iPhone zip), unzipped to
   `private/export/`. Training starts 2025-09-05; ~180 sessions, ~1,800 sets, 14 months.
-- `parse` applies `private/corrections.json` (git-ignored): `start`, per-message rewrites keyed by
+- `parse` translates every shown text (notes, captions, climbing notes) to English with
+  `private/note_translations.json`, and applies `private/corrections.json` (git-ignored): `start`, per-message rewrites keyed by
   `"YYYY-MM-DD HH:MM:SS"` (string = new text, `null` = drop, `{entries: [...]}` = given
   directly), `photos` (drop / attach), `textFixes` (typo fixes applied to every message first), `technique` (extra cues), `notTechnique` (repeated
   comments that aren't cues), `routines` (the eras, written by the agent from the chat and the
@@ -186,6 +211,14 @@ frontend/
 | Area | Endpoints |
 |---|---|
 | Health | `GET /health` |
+| Day types | `GET /session-types` (label, usual exercises in order, last date, sessions) |
+| Exercises | `GET /exercises` (catalog + custom, with `lastDone`, `timesDone`) · `POST /exercises` · `GET /exercises/{id}/summary[?exclude=workoutId]` (cues, last, streak = target game, photos, bestDrop) |
+| Cues | `POST /exercises/{id}/notes {text, date}` · `PATCH /exercises/{id}/notes/{noteId} {text?, hidden?}` · `DELETE` (same path) |
+| Workouts | `GET /workouts?limit=` (newest first) · `GET/PUT/DELETE /workouts/{id}` (PUT keeps id, date, source; label recomputed) |
+| In progress | `GET /active` · `POST /active {startedAt}` (keeps an existing one) · `PUT /active` (autosave; startedAt fixed) · `POST /active/finish {endedAt}` · `DELETE /active` |
+| Photos | `POST /photos` (multipart photo + thumb, resized on the phone) · `GET /photos/{space}/{id}[?size=thumb]` |
+
+Times are the phone local time without a zone (`2026-10-30T18:00:00`), like the import.
 
 ## 5. Run, test, preview
 

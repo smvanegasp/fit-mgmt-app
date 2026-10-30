@@ -15,7 +15,7 @@ const TABS: readonly { id: "train" | "history" | "progress" | "settings"; label:
 
 type Tab = (typeof TABS)[number]["id"];
 
-const PAGES: Record<Tab, () => React.JSX.Element> = {
+const PAGES: Record<Tab, () => React.JSX.Element | null> = {
   train: TrainPage,
   history: HistoryPage,
   progress: ProgressPage,
@@ -43,7 +43,7 @@ export function App() {
               onClick={() => setTab(t.id)}
               aria-current={tab === t.id ? "page" : undefined}
               className={`flex flex-col items-center py-2 text-xs font-medium ${
-                tab === t.id ? "text-emerald-700" : "text-stone-500"
+                tab === t.id ? "text-blue-700" : "text-stone-500"
               }`}
             >
               <t.icon size={24} weight="fill" aria-hidden />
