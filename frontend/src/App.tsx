@@ -9,7 +9,7 @@ import { DESKTOP, useRefreshSession, useSession } from "./hooks";
 import { HistoryPage } from "./pages/HistoryPage";
 import { ProgressPage } from "./pages/ProgressPage";
 import { SettingsPage } from "./pages/SettingsPage";
-import { StartPage } from "./pages/StartPage";
+import { WelcomePage } from "./pages/WelcomePage";
 import { TrainPage } from "./pages/TrainPage";
 
 const TABS: readonly { id: Tab; label: string; icon: Icon }[] = [
@@ -46,7 +46,7 @@ export function App() {
 
   if (session.isLoading) return null;
   if (session.error) return <p className="p-6 text-center text-red-600">Couldn't reach the app: {session.error.message}</p>;
-  if (!session.data?.role) return <StartPage />;
+  if (!session.data?.role) return <WelcomePage />;
   return <MainApp session={session.data} />;
 }
 

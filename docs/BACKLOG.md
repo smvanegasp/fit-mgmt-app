@@ -26,8 +26,18 @@ Sergio merges.
 
 ## Now
 
-Stages 0-4c merged (#1, #3-#11). **Stage 5a (guests and passcode) is in review** on
-`stage-5a-guests`: Sergio sets a passcode and tests. Then 5b welcome page, 6a-6c AWS, 7 production import.
+Stages 0-5a merged (#1, #3-#12). **Stage 5b (welcome page) is in review** on `stage-5b-welcome`:
+Sergio approves the note. Then 6a-6c AWS, 7 production import.
+
+## Stage 5b: what's in it
+
+- **Welcome page** (adapted from the pantry) instead of the plain start screen: Sergio's photo and a
+  short note, three looping clips (log a workout, the progress, history by month), Continue (a copy
+  of the log) and I'm Sergio. Fits a 390x844 phone without scrolling; on computers, two columns
+  with the clips side by side.
+- **Clips** recorded with Playwright in sample demos (`npm run record-tutorials`, ~460 KB in all).
+  The sample log gained deadlifts.
+- **App icon** (the barbell on blue, maskable) and `manifest.json` for Add to Home Screen.
 
 ## Stage 5a: what's in it
 
@@ -131,10 +141,10 @@ Stages 0-4c merged (#1, #3-#11). **Stage 5a (guests and passcode) is in review**
   files) in `private/` at the repo root. Android caps exports with media at the most recent
   ~10,000 messages; if the chat is longer, also export **Without media** for the full text.
 - Done: Groq API key in `backend/.env` (2026-10-30).
-- Now: the **owner passcode**: `cd backend && uv run python ../scripts/set_passcode.py` (Sergio types
-  6 digits, hidden), then `docker compose up -d api`.
-- Later: alert email (6a), passcode via `set_passcode.py` (5a), Hostinger access (6c), welcome
-  note text and photo (5b).
+- Done: owner passcode (2026-10-30).
+- Now: OK or rewrite of the **welcome note** (5b); the photo is the pantry's for now (a gym photo can
+  replace `frontend/public/sergio.jpg`).
+- Later: alert email (6a), Hostinger access (6c).
 
 ## Feedback round 1 on stage 2 (Sergio, 2026-10-30), done on the same PR
 

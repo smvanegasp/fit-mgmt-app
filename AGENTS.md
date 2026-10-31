@@ -97,15 +97,17 @@ A mobile-first web app where Sergio logs their gym workouts and sees their progr
 | 4a | Progress: one consistency view (weeks as rows of days colored by day type, count per week, streak of weeks with 3+), the five main lifts as progression ladders (set glyphs: columns = sets, squares = reps); full ladder on every exercise page; one home per piece of information, linked from the rest | #8 |
 | 4b | Routine timeline (eras, sessions, days, notes, photo) on Progress; drop sets (total reps per ladder, best in full) on the dips and chin-ups pages; climbing grade pyramid and hardest send on the bouldering page, with a card on Progress | #9 |
 | 4c | Desktop (from 1024px): sidebar, opens on Progress as a dashboard (streak + year heatmap, lifts and climbing in a grid, routine next to the last workouts), workout and exercise pages as a right-side panel, History two columns; Train and Settings stay one column | #10, #11 |
-| 5a | Owner passcode login (6 digits, 3 tries then a pause, 90-day cookie) and guest demos (a private 24h copy of the log without the workout in progress, or a sample log when the owner has none), ported from the pantry; start screen, demo banner, log out; the cue check is off for guests | open |
+| 5a | Owner passcode login (6 digits, 3 tries then a pause, 90-day cookie) and guest demos (a private 24h copy of the log without the workout in progress, or a sample log when the owner has none), ported from the pantry; start screen, demo banner, log out; the cue check is off for guests | #12 |
+| 5b | Welcome page (Sergio's photo and note, three tutorial clips recorded in a sample demo, Continue / I'm Sergio; two columns on computers), app icon and manifest (Add to Home Screen) | open |
 
-**Where things stand (2026-10-30):** stages 0-4c are merged; stage 5a (guests and passcode) is in review on `stage-5a-guests`. The app runs **only
+**Where things stand (2026-10-30):** stages 0-5a are merged; stage 5b (welcome page) is in review on `stage-5b-welcome`. The app runs **only
 locally** (Docker + ngrok); nothing is on AWS yet (stages 6a-6c), so the WhatsApp history is only in
-the local DynamoDB (`load --local`), and anything logged in the app now stays local. Sergio tests on
+the local DynamoDB (`load --local`), and anything logged in the app now stays local. Sergio logs in
+with their passcode (set 2026-10-30). Sergio tests on
 their phone through the ngrok URL and may be using the local app while the agent works.
 
-**Next: Sergio's test of 5a, then stage 5b** (the welcome page with Sergio's note and photo, PWA
-icons; see [docs/BACKLOG.md](docs/BACKLOG.md)). Load the `dataviz` skill
+**Next: Sergio's OK on the welcome note, then stage 6a** (AWS with Terraform on profile `gym`; see
+[docs/BACKLOG.md](docs/BACKLOG.md); applies need Sergio's OK). Load the `dataviz` skill
 before writing chart code. Visuals are plain SVG/HTML in `components/Progression.tsx` (no chart
 library). Day-type colors are CSS variables in `index.css` (`--chart-push/legs/pull/cardio`),
 checked with the dataviz palette validator in both modes.
@@ -188,7 +190,8 @@ frontend/
                             Cues (checklist + manage sheet), ExercisePicker, Stepper,
                             Photos, BottomSheet, InfoTip (both from the pantry), ComingSoon,
                             Progression (SetGlyph, GameDots, ProgressionLadder, LiftCard, day-type
-                            colors), Nav (useGoTo: switch tabs from a page)
+                            colors), Nav (useGoTo: switch tabs from a page), DemoBanner, PasscodeSheet,
+                            TutorialStrip (from the pantry)
   src/lib/                  pure logic + tests: sets (summaries, next set, ladder, volume, next up),
                             time (local ISO), weeks (week grouping, long dates), laps, duration, search (fuzzy), images, theme,
                             progress (week rows and counts, streaks, step dates), cues (sections and order),
@@ -286,6 +289,8 @@ docker compose up -d --build          # app at http://localhost:5180 (API docs :
 ngrok http 5180                       # phone URL (no password, by choice; see 6)
 cd backend && uv run pytest -q
 cd frontend && npm test && npm run build
+cd frontend && npm run record-tutorials     # re-record the welcome clips (stack up, ffmpeg; sample demos)
+cd frontend && node scripts/make-icons.mjs  # app icons from public/favicon.svg
 cd backend && uv run python ../scripts/import_whatsapp.py parse        # -> private/import/
 cd backend && uv run python ../scripts/import_whatsapp.py load --local # stack must be up
 ```
