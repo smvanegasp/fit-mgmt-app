@@ -52,4 +52,14 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-  # A terraform fmt/validate job joins in stage 6a, when infra/ exists.
+  terraform:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: hashicorp/setup-terraform@v4
+      - run: terraform fmt -check -recursive infra
+      # No backend or AWS credentials in CI: this only checks the configuration.
+      - run: terraform -chdir=infra init -backend=false -input=false
+      - run: terraform -chdir=infra validate
+      - run: terraform -chdir=infra/bootstrap init -backend=false -input=false
+      - run: terraform -chdir=infra/bootstrap validate

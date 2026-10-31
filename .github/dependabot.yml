@@ -23,4 +23,7 @@ updates:
     directory: /
     schedule: { interval: weekly }
     groups: { actions: { patterns: ["*"], update-types: [minor, patch] } }
-  # A terraform entry for /infra joins in stage 6a.
+  - package-ecosystem: terraform
+    directory: /infra
+    schedule: { interval: weekly }
+    groups: { terraform: { patterns: ["*"], update-types: [minor, patch] } }
