@@ -12,8 +12,9 @@ real training log.
 
 Built in stages alongside its sibling project, the
 [pantry app](https://github.com/smvanegasp/pantry-mgmt-app), and shares its architecture.
-**Status:** logging, history, progress and the desktop dashboard are built (stages 0-4c); it runs
-locally until the AWS stages. The full plan is in [docs/BACKLOG.md](docs/BACKLOG.md).
+**Status:** logging, history, progress, the desktop dashboard, guest demos and the welcome page are
+built (stages 0-5b), and the app is deployed on AWS (stage 6a); the custom domain and the history
+import come next. The full plan is in [docs/BACKLOG.md](docs/BACKLOG.md).
 
 ## Stack
 
@@ -23,8 +24,8 @@ locally until the AWS stages. The full plan is in [docs/BACKLOG.md](docs/BACKLOG
 | Backend | Python 3.12, FastAPI, boto3 (managed with uv) |
 | Data | DynamoDB, single table, partitioned by space (owner log or guest sandbox) |
 | Local dev | Docker Compose: API, DynamoDB Local, Vite dev server |
-| Hosting (planned) | AWS: CloudFront, S3, API Gateway, Lambda (same Docker image), DynamoDB, SSM |
-| Infra (planned) | Terraform |
+| Hosting | AWS: CloudFront, S3, API Gateway, Lambda (same Docker image), DynamoDB, SSM, CloudWatch alarms |
+| Infra | Terraform (`infra/`, remote state in S3) |
 | CI/CD | GitHub Actions: tests, build, Docker build, secret scan; deploy on merge via OIDC |
 
 ## How changes ship

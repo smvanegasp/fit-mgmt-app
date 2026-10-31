@@ -98,15 +98,16 @@ A mobile-first web app where Sergio logs their gym workouts and sees their progr
 | 4b | Routine timeline (eras, sessions, days, notes, photo) on Progress; drop sets (total reps per ladder, best in full) on the dips and chin-ups pages; climbing grade pyramid and hardest send on the bouldering page, with a card on Progress | #9 |
 | 4c | Desktop (from 1024px): sidebar, opens on Progress as a dashboard (streak + year heatmap, lifts and climbing in a grid, routine next to the last workouts), workout and exercise pages as a right-side panel, History two columns; Train and Settings stay one column | #10, #11 |
 | 5a | Owner passcode login (6 digits, 3 tries then a pause, 90-day cookie) and guest demos (a private 24h copy of the log without the workout in progress, or a sample log when the owner has none), ported from the pantry; start screen, demo banner, log out; the cue check is off for guests | #12 |
-| 5b | Welcome page (Sergio's photo and note, three tutorial clips recorded in a sample demo, Continue / I'm Sergio; two columns on computers), app icon and manifest (Add to Home Screen) | open |
+| 5b | Welcome page (Sergio's photo and note, three tutorial clips recorded in a sample demo, Continue / I'm Sergio; two columns on computers), app icon and manifest (Add to Home Screen) | #13 |
+| 6a | AWS with Terraform (profile `gym`, all `fit-*`): DynamoDB, photo and web buckets, Lambda + HTTP API, CloudFront, SSM secrets, email alarms; terraform CI job, Dependabot | open |
 
-**Where things stand (2026-10-30):** stages 0-5a are merged; stage 5b (welcome page) is in review on `stage-5b-welcome`. The app runs **only
-locally** (Docker + ngrok); nothing is on AWS yet (stages 6a-6c), so the WhatsApp history is only in
+**Where things stand (2026-10-30):** stages 0-5b are merged; stage 6a (AWS) is in review on `stage-6a-aws`, and the app is deployed on AWS
+(section 8) with an empty database (demos show the sample log). Sergio's real log is still only in
 the local DynamoDB (`load --local`), and anything logged in the app now stays local. Sergio logs in
 with their passcode (set 2026-10-30). Sergio tests on
 their phone through the ngrok URL and may be using the local app while the agent works.
 
-**Next: stage 6a** (AWS with Terraform on profile `gym`; see
+**Next: stage 6b** (GitHub OIDC deploy role, so merges deploy; see section 8 and
 [docs/BACKLOG.md](docs/BACKLOG.md); applies need Sergio's OK). Load the `dataviz` skill
 before writing chart code. Visuals are plain SVG/HTML in `components/Progression.tsx` (no chart
 library). Day-type colors are CSS variables in `index.css` (`--chart-push/legs/pull/cardio`),
@@ -360,9 +361,26 @@ cd backend && uv run python ../scripts/import_whatsapp.py load --local # stack m
 
 ## 8. AWS deployment (stage 6)
 
-Not deployed yet. The plan mirrors the pantry: Terraform in `infra/` (state bucket via
-`infra/bootstrap/`), Lambda container + HTTP API + CloudFront + S3 + DynamoDB `fit` (PITR,
-deletion protection) + SSM `/fit/` + SNS alarms, GitHub OIDC deploy role `fit-github-deploy`,
-ACM certificate for `gym.sergiovanegas.com` with two CNAMEs at Hostinger. The agent may run
-`terraform plan`; **applies need Sergio's OK**. After 6a/6b, set the repo variables
-`DEPLOY_ENABLED=true`, `DISTRIBUTION_ID` and `SITE_URL` to turn on `deploy.yml`.
+Live at **https://dj3f8i20u01kh.cloudfront.net** (custom domain in 6c). Deployed in stage 6a
+(2026-10-30) on profile `gym` (account 816940506502, same as the pantry but a
+fully separate stack: everything is named `fit-*`). Terraform in `infra/`; its state lives in
+`fit-tfstate-816940506502` (created by `infra/bootstrap/`, whose own small state stays local and
+git-ignored). The alert email is in the git-ignored `infra/terraform.tfvars` (never in the repo).
+
+- **What runs:** CloudFront (`/*` from the private web bucket `fit-web-<account>`, `/api/*` to the
+  HTTP API with the `X-Origin-Verify` secret) -> Lambda `fit-api` (the `backend/Dockerfile` lambda
+  stage, image in ECR `fit-api`, last 5 kept) -> DynamoDB `fit` (PITR, deletion protection, TTL)
+  and the photos bucket `fit-photos-<account>` (demo photos expire after 2 days). Secrets are SSM
+  SecureStrings `/fit/SESSION_SECRET`, `/fit/PASSCODE_HASH`, `/fit/GROQ_API_KEY`
+  (`scripts/set_aws_secrets.py`; the session secret is generated once and never overwritten).
+- **Alarms** (SNS `fit-alerts` -> email, after Sergio confirms the subscription): a wrong owner
+  passcode, the cue check failing 3+ times in 15 min ("Cue check failed" log line), API 5xx,
+  Lambda errors. Keep those log lines stable.
+- **Deploy by hand:** `scripts/deploy.sh` (image -> ECR, `terraform apply`, frontend -> S3,
+  invalidation). The agent may run `terraform plan`; **applies need Sergio's OK.**
+- **Next:** 6b, the GitHub OIDC deploy role `fit-github-deploy`. The account already has GitHub's
+  OIDC provider (the pantry created it, one per account), so read it with a data source instead of
+  creating it. Then set the repo variables `DEPLOY_ENABLED=true`, `DISTRIBUTION_ID` and `SITE_URL`
+  to turn on `deploy.yml`. 6c: ACM certificate for `gym.sergiovanegas.com` with two CNAMEs at
+  Hostinger.
+- The production table starts empty, so demos use the sample log until the stage 7 import.

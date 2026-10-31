@@ -26,8 +26,19 @@ Sergio merges.
 
 ## Now
 
-Stages 0-5a merged (#1, #3-#12). **Stage 5b (welcome page) is in review** on `stage-5b-welcome`:
-Sergio's feedback applied (name "Gym", their photo and note). Then 6a-6c AWS, 7 production import.
+Stages 0-5b merged (#1, #3-#13). **Stage 6a (AWS) is deployed** and in review on `stage-6a-aws`:
+https://dj3f8i20u01kh.cloudfront.net (empty database: demos show the sample log). Then 6b (merges
+deploy), 6c (gym.sergiovanegas.com), 7 production import.
+
+## Stage 6a: what's in it (deployed 2026-10-30)
+
+- Terraform ported from the pantry, all `fit-*` on profile `gym`: state bucket (`infra/bootstrap`),
+  DynamoDB `fit` (PITR, deletion protection, TTL), photo and web buckets, ECR + Lambda `fit-api`
+  behind an HTTP API, CloudFront (origin secret; direct API Gateway calls get 403), SSM `/fit/`
+  secrets, SNS email alarms (wrong passcode, cue check failing, API 5xx, Lambda errors).
+- `scripts/deploy.sh` and `scripts/set_aws_secrets.py`; terraform fmt/validate in CI; Dependabot.
+- Checked live: health, 401 without a session, API docs hidden, a sample demo, the welcome page
+  and clips.
 
 ## Feedback round 1 on stage 5b (Sergio, 2026-10-30)
 
@@ -152,7 +163,9 @@ Sergio's feedback applied (name "Gym", their photo and note). Then 6a-6c AWS, 7 
 - Done: owner passcode (2026-10-30).
 - Done: welcome note and photo (5b, 2026-10-30); alert email for 6a (given in chat; it goes only in the
   git-ignored `infra/terraform.tfvars`, never in the repo).
-- Later: OK on the 6a Terraform plan before any apply, Hostinger access (6c).
+- Done: OK on the 6a deploy (2026-10-30).
+- Now: **confirm the alarm email** (AWS sent a "Subscription Confirmation" link).
+- Later: OK on the 6b apply (deploy role), Hostinger access (6c).
 
 ## Feedback round 1 on stage 2 (Sergio, 2026-10-30), done on the same PR
 
