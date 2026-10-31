@@ -6,6 +6,10 @@
     <meta name="theme-color" content="#fafaf9" />
     <title>Gym</title>
     <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <!-- App icon and "Add to Home Screen". The manifest is .json so S3 serves it as JSON. -->
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+    <link rel="manifest" href="/manifest.json" />
+    <meta name="apple-mobile-web-app-title" content="Gym" />
     <script>
       // Apply dark mode before the first paint (no white flash). Same logic as src/lib/theme.ts.
       try {

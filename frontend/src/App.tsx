@@ -9,7 +9,7 @@ import { DESKTOP, useRefreshSession, useSession } from "./hooks";
 import { HistoryPage } from "./pages/HistoryPage";
 import { ProgressPage } from "./pages/ProgressPage";
 import { SettingsPage } from "./pages/SettingsPage";
-import { StartPage } from "./pages/StartPage";
+import { WelcomePage } from "./pages/WelcomePage";
 import { TrainPage } from "./pages/TrainPage";
 
 const TABS: readonly { id: Tab; label: string; icon: Icon }[] = [
@@ -46,7 +46,7 @@ export function App() {
 
   if (session.isLoading) return null;
   if (session.error) return <p className="p-6 text-center text-red-600">Couldn't reach the app: {session.error.message}</p>;
-  if (!session.data?.role) return <StartPage />;
+  if (!session.data?.role) return <WelcomePage />;
   return <MainApp session={session.data} />;
 }
 
@@ -71,7 +71,7 @@ function MainApp({ session }: { session: SessionInfo }) {
 
           {/* Bottom tabs on phones and tablets; a sidebar on computers. */}
           <nav className="fixed inset-x-0 bottom-0 z-30 border-t border-stone-200 bg-white pb-[env(safe-area-inset-bottom)] lg:inset-y-0 lg:right-auto lg:w-56 lg:border-t-0 lg:border-r lg:pb-0">
-            <div className="hidden px-6 pt-8 pb-6 text-lg font-semibold lg:block">Gym tracker</div>
+            <div className="hidden px-6 pt-8 pb-6 text-lg font-semibold lg:block">Gym</div>
             <div className="mx-auto grid max-w-lg grid-cols-4 lg:mx-0 lg:flex lg:max-w-none lg:flex-col lg:gap-1 lg:px-3">
               {TABS.map((t) => (
                 <button

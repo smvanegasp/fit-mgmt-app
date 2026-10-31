@@ -26,8 +26,26 @@ Sergio merges.
 
 ## Now
 
-Stages 0-4c merged (#1, #3-#11). **Stage 5a (guests and passcode) is in review** on
-`stage-5a-guests`: Sergio sets a passcode and tests. Then 5b welcome page, 6a-6c AWS, 7 production import.
+Stages 0-5a merged (#1, #3-#12). **Stage 5b (welcome page) is in review** on `stage-5b-welcome`:
+Sergio's feedback applied (name "Gym", their photo and note). Then 6a-6c AWS, 7 production import.
+
+## Feedback round 1 on stage 5b (Sergio, 2026-10-30)
+
+| What Sergio said | Done |
+|---|---|
+| Call it just "Gym" | Welcome page, sidebar, browser title and the installed app name |
+| Use the photo in private/ | Cropped around the face, 256 px, metadata (location) stripped |
+| The note: 12 years of calisthenics and weightlifting, then the last year logged | Rewritten in their words; the clips shrink a little so the page still fits a phone |
+
+## Stage 5b: what's in it
+
+- **Welcome page** (adapted from the pantry) instead of the plain start screen: Sergio's photo and a
+  short note, three looping clips (log a workout, the progress, history by month), Continue (a copy
+  of the log) and I'm Sergio. Fits a 390x844 phone without scrolling; on computers, two columns
+  with the clips side by side.
+- **Clips** recorded with Playwright in sample demos (`npm run record-tutorials`, ~460 KB in all).
+  The sample log gained deadlifts.
+- **App icon** (the barbell on blue, maskable) and `manifest.json` for Add to Home Screen.
 
 ## Stage 5a: what's in it
 
@@ -131,10 +149,10 @@ Stages 0-4c merged (#1, #3-#11). **Stage 5a (guests and passcode) is in review**
   files) in `private/` at the repo root. Android caps exports with media at the most recent
   ~10,000 messages; if the chat is longer, also export **Without media** for the full text.
 - Done: Groq API key in `backend/.env` (2026-10-30).
-- Now: the **owner passcode**: `cd backend && uv run python ../scripts/set_passcode.py` (Sergio types
-  6 digits, hidden), then `docker compose up -d api`.
-- Later: alert email (6a), passcode via `set_passcode.py` (5a), Hostinger access (6c), welcome
-  note text and photo (5b).
+- Done: owner passcode (2026-10-30).
+- Done: welcome note and photo (5b, 2026-10-30); alert email for 6a (given in chat; it goes only in the
+  git-ignored `infra/terraform.tfvars`, never in the repo).
+- Later: OK on the 6a Terraform plan before any apply, Hostinger access (6c).
 
 ## Feedback round 1 on stage 2 (Sergio, 2026-10-30), done on the same PR
 

@@ -12,7 +12,7 @@ WEEKS = 8
 # as written, or None for body weight).
 PLAN = [
     (0, "Push", [("dips", 4, 4, 70), ("bench-press", 5, 3, 95)]),
-    (2, "Legs", [("squat", 5, 5, 135), ("rdl", 3, 8, 95)]),
+    (2, "Legs", [("squat", 5, 5, 135), ("deadlift", 3, 3, 135), ("rdl", 3, 8, 95)]),
     (4, "Pull", [("chin-ups", 4, 3, 25), ("pull-ups", 3, 8, None)]),
 ]
 CUES = {
@@ -50,7 +50,7 @@ def sample_rows(today: date) -> dict[str, dict[str, Any]]:
             }
     rows[f"ROUTINE#{first}#sample"] = {
         "id": "sample", "name": "3-day split", "from": first, "to": None,
-        "days": ["Push: weighted dips, bench press", "Legs: squat, Romanian deadlift", "Pull: weighted chin-ups, pull-ups"],
+        "days": ["Push: weighted dips, bench press", "Legs: squat, deadlift, Romanian deadlift", "Pull: weighted chin-ups, pull-ups"],
         "notes": "Up 5 lb after reaching a target three sessions in a row.", "source": "app",
     }
     return rows
