@@ -26,9 +26,17 @@ Sergio merges.
 
 ## Now
 
-Stages 0-6a merged (#1, #3-#14), live at https://dj3f8i20u01kh.cloudfront.net (empty database:
-demos show the sample log). **Stage 6b (merges deploy) is on** and in review on `stage-6b-deploy`.
-Then 6c (gym.sergiovanegas.com), 7 production import.
+Stages 0-6b merged (#1, #3-#15), live at **https://gym.sergiovanegas.com** (empty database: demos
+show the sample log). **Stage 6c (the domain)** is done and in review on `stage-6c-domain`. Next:
+stage 7, the production import of Sergio's history.
+
+## Stage 6c: what's in it (2026-10-31)
+
+- `infra/domain.tf`: an ACM certificate for gym.sergiovanegas.com, validated by DNS, and CloudFront
+  serving the domain (in place, no downtime). Sergio added two CNAMEs at Hostinger (validation and
+  `gym` -> CloudFront). Applied with Sergio's OK: 2 additions, 1 in-place change.
+- `SITE_URL` (the deploy check) is now the domain. Checked: HTTPS, certificate until May 2027 (renews
+  itself), security headers, the cloudfront.net address still works.
 
 ## Stage 6b: what's in it (2026-10-30)
 
@@ -175,7 +183,8 @@ Then 6c (gym.sergiovanegas.com), 7 production import.
 - Done: OK on the 6a deploy (2026-10-30).
 - Now: **confirm the alarm email** (AWS sent a "Subscription Confirmation" link).
 - Done: OK on the 6b apply (2026-10-30).
-- Next (6c): two CNAME records at Hostinger for gym.sergiovanegas.com (values come from Terraform).
+- Done: the two CNAMEs at Hostinger (2026-10-31); keep the validation one for renewals.
+- Next (7): OK to load the history into the AWS table (after a dry run).
 
 ## Feedback round 1 on stage 2 (Sergio, 2026-10-30), done on the same PR
 
