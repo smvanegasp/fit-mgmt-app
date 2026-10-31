@@ -79,6 +79,9 @@ A mobile-first web app where Sergio logs their gym workouts and sees their progr
   phone. Browser checks that write (start/finish/discard a workout, rename, merge) can collide with
   them: check `GET /api/active` is null first, keep write flows short and discard what you start, or
   stick to read-only checks (and count write requests). Never discard a workout you didn't start.
+  Since 5a every request needs a session: run browser checks in a **sample demo**
+  (`fetch('/api/session/guest/reset?sample=true', {method: 'POST'})` in the test browser), which
+  never holds or touches the real log. Never log in as the owner from the test browser.
   Use exact Playwright selectors: a loose `/Push/` once matched "Start Push workout".
 - **Feedback rounds:** Sergio reviews on their phone and sends lists of changes; small ones go on the
   open PR branch, logged in the backlog as "Feedback round N" tables.
@@ -93,15 +96,16 @@ A mobile-first web app where Sergio logs their gym workouts and sees their progr
 | 3 | History: one workout per day, grouped by week with day-type filters; workout detail (read, then edit) with estimated times; exercise pages (target, best set, best drop, cues, photos, every session); rename and merge exercises; everything in English | #6 |
 | 4a | Progress: one consistency view (weeks as rows of days colored by day type, count per week, streak of weeks with 3+), the five main lifts as progression ladders (set glyphs: columns = sets, squares = reps); full ladder on every exercise page; one home per piece of information, linked from the rest | #8 |
 | 4b | Routine timeline (eras, sessions, days, notes, photo) on Progress; drop sets (total reps per ladder, best in full) on the dips and chin-ups pages; climbing grade pyramid and hardest send on the bouldering page, with a card on Progress | #9 |
-| 4c | Desktop (from 1024px): sidebar, opens on Progress as a dashboard (streak + year heatmap, lifts and climbing in a grid, routine next to the last workouts), workout and exercise pages as a right-side panel, History two columns; Train and Settings stay one column | open |
+| 4c | Desktop (from 1024px): sidebar, opens on Progress as a dashboard (streak + year heatmap, lifts and climbing in a grid, routine next to the last workouts), workout and exercise pages as a right-side panel, History two columns; Train and Settings stay one column | #10, #11 |
+| 5a | Owner passcode login (6 digits, 3 tries then a pause, 90-day cookie) and guest demos (a private 24h copy of the log without the workout in progress, or a sample log when the owner has none), ported from the pantry; start screen, demo banner, log out; the cue check is off for guests | open |
 
-**Where things stand (2026-10-30):** stages 0-4b are merged; stage 4c (desktop) is in review on `stage-4c-desktop`. The app runs **only
+**Where things stand (2026-10-30):** stages 0-4c are merged; stage 5a (guests and passcode) is in review on `stage-5a-guests`. The app runs **only
 locally** (Docker + ngrok); nothing is on AWS yet (stages 6a-6c), so the WhatsApp history is only in
 the local DynamoDB (`load --local`), and anything logged in the app now stays local. Sergio tests on
 their phone through the ngrok URL and may be using the local app while the agent works.
 
-**Next: Sergio's feedback on the desktop (4c), then stage 5a** (guest sandboxes and the owner
-passcode; see [docs/BACKLOG.md](docs/BACKLOG.md)). Load the `dataviz` skill
+**Next: Sergio's test of 5a, then stage 5b** (the welcome page with Sergio's note and photo, PWA
+icons; see [docs/BACKLOG.md](docs/BACKLOG.md)). Load the `dataviz` skill
 before writing chart code. Visuals are plain SVG/HTML in `components/Progression.tsx` (no chart
 library). Day-type colors are CSS variables in `index.css` (`--chart-push/legs/pull/cardio`),
 checked with the dataviz palette validator in both modes.
@@ -161,9 +165,12 @@ backend/
   app/progress.py           Progress tab: training days with day type; each exercise's progression
                             ladder (one step per target, from the target-game replay; MAIN_LIFTS)
   app/labels.py             session labels ("Push", "Squat + Climb"); shared with the importer
-  app/space.py              current_space(): "main" until stage 5a (then the pantry version)
+  app/session.py, space.py  signed cookie -> data space ("main" or "sb-<expiry>-<id>"); 401 without one
+  app/sandbox.py            create/expire sandboxes (copy of main minus ACTIVE); sample_data.py seeds
+                            the sample log (8 weeks of Push/Legs/Pull) when main has no workouts
+  app/passcode.py           scrypt hash/verify; ratelimit.py DynamoDB fixed-window counters
   app/routers/              exercises (list, create, summary, cues, progress), workouts (saved + ACTIVE),
-                            photos, progress
+                            photos, progress, session (all from the pantry)
   app/catalog.py            built-in exercise catalog: English names, group, load type, bar
                             weight, aliases (Spanish, shorthand, typos)
   app/importer/             chat.py (export -> messages), parse.py (messages -> workouts, notes,
@@ -259,7 +266,8 @@ frontend/
 
 | Area | Endpoints |
 |---|---|
-| Health | `GET /health` |
+| Health | `GET /health` (no session needed) |
+| Session | `GET /session` · `POST /session/guest` · `POST /session/guest/reset[?sample=true]` · `POST /session/owner {passcode}` · `DELETE /session`. Everything else needs a session (401). Demos: 20/hour per IP (1000 locally), 500/hour total; 3 wrong passcodes pause owner login on that network for an hour (10/hour globally); guests upload at most 40 photos a day; the cue check is owner-only |
 | Progress | `GET /progress` (days with day type; the main lifts' progression ladders; routine eras newest first with their workouts) · `GET /exercises/{id}/progress` (one exercise's ladder: `steps` of `{scheme, sessions, times}`, oldest first) |
 | Day types | `GET /session-types` (label, usual exercises in order, last date, sessions) |
 | Exercise page | `GET /exercises/{id}/history` (sessions newest first, all photos, best set) · `PATCH /exercises/{id} {name?, group?}` (old name stays an alias) · `POST /exercises/{id}/merge {into}` (sessions and cues move; the duplicate is hidden) |
@@ -307,9 +315,10 @@ cd backend && uv run python ../scripts/import_whatsapp.py load --local # stack m
   tests with made-up lines); parsed workouts go straight into DynamoDB, never into a seed file in
   git. The chat also has non-training messages (to-do lists, links, a birthday list): the
   importer drops them, and they must never be quoted in commits, PRs or docs.
-- `backend/.env` (git-ignored) holds `GROQ_API_KEY` (the cue check; Compose reads it when the `api`
-  container is created, so run `docker compose up -d api` after adding it) and will hold
-  `PASSCODE_HASH` and `SESSION_SECRET` (stage 5a). **Never
+- `backend/.env` (git-ignored) holds `GROQ_API_KEY` (the cue check), `PASSCODE_HASH` and
+  `SESSION_SECRET` (written by `scripts/set_passcode.py`, which Sergio runs: a hidden prompt; it
+  keeps the other keys). Compose reads the file when the `api` container is created, so run
+  `docker compose up -d api` after changing it. **Never
   print, cat or paste secrets.** Never ask Sergio to paste a key or passcode into chat; they run
   the scripts or edit `.env` themself. On AWS they are SSM SecureStrings under `/fit/`.
 - AWS access: profile **`gym`** (IAM user `gym-deployer`, AdministratorAccess, same account

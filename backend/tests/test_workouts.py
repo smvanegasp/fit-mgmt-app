@@ -1,13 +1,7 @@
-import pytest
 from fastapi.testclient import TestClient
 
 from app import db
-from app.main import app
 
-
-@pytest.fixture
-def client() -> TestClient:
-    return TestClient(app)
 
 
 def squat_day(workout_id: str, date: str, sets: list[dict], source: str = "whatsapp", photos: list | None = None) -> None:

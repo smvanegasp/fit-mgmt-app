@@ -1,10 +1,11 @@
 """DynamoDB access: one table, partitioned by space (the owner's training log or a guest sandbox).
 
-Guest sandboxes (stage 5a) will add a `ttl` attribute to their rows so DynamoDB deletes them
-when the sandbox expires.
+Every row of a guest sandbox carries a `ttl` (the sandbox's expiry), so DynamoDB deletes the
+whole sandbox together.
 """
 
 import os
+import time
 from decimal import Decimal
 from functools import lru_cache
 from typing import Any
@@ -78,8 +79,19 @@ def _to_dynamo(value: Any) -> Any:
     return value
 
 
+def _row(space: str, sk: str, data: dict[str, Any]) -> dict[str, Any]:
+    # Imported here to avoid a cycle: sandbox ids are defined next to the sandbox logic.
+    from app.sandbox import expires_at
+
+    row = {**_to_dynamo(data), "pk": _pk(space), "sk": sk}
+    expiry = expires_at(space)
+    if expiry is not None:
+        row["ttl"] = expiry
+    return row
+
+
 def put(space: str, sk: str, data: dict[str, Any]) -> None:
-    get_table().put_item(Item={**_to_dynamo(data), "pk": _pk(space), "sk": sk})
+    get_table().put_item(Item=_row(space, sk, data))
 
 
 def get(space: str, sk: str) -> dict[str, Any] | None:
@@ -111,13 +123,15 @@ def put_many(space: str, rows: dict[str, dict[str, Any]]) -> None:
     """Write many rows ({sk: data}) in batches of 25."""
     with get_table().batch_writer() as batch:
         for sk, data in rows.items():
-            batch.put_item(Item={**_to_dynamo(data), "pk": _pk(space), "sk": sk})
+            batch.put_item(Item=_row(space, sk, data))
 
 
 def keys(space: str, sk_prefix: str) -> list[tuple[str, dict[str, Any]]]:
     """(sk, data) for every row under a prefix; like query() but keeps the sort key."""
     table = get_table()
-    condition = Key("pk").eq(_pk(space)) & Key("sk").begins_with(sk_prefix)
+    condition = Key("pk").eq(_pk(space))
+    if sk_prefix:
+        condition = condition & Key("sk").begins_with(sk_prefix)
     response = table.query(KeyConditionExpression=condition)
     rows = response["Items"]
     while "LastEvaluatedKey" in response:
@@ -130,3 +144,23 @@ def delete_many(space: str, sks: list[str]) -> None:
     with get_table().batch_writer() as batch:
         for sk in sks:
             batch.delete_item(Key={"pk": _pk(space), "sk": sk})
+
+
+def copy_space(source: str, target: str, skip: tuple[str, ...] = ()) -> int:
+    """Copy every row of one space into another (except sort keys starting with `skip`);
+    returns the number of rows copied."""
+    rows = [(sk, data) for sk, data in keys(source, "") if not sk.startswith(skip)] if skip else keys(source, "")
+    put_many(target, dict(rows))
+    return len(rows)
+
+
+def increment(key: str, ttl_seconds: int) -> int:
+    """Atomically add 1 to a counter row (outside any space) and return the new value."""
+    response = get_table().update_item(
+        Key={"pk": f"COUNTER#{key}", "sk": "COUNTER"},
+        UpdateExpression="ADD #n :one SET #ttl = if_not_exists(#ttl, :ttl)",
+        ExpressionAttributeNames={"#n": "n", "#ttl": "ttl"},
+        ExpressionAttributeValues={":one": 1, ":ttl": int(time.time()) + ttl_seconds},
+        ReturnValues="UPDATED_NEW",
+    )
+    return int(response["Attributes"]["n"])

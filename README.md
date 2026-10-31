@@ -65,6 +65,10 @@ cd frontend && npm test && npm run build
   gitleaks on every push and pull request.
 - The raw WhatsApp export stays in a git-ignored `private/` folder. Only the import code is in
   the repo; parsed workouts are written straight to the database.
+- Visitors get a **private 24-hour copy** of the log (a "sandbox" in the same table, its rows
+  expiring with DynamoDB TTL); the space comes only from a signed httpOnly cookie, so a guest can't
+  reach the owner's data. The owner logs in with a 6-digit passcode (scrypt hash; three wrong tries
+  pause login on that network). Demo creation and guest photo uploads are rate-limited.
 - On AWS, secrets live in SSM Parameter Store (SecureString) and the API only accepts requests
   that come through CloudFront.
 - One optional AI feature: when a note is written on an exercise, the API sends that note and the

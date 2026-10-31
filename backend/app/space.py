@@ -1,11 +1,15 @@
-OWNER_SPACE = "main"
+from fastapi import HTTPException, Request, status
+
+from app.session import read_session
 
 
-def current_space() -> str:
-    """The data space for this request.
+def current_space(request: Request) -> str:
+    """The data space for this request, taken only from the signed session cookie.
 
-    Until guest sandboxes and owner login exist (stage 5a) everything works on the owner's log.
-    Stage 5a replaces this with the pantry's version, which reads the space only from the
-    signed session cookie, so a guest can never reach the owner's data.
+    The owner gets the real training log ("main"); guests get their own sandbox. Request bodies
+    and URLs can never choose a space, so a guest has no way to reach the owner's data.
     """
-    return OWNER_SPACE
+    session = read_session(request)
+    if session is None:
+        raise HTTPException(status.HTTP_401_UNAUTHORIZED, "No session; look around as a guest or log in")
+    return session.space

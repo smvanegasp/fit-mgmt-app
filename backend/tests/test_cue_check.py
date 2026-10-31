@@ -6,12 +6,7 @@ import pytest
 from fastapi.testclient import TestClient
 
 from app import cue_check
-from app.main import app
 
-
-@pytest.fixture
-def client() -> TestClient:
-    return TestClient(app)
 
 
 def add(client: TestClient, text: str, section: str | None = None) -> dict:

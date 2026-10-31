@@ -217,6 +217,16 @@ export interface Progress {
   routines: Routine[];
 }
 
+export interface SessionInfo {
+  role: "owner" | "guest" | null;
+  /** Unix seconds when a guest sandbox expires. */
+  expiresAt: number | null;
+  ownerLoginEnabled: boolean;
+}
+
+/** Fired when the API says the session is gone (e.g. the 24h demo expired). */
+export const SESSION_EXPIRED = "gym:session-expired";
+
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
   // FormData bodies set their own multipart Content-Type.
   const isForm = init?.body instanceof FormData;
@@ -225,6 +235,9 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
     headers: isForm ? init?.headers : { "Content-Type": "application/json", ...init?.headers },
   });
   if (!res.ok) {
+    if (res.status === 401 && !path.startsWith("/session")) {
+      window.dispatchEvent(new Event(SESSION_EXPIRED));
+    }
     let message = res.statusText;
     try {
       const body = await res.json();
@@ -245,6 +258,12 @@ export function photoUrl(key: string, size: "full" | "thumb" = "full"): string {
 
 export const api = {
   health: () => request<{ status: string }>("/health"),
+
+  getSession: () => request<SessionInfo>("/session"),
+  startGuest: () => request<SessionInfo>("/session/guest", { method: "POST" }),
+  resetGuest: () => request<SessionInfo>("/session/guest/reset", { method: "POST" }),
+  ownerLogin: (passcode: string) => request<SessionInfo>("/session/owner", json("POST", { passcode })),
+  logout: () => request<SessionInfo>("/session", { method: "DELETE" }),
 
   listExercises: () => request<Exercise[]>("/exercises"),
   createExercise: (body: Pick<Exercise, "name" | "group" | "load" | "measure">) =>

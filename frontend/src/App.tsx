@@ -1,12 +1,15 @@
 import { Barbell, ChartLineUp, ClockCounterClockwise, GearSix, type Icon } from "@phosphor-icons/react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
+import { SESSION_EXPIRED, type SessionInfo } from "./api";
+import { DemoBanner } from "./components/DemoBanner";
 import { NavContext, type Tab } from "./components/Nav";
 import { ScreensProvider } from "./components/Screens";
-import { DESKTOP } from "./hooks";
+import { DESKTOP, useRefreshSession, useSession } from "./hooks";
 import { HistoryPage } from "./pages/HistoryPage";
 import { ProgressPage } from "./pages/ProgressPage";
 import { SettingsPage } from "./pages/SettingsPage";
+import { StartPage } from "./pages/StartPage";
 import { TrainPage } from "./pages/TrainPage";
 
 const TABS: readonly { id: Tab; label: string; icon: Icon }[] = [
@@ -32,6 +35,22 @@ const WIDE: Record<Tab, string> = {
 };
 
 export function App() {
+  const session = useSession();
+  const refresh = useRefreshSession();
+
+  // A 401 from any request means the session ended (e.g. the demo expired): check it again.
+  useEffect(() => {
+    window.addEventListener(SESSION_EXPIRED, refresh);
+    return () => window.removeEventListener(SESSION_EXPIRED, refresh);
+  }, [refresh]);
+
+  if (session.isLoading) return null;
+  if (session.error) return <p className="p-6 text-center text-red-600">Couldn't reach the app: {session.error.message}</p>;
+  if (!session.data?.role) return <StartPage />;
+  return <MainApp session={session.data} />;
+}
+
+function MainApp({ session }: { session: SessionInfo }) {
   // Phones open on Train (logging); computers on Progress (what visitors come to see).
   const [tab, setTab] = useState<Tab>(() => (window.matchMedia(DESKTOP).matches ? "progress" : "train"));
   const current = TABS.find((t) => t.id === tab)!;
@@ -44,6 +63,9 @@ export function App() {
           <main className={`mx-auto max-w-lg px-4 pt-[max(1rem,env(safe-area-inset-top))] lg:px-10 lg:pt-8 ${WIDE[tab]}`}>
             {/* The tab bar shows where you are; the heading is for screen readers. */}
             <h1 className="sr-only">{current.label}</h1>
+            {session.role === "guest" && session.expiresAt && (
+              <DemoBanner expiresAt={session.expiresAt} ownerLoginEnabled={session.ownerLoginEnabled} />
+            )}
             <Page />
           </main>
 
