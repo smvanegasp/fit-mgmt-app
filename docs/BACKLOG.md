@@ -26,9 +26,18 @@ Sergio merges.
 
 ## Now
 
-Stages 0-5b merged (#1, #3-#13). **Stage 6a (AWS) is deployed** and in review on `stage-6a-aws`:
-https://dj3f8i20u01kh.cloudfront.net (empty database: demos show the sample log). Then 6b (merges
-deploy), 6c (gym.sergiovanegas.com), 7 production import.
+Stages 0-6a merged (#1, #3-#14), live at https://dj3f8i20u01kh.cloudfront.net (empty database:
+demos show the sample log). **Stage 6b (merges deploy) is on** and in review on `stage-6b-deploy`.
+Then 6c (gym.sergiovanegas.com), 7 production import.
+
+## Stage 6b: what's in it (2026-10-30)
+
+- `infra/github.tf`: IAM role `fit-github-deploy` that only workflows on `main` of this repo can
+  assume (GitHub OIDC, immutable subject); it reads the account's existing OIDC provider (the
+  pantry's). Applied with Sergio's OK (2 additions).
+- Repo variables `DEPLOY_ENABLED=true`, `DISTRIBUTION_ID`, `SITE_URL`; a manual Deploy run passed
+  (image, Lambda, frontend, health check).
+- Expected cost of the whole stack: about $0.10-0.25 a month at this usage (mostly free tier).
 
 ## Stage 6a: what's in it (deployed 2026-10-30)
 
@@ -165,7 +174,8 @@ deploy), 6c (gym.sergiovanegas.com), 7 production import.
   git-ignored `infra/terraform.tfvars`, never in the repo).
 - Done: OK on the 6a deploy (2026-10-30).
 - Now: **confirm the alarm email** (AWS sent a "Subscription Confirmation" link).
-- Later: OK on the 6b apply (deploy role), Hostinger access (6c).
+- Done: OK on the 6b apply (2026-10-30).
+- Next (6c): two CNAME records at Hostinger for gym.sergiovanegas.com (values come from Terraform).
 
 ## Feedback round 1 on stage 2 (Sergio, 2026-10-30), done on the same PR
 
