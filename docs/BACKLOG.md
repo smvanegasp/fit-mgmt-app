@@ -27,7 +27,15 @@ Sergio merges.
 ## Now
 
 Stages 0-5a merged (#1, #3-#12). **Stage 5b (welcome page) is in review** on `stage-5b-welcome`:
-Sergio approves the note. Then 6a-6c AWS, 7 production import.
+Sergio's feedback applied (name "Gym", their photo and note). Then 6a-6c AWS, 7 production import.
+
+## Feedback round 1 on stage 5b (Sergio, 2026-10-30)
+
+| What Sergio said | Done |
+|---|---|
+| Call it just "Gym" | Welcome page, sidebar, browser title and the installed app name |
+| Use the photo in private/ | Cropped around the face, 256 px, metadata (location) stripped |
+| The note: 12 years of calisthenics and weightlifting, then the last year logged | Rewritten in their words; the clips shrink a little so the page still fits a phone |
 
 ## Stage 5b: what's in it
 
@@ -142,9 +150,9 @@ Sergio approves the note. Then 6a-6c AWS, 7 production import.
   ~10,000 messages; if the chat is longer, also export **Without media** for the full text.
 - Done: Groq API key in `backend/.env` (2026-10-30).
 - Done: owner passcode (2026-10-30).
-- Now: OK or rewrite of the **welcome note** (5b); the photo is the pantry's for now (a gym photo can
-  replace `frontend/public/sergio.jpg`).
-- Later: alert email (6a), Hostinger access (6c).
+- Done: welcome note and photo (5b, 2026-10-30); alert email for 6a (given in chat; it goes only in the
+  git-ignored `infra/terraform.tfvars`, never in the repo).
+- Later: OK on the 6a Terraform plan before any apply, Hostinger access (6c).
 
 ## Feedback round 1 on stage 2 (Sergio, 2026-10-30), done on the same PR
 

@@ -106,7 +106,7 @@ the local DynamoDB (`load --local`), and anything logged in the app now stays lo
 with their passcode (set 2026-10-30). Sergio tests on
 their phone through the ngrok URL and may be using the local app while the agent works.
 
-**Next: Sergio's OK on the welcome note, then stage 6a** (AWS with Terraform on profile `gym`; see
+**Next: stage 6a** (AWS with Terraform on profile `gym`; see
 [docs/BACKLOG.md](docs/BACKLOG.md); applies need Sergio's OK). Load the `dataviz` skill
 before writing chart code. Visuals are plain SVG/HTML in `components/Progression.tsx` (no chart
 library). Day-type colors are CSS variables in `index.css` (`--chart-push/legs/pull/cardio`),

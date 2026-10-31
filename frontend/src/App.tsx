@@ -71,7 +71,7 @@ function MainApp({ session }: { session: SessionInfo }) {
 
           {/* Bottom tabs on phones and tablets; a sidebar on computers. */}
           <nav className="fixed inset-x-0 bottom-0 z-30 border-t border-stone-200 bg-white pb-[env(safe-area-inset-bottom)] lg:inset-y-0 lg:right-auto lg:w-56 lg:border-t-0 lg:border-r lg:pb-0">
-            <div className="hidden px-6 pt-8 pb-6 text-lg font-semibold lg:block">Gym tracker</div>
+            <div className="hidden px-6 pt-8 pb-6 text-lg font-semibold lg:block">Gym</div>
             <div className="mx-auto grid max-w-lg grid-cols-4 lg:mx-0 lg:flex lg:max-w-none lg:flex-col lg:gap-1 lg:px-3">
               {TABS.map((t) => (
                 <button

@@ -37,16 +37,16 @@ export function WelcomePage() {
           <span className="flex h-12 w-12 items-center justify-center rounded-2xl bg-blue-600 text-white">
             <Barbell size={28} weight="fill" aria-hidden />
           </span>
-          <h1 className="text-3xl font-bold">Gym log</h1>
+          <h1 className="text-3xl font-bold">Gym</h1>
         </div>
         {/* A personal hello instead of a tagline: who made this and why. */}
         <div className="mt-4 flex items-start gap-3 rounded-2xl bg-blue-50 p-3">
           <img src="/sergio.jpg" alt="Sergio" width={48} height={48}
             className="h-12 w-12 shrink-0 rounded-full object-cover ring-2 ring-white" />
           <p className="text-sm text-stone-700">
-            <b>Hi, I'm Sergio!</b> For over a year I logged every set in a WhatsApp chat with myself. This app turns
-            those messages into a log I can learn from: what I lifted, what's next, and the cues that make each lift go
-            better.
+            <b>Hi, I'm Sergio!</b> I've been training calisthenics and weightlifting for 12 years. This last year I
+            logged every workout in a WhatsApp chat with myself, and this app turns those messages into a log I can
+            learn from: what I lifted, what's next, and the cues that make each lift go better.
           </p>
         </div>
 
