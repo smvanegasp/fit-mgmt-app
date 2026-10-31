@@ -13,8 +13,7 @@ real training log.
 Built in stages alongside its sibling project, the
 [pantry app](https://github.com/smvanegasp/pantry-mgmt-app), and shares its architecture.
 **Status:** logging, history, progress, the desktop dashboard, guest demos and the welcome page are
-built (stages 0-5b), and the app is live at https://gym.sergiovanegas.com (stage 6); the history import
-comes next. The full plan is in [docs/BACKLOG.md](docs/BACKLOG.md).
+built (stages 0-5b), and the app is live at https://gym.sergiovanegas.com with the full imported history (stages 6-7). The full plan is in [docs/BACKLOG.md](docs/BACKLOG.md).
 
 ## Stack
 

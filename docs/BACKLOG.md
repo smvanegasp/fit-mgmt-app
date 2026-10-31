@@ -22,13 +22,22 @@ Sergio merges.
 | 6a | `stage-6a-aws` | Terraform on profile `gym`: Lambda, API Gateway, DynamoDB, CloudFront, SSM, alarms; terraform CI job and Dependabot entry. | `/api/health` on the CloudFront URL |
 | 6b | `stage-6b-deploy` | GitHub OIDC deploy role; set `DEPLOY_ENABLED`, `DISTRIBUTION_ID`, `SITE_URL` repo variables. | A merge deploys automatically |
 | 6c | `stage-6c-domain` | ACM for `gym.sergiovanegas.com`; Sergio adds 2 CNAMEs at Hostinger. | Site loads on the domain |
-| 7 | `stage-7-prod-import` | `import_whatsapp.py --profile gym --table fit --space main`: dry run, then real. Verify counts and dates; guests see the history. PITR on before writing. | Sergio checks Progress on their phone |
+| 7 | (no branch: data only) | `import_whatsapp.py --profile gym --table fit --space main`: dry run, then real. Verify counts and dates; guests see the history. PITR on before writing. | Sergio checks Progress on their phone |
 
 ## Now
 
-Stages 0-6b merged (#1, #3-#15), live at **https://gym.sergiovanegas.com** (empty database: demos
-show the sample log). **Stage 6c (the domain)** is done and in review on `stage-6c-domain`. Next:
-stage 7, the production import of Sergio's history.
+All stages done. Stages 0-6b merged (#1, #3-#15); **6c (gym.sergiovanegas.com) and 7 (the
+production import)** are done and in review on `stage-6c-domain`. Production holds the real log;
+Sergio logs at https://gym.sergiovanegas.com. New requests go in Ideas below.
+
+## Stage 7: the production import (2026-10-31, with Sergio's OK)
+
+- Dry run: a fresh parse (177 sessions, 1,780 sets, 50 cues with sections, 4 routines, 15 photos,
+  1 body-weight entry). PITR confirmed on and the owner space empty first.
+- `import_whatsapp.py load --profile gym --table fit --bucket fit-photos-816940506502`.
+- Checked: AWS and local match row by row (workouts, routines, body weight identical; cues differ
+  only by an explicit `hidden: false`; 4 exercise rows only by the old `posterior` group name, which
+  the app ignores). A visitor demo on the domain shows the real log, cues and photos.
 
 ## Stage 6c: what's in it (2026-10-31)
 
@@ -184,7 +193,7 @@ stage 7, the production import of Sergio's history.
 - Now: **confirm the alarm email** (AWS sent a "Subscription Confirmation" link).
 - Done: OK on the 6b apply (2026-10-30).
 - Done: the two CNAMEs at Hostinger (2026-10-31); keep the validation one for renewals.
-- Next (7): OK to load the history into the AWS table (after a dry run).
+- Done: OK on the production import (2026-10-31).
 
 ## Feedback round 1 on stage 2 (Sergio, 2026-10-30), done on the same PR
 

@@ -102,16 +102,15 @@ A mobile-first web app where Sergio logs their gym workouts and sees their progr
 | 6a | AWS with Terraform (profile `gym`, all `fit-*`): DynamoDB, photo and web buckets, Lambda + HTTP API, CloudFront, SSM secrets, email alarms; terraform CI job, Dependabot | #14 |
 | 6b | Merges deploy: IAM role `fit-github-deploy` (GitHub OIDC, main only; reads the account's existing OIDC provider), repo variables `DEPLOY_ENABLED`, `DISTRIBUTION_ID`, `SITE_URL`; tested with a manual run | #15 |
 | 6c | gym.sergiovanegas.com: ACM certificate (DNS-validated, auto-renewing) and CloudFront alias; two CNAMEs at Hostinger | open |
+| 7 | Production import (2026-10-31): 177 workouts, 1,780 sets, 50 cues, 4 routines, 15 photos into AWS `fit` (space main); identical to the local log row by row (only `hidden: false` spelled out and an old group name differ locally) | done (no code) |
 
-**Where things stand (2026-10-30):** stages 0-5b are merged; stages 6a-6b are done (merges deploy automatically), and the app is deployed on AWS
-(section 8) at https://gym.sergiovanegas.com with an empty database (demos show the sample log). Sergio's real log is still only in
-the local DynamoDB (`load --local`), and anything logged in the app now stays local. Sergio logs in
-with their passcode (set 2026-10-30). Sergio tests on
-their phone through the ngrok URL and may be using the local app while the agent works.
+**Where things stand (2026-10-31):** all stages (0-7) are done; 6c and 7 are in review on
+`stage-6c-domain`. **Production holds Sergio's real log** at https://gym.sergiovanegas.com (loaded
+in stage 7), so Sergio logs there from now on and visitors get a copy of it. The local stack has the
+same history and is now only for development: anything logged locally stays local. **Never change
+or delete `SPACE#main` on AWS without Sergio's explicit OK** (section 6); test in sample demos.
 
-**Next: stage 7** (the production import: Sergio's WhatsApp history into the AWS table with
-`import_whatsapp.py load --profile gym ...`; dry run first, PITR is on; needs Sergio's OK; see
-[docs/BACKLOG.md](docs/BACKLOG.md)). Load the `dataviz` skill
+**Next:** whatever Sergio asks for; open ideas are in [docs/BACKLOG.md](docs/BACKLOG.md). Load the `dataviz` skill
 before writing chart code. Visuals are plain SVG/HTML in `components/Progression.tsx` (no chart
 library). Day-type colors are CSS variables in `index.css` (`--chart-push/legs/pull/cardio`),
 checked with the dataviz palette validator in both modes.
