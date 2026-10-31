@@ -107,8 +107,12 @@ resource "aws_cloudfront_distribution" "main" {
     }
   }
 
-  # The cloudfront.net address and certificate until stage 6c adds gym.sergiovanegas.com.
+  # Served on the custom domain (domain.tf); the cloudfront.net name keeps working.
+  aliases = [var.domain]
+
   viewer_certificate {
-    cloudfront_default_certificate = true
+    acm_certificate_arn      = aws_acm_certificate_validation.app.certificate_arn
+    ssl_support_method       = "sni-only"
+    minimum_protocol_version = "TLSv1.2_2021"
   }
 }
