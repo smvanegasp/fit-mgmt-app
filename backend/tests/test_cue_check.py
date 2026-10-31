@@ -58,3 +58,16 @@ def test_the_check_suggests_an_update_with_the_cues_and_note(client: TestClient,
 def test_bad_answers_become_no_suggestion(client: TestClient, monkeypatch: pytest.MonkeyPatch, reply: dict | str) -> None:
     answer(monkeypatch, reply)
     assert client.post("/api/exercises/squat/cue-check", json={"note": "felt heavy"}).json()["action"] == "none"
+
+
+def test_a_failing_check_is_logged_for_the_alarm(client: TestClient, monkeypatch: pytest.MonkeyPatch, caplog: pytest.LogCaptureFixture) -> None:
+    import httpx
+
+    monkeypatch.setenv("GROQ_API_KEY", "test")
+
+    def down(messages: list) -> str:
+        raise httpx.ConnectError("down")
+
+    monkeypatch.setattr(cue_check, "_ask", down)
+    assert client.post("/api/exercises/squat/cue-check", json={"note": "bar lower"}).status_code == 502
+    assert "Cue check failed" in caplog.text

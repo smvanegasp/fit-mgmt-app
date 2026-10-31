@@ -1,3 +1,4 @@
+import logging
 import re
 import uuid
 
@@ -25,6 +26,8 @@ from app.sandbox import OWNER_SPACE
 from app.space import current_space
 
 router = APIRouter(prefix="/api/exercises", tags=["exercises"])
+
+log = logging.getLogger("uvicorn.error")
 
 
 def all_exercises(space: str) -> dict[str, Exercise]:
@@ -169,6 +172,8 @@ def check_cue(exercise_id: str, body: CueCheck, space: str = Depends(current_spa
     except cue_check.CueCheckOff:
         raise HTTPException(status.HTTP_503_SERVICE_UNAVAILABLE, "The cue check is off (no GROQ_API_KEY)") from None
     except httpx.HTTPError:
+        # The cue-check alarm watches for this line (infra/monitoring.tf).
+        log.warning("Cue check failed")
         raise HTTPException(status.HTTP_502_BAD_GATEWAY, "The cue check didn't answer; try again later") from None
 
 
