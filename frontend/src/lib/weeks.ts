@@ -51,3 +51,26 @@ export function longDate(day: string, today: string): string {
   const year = date.getFullYear() !== parse(today).getFullYear() ? `, ${date.getFullYear()}` : "";
   return `${weekday}, ${MONTHS[date.getMonth()]} ${date.getDate()}${year}`;
 }
+
+const MONTH_NAMES = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+
+/** Weeks (newest first) grouped by month, by the month of each week's newest workout:
+ * "October" (this year) or "December 2025", with the number of workouts. */
+export function groupByMonth<T extends { date: string }>(
+  weeks: { label: string; monday: string; items: T[] }[],
+  today: string,
+): { key: string; label: string; count: number; weeks: { label: string; monday: string; items: T[] }[] }[] {
+  const months: { key: string; label: string; count: number; weeks: { label: string; monday: string; items: T[] }[] }[] = [];
+  for (const week of weeks) {
+    const key = week.items[0].date.slice(0, 7);
+    let month = months.at(-1);
+    if (month?.key !== key) {
+      const name = MONTH_NAMES[Number(key.slice(5)) - 1];
+      month = { key, label: key.slice(0, 4) === today.slice(0, 4) ? name : `${name} ${key.slice(0, 4)}`, count: 0, weeks: [] };
+      months.push(month);
+    }
+    month.weeks.push(week);
+    month.count += week.items.length;
+  }
+  return months;
+}

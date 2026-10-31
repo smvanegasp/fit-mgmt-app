@@ -9,7 +9,7 @@ import { useExercises, useWorkouts } from "../hooks";
 import { fuzzyMatch } from "../lib/search";
 import { dayType } from "../lib/sets";
 import { friendlyDate, localIso } from "../lib/time";
-import { groupByWeek } from "../lib/weeks";
+import { groupByMonth, groupByWeek } from "../lib/weeks";
 
 type View = "workouts" | "exercises";
 const DAY_TYPES = ["Push", "Legs", "Pull", "Cardio"];
@@ -41,8 +41,17 @@ function Workouts() {
 
   const all = workouts.data ?? [];
   const shown = all.filter((w) => !type || dayType(w.label) === type);
-  const weeks = groupByWeek(shown, today);
+  const months = groupByMonth(groupByWeek(shown, today), today);
   const first = all.at(-1)?.date;
+  // Months fold so it's quick to scroll back; the newest month starts open.
+  const [opened, setOpened] = useState<Set<string>>(new Set());
+  const [closed, setClosed] = useState<Set<string>>(new Set());
+  const isOpen = (key: string, i: number) => (i === 0 ? !closed.has(key) : opened.has(key));
+  const toggle = (key: string, i: number) => {
+    const flip = (set: Set<string>) => new Set(set.has(key) ? [...set].filter((k) => k !== key) : [...set, key]);
+    if (i === 0) setClosed(flip);
+    else setOpened(flip);
+  };
 
   return (
     <>
@@ -64,19 +73,31 @@ function Workouts() {
       )}
       {workouts.data && shown.length === 0 && <p className="py-10 text-center text-stone-500">No workouts match.</p>}
 
-      {weeks.map((week) => (
-        <section key={week.monday} className="mt-5">
-          <h2 className="mb-2 flex items-baseline justify-between">
-            <span className="font-semibold">{week.label}</span>
-            <span className="text-sm text-stone-500">{week.items.length} {week.items.length === 1 ? "workout" : "workouts"}</span>
+      {months.map((month, i) => (
+        <section key={month.key} className="mt-4">
+          <h2>
+            <button type="button" onClick={() => toggle(month.key, i)} aria-expanded={isOpen(month.key, i)}
+              className="flex w-full items-center gap-2 border-b border-stone-200 py-2 text-left">
+              <span className="text-lg font-semibold">{month.label}</span>
+              <span className="text-sm text-stone-500">{month.count} {month.count === 1 ? "workout" : "workouts"}</span>
+              <CaretDown size={16} className={`ml-auto text-stone-500 ${isOpen(month.key, i) ? "rotate-180" : ""}`} aria-hidden />
+            </button>
           </h2>
-          <ul className="space-y-2 lg:grid lg:grid-cols-2 lg:gap-3 lg:space-y-0">
-            {week.items.map((w) => (
-              <li key={w.id}>
-                <WorkoutCard workout={w} onClick={() => screens.openWorkout(w.id)} />
-              </li>
-            ))}
-          </ul>
+          {isOpen(month.key, i) && month.weeks.map((week) => (
+            <section key={week.monday} className="mt-4">
+              <h3 className="mb-2 flex items-baseline justify-between">
+                <span className="font-semibold">{week.label}</span>
+                <span className="text-sm text-stone-500">{week.items.length} {week.items.length === 1 ? "workout" : "workouts"}</span>
+              </h3>
+              <ul className="space-y-2 lg:grid lg:grid-cols-2 lg:gap-3 lg:space-y-0">
+                {week.items.map((w) => (
+                  <li key={w.id}>
+                    <WorkoutCard workout={w} onClick={() => screens.openWorkout(w.id)} />
+                  </li>
+                ))}
+              </ul>
+            </section>
+          ))}
         </section>
       ))}
 

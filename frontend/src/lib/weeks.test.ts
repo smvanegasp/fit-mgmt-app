@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { groupByWeek, longDate, weekLabel, weekStart } from "./weeks";
+import { groupByMonth, groupByWeek, longDate, weekLabel, weekStart } from "./weeks";
 
 describe("weeks", () => {
   it("starts weeks on Monday", () => {
@@ -29,5 +29,20 @@ describe("weeks", () => {
   it("writes long dates", () => {
     expect(longDate("2026-10-26", "2026-10-30")).toBe("Monday, Oct 26");
     expect(longDate("2025-12-29", "2026-10-30")).toBe("Monday, Dec 29, 2025");
+  });
+});
+
+describe("groupByMonth", () => {
+  it("puts weeks under the month of their newest workout", () => {
+    const weeks = groupByWeek(
+      [{ date: "2026-10-29" }, { date: "2026-10-01" }, { date: "2026-09-29" }, { date: "2026-09-10" }, { date: "2025-12-30" }],
+      "2026-10-30",
+    );
+    const months = groupByMonth(weeks, "2026-10-30");
+    expect(months.map((m) => [m.label, m.count, m.weeks.length])).toEqual([
+      ["October", 3, 2],
+      ["September", 1, 1],
+      ["December 2025", 1, 1],
+    ]);
   });
 });
