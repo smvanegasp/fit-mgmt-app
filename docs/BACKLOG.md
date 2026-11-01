@@ -26,9 +26,20 @@ Sergio merges.
 
 ## Now
 
-All stages done. Stages 0-6b merged (#1, #3-#15); **6c (gym.sergiovanegas.com) and 7 (the
-production import)** are done and in review on `stage-6c-domain`. Production holds the real log;
-Sergio logs at https://gym.sergiovanegas.com. New requests go in Ideas below.
+All planned stages are done and live at https://gym.sergiovanegas.com. **Stage 8a (in-app feedback)**
+is in review on `stage-8a-feedback`; next is 8b, the training-log identity (plan agreed 2026-10-31:
+own logo from the set glyph, a condensed display font for numbers and headings, dark by default, a
+stats-led welcome page, a slimmer demo banner).
+
+## Stage 8a: in-app feedback (2026-10-31)
+
+- Anyone with a session (Sergio or a guest) leaves feedback from **Settings** or the **guest banner**:
+  a note plus the screen it's about (the last one visited, preselected).
+- Stored outside every sandbox (`SPACE#feedback`, no TTL), rate-limited; Sergio's **inbox** in
+  Settings (new count, mark done). A guest's feedback **emails Sergio** (alarm
+  `fit-guest-feedback`, at most one email per 15 min).
+- The agent reads it at the start of each session with `scripts/feedback.py` (AGENTS.md section 2).
+- The demo banner got tighter to fit Feedback: Reset is now an icon.
 
 ## Stage 7: the production import (2026-10-31, with Sergio's OK)
 

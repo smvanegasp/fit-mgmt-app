@@ -6,6 +6,7 @@ import { DemoBanner } from "./components/DemoBanner";
 import { NavContext, type Tab } from "./components/Nav";
 import { ScreensProvider } from "./components/Screens";
 import { DESKTOP, useRefreshSession, useSession } from "./hooks";
+import { rememberPlace } from "./lib/place";
 import { HistoryPage } from "./pages/HistoryPage";
 import { ProgressPage } from "./pages/ProgressPage";
 import { SettingsPage } from "./pages/SettingsPage";
@@ -55,6 +56,10 @@ function MainApp({ session }: { session: SessionInfo }) {
   const [tab, setTab] = useState<Tab>(() => (window.matchMedia(DESKTOP).matches ? "progress" : "train"));
   const current = TABS.find((t) => t.id === tab)!;
   const Page = PAGES[tab];
+  // What feedback is about by default: the last tab other than Settings.
+  useEffect(() => {
+    if (tab !== "settings") rememberPlace(tab);
+  }, [tab]);
 
   return (
     <NavContext.Provider value={setTab}>

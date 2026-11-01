@@ -217,6 +217,16 @@ export interface Progress {
   routines: Routine[];
 }
 
+/** Feedback left in the app; the owner reads it in Settings, the agent with scripts/feedback.py. */
+export interface Feedback {
+  id: string;
+  text: string;
+  page: string;
+  role: "owner" | "guest";
+  createdAt: string;
+  status: "new" | "done";
+}
+
 export interface SessionInfo {
   role: "owner" | "guest" | null;
   /** Unix seconds when a guest sandbox expires. */
@@ -264,6 +274,10 @@ export const api = {
   resetGuest: () => request<SessionInfo>("/session/guest/reset", { method: "POST" }),
   ownerLogin: (passcode: string) => request<SessionInfo>("/session/owner", json("POST", { passcode })),
   logout: () => request<SessionInfo>("/session", { method: "DELETE" }),
+
+  sendFeedback: (text: string, page: string) => request<Feedback>("/feedback", json("POST", { text, page })),
+  listFeedback: () => request<Feedback[]>("/feedback"),
+  markFeedback: (id: string, status: Feedback["status"]) => request<Feedback>(`/feedback/${id}`, json("PATCH", { status })),
 
   listExercises: () => request<Exercise[]>("/exercises"),
   createExercise: (body: Pick<Exercise, "name" | "group" | "load" | "measure">) =>

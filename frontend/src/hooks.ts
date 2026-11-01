@@ -29,6 +29,27 @@ export function useRefreshSession() {
   return useCallback(() => qc.invalidateQueries({ queryKey: SESSION }), [qc]);
 }
 
+export function useSendFeedback() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (v: { text: string; page: string }) => api.sendFeedback(v.text, v.page),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["feedback"] }),
+  });
+}
+
+/** The owner's feedback inbox (guests get 403, so only ask as the owner). */
+export function useFeedback(enabled: boolean) {
+  return useQuery({ queryKey: ["feedback"], queryFn: api.listFeedback, enabled });
+}
+
+export function useMarkFeedback() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (v: { id: string; status: "new" | "done" }) => api.markFeedback(v.id, v.status),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["feedback"] }),
+  });
+}
+
 export function useHealth() {
   return useQuery({ queryKey: ["health"], queryFn: api.health });
 }

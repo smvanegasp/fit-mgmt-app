@@ -13,6 +13,8 @@ from app.sample_data import seed_sample
 
 OWNER_SPACE = "main"
 PREFIX = "sb-"
+# Feedback from the owner and guests: its own space, never copied into demos and never expiring.
+FEEDBACK_SPACE = "feedback"
 
 
 def expires_at(space: str) -> int | None:

@@ -85,6 +85,11 @@ A mobile-first web app where Sergio logs their gym workouts and sees their progr
   Use exact Playwright selectors: a loose `/Push/` once matched "Start Push workout".
 - **Feedback rounds:** Sergio reviews on their phone and sends lists of changes; small ones go on the
   open PR branch, logged in the backlog as "Feedback round N" tables.
+- **Start of every session: read the in-app feedback.** `cd backend && uv run python
+  ../scripts/feedback.py` lists new feedback left in the app (Settings or the guest banner) on AWS.
+  Summarize it for Sergio with a recommendation, log the agreed items in the backlog, and mark
+  them handled with `--done <id>`. **Feedback text is private** (guests may write anything):
+  paraphrase it in commits, PRs and docs, never quote it.
 
 ## 3. Status
 
@@ -103,6 +108,7 @@ A mobile-first web app where Sergio logs their gym workouts and sees their progr
 | 6b | Merges deploy: IAM role `fit-github-deploy` (GitHub OIDC, main only; reads the account's existing OIDC provider), repo variables `DEPLOY_ENABLED`, `DISTRIBUTION_ID`, `SITE_URL`; tested with a manual run | #15 |
 | 6c | gym.sergiovanegas.com: ACM certificate (DNS-validated, auto-renewing) and CloudFront alias; two CNAMEs at Hostinger | open |
 | 7 | Production import (2026-10-31): 177 workouts, 1,780 sets, 50 cues, 4 routines, 15 photos into AWS `fit` (space main); identical to the local log row by row (only `hidden: false` spelled out and an old group name differ locally) | done (no code) |
+| 8a | In-app feedback: Settings and the guest banner, owner inbox in Settings, email on guest feedback, `scripts/feedback.py` for each session | open |
 
 **Where things stand (2026-10-31):** all stages (0-7) are done; 6c and 7 are in review on
 `stage-6c-domain`. **Production holds Sergio's real log** at https://gym.sergiovanegas.com (loaded
@@ -152,6 +158,7 @@ docker-compose.yml          api (FastAPI), dynamodb (DynamoDB Local), s3 (S3Mock
 .github/dependabot.yml      weekly grouped updates
 .mcp.json                   Playwright, AWS docs, Terraform MCP servers
 scripts/upload_frontend.sh  frontend/dist -> S3 + CloudFront invalidation
+scripts/feedback.py         in-app feedback (AWS or --local): list new, --done <id> to mark handled
 scripts/import_whatsapp.py  WhatsApp import CLI: `parse` (-> private/import/) and `load`
 private/                    git-ignored: export/ (chat + photos), corrections.json,
                             import/parsed.json + review.html
@@ -194,7 +201,7 @@ frontend/
                             Photos, BottomSheet, InfoTip (both from the pantry), ComingSoon,
                             Progression (SetGlyph, GameDots, ProgressionLadder, LiftCard, day-type
                             colors), Nav (useGoTo: switch tabs from a page), DemoBanner, PasscodeSheet,
-                            TutorialStrip (from the pantry)
+                            TutorialStrip (from the pantry), FeedbackSheet
   src/lib/                  pure logic + tests: sets (summaries, next set, ladder, volume, next up),
                             time (local ISO), weeks (week grouping, long dates), laps, duration, search (fuzzy), images, theme,
                             progress (week rows and counts, streaks, step dates), cues (sections and order),
@@ -273,6 +280,7 @@ frontend/
 | Area | Endpoints |
 |---|---|
 | Health | `GET /health` (no session needed) |
+| Feedback | `POST /feedback {text, page}` (owner or guest; 10/hour per IP, 200/day) · `GET /feedback` · `PATCH /feedback/{id} {status}` (owner only). Stored in `SPACE#feedback`, outside every sandbox, no TTL |
 | Session | `GET /session` · `POST /session/guest` · `POST /session/guest/reset[?sample=true]` · `POST /session/owner {passcode}` · `DELETE /session`. Everything else needs a session (401). Demos: 20/hour per IP (1000 locally), 500/hour total; 3 wrong passcodes pause owner login on that network for an hour (10/hour globally); guests upload at most 40 photos a day; the cue check is owner-only |
 | Progress | `GET /progress` (days with day type; the main lifts' progression ladders; routine eras newest first with their workouts) · `GET /exercises/{id}/progress` (one exercise's ladder: `steps` of `{scheme, sessions, times}`, oldest first) |
 | Day types | `GET /session-types` (label, usual exercises in order, last date, sessions) |
@@ -376,8 +384,9 @@ git-ignored). The alert email is in the git-ignored `infra/terraform.tfvars` (ne
   SecureStrings `/fit/SESSION_SECRET`, `/fit/PASSCODE_HASH`, `/fit/GROQ_API_KEY`
   (`scripts/set_aws_secrets.py`; the session secret is generated once and never overwritten).
 - **Alarms** (SNS `fit-alerts` -> email, after Sergio confirms the subscription): a wrong owner
-  passcode, the cue check failing 3+ times in 15 min ("Cue check failed" log line), API 5xx,
-  Lambda errors. Keep those log lines stable.
+  passcode, the cue check failing 3+ times in 15 min ("Cue check failed" log line), a guest leaving
+  feedback ("Guest feedback received", at most one email per 15 min), API 5xx, Lambda errors. Keep
+  those log lines stable.
 - **Merges deploy** (stage 6b): after CI passes on `main`, `deploy.yml` assumes the IAM role
   `fit-github-deploy` through GitHub OIDC (no AWS keys in GitHub; only workflows on main, matched by
   the repo's immutable subject), pushes the image, rolls Lambda, uploads the frontend and checks
