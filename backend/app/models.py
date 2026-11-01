@@ -368,3 +368,25 @@ class Feedback(BaseModel):
 
 class FeedbackUpdate(BaseModel):
     status: Literal["new", "done"]
+
+
+class PublicDay(BaseModel):
+    date: str
+    type: str
+
+
+class PublicLift(BaseModel):
+    exerciseId: str
+    name: str
+    group: Group
+    load: Load
+    scheme: Scheme
+    times: int
+
+
+class PublicSummary(BaseModel):
+    """What the welcome page shows before anyone signs in: training days and current targets only
+    (no notes, cues, photos or workout details). A guest sees all of this after Continue anyway."""
+
+    days: list[PublicDay]
+    lifts: list[PublicLift]

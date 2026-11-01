@@ -61,7 +61,7 @@ function Idle({ onOpen }: { onOpen: (w: Workout) => void }) {
   return (
     <div className="pb-28">
       <section className="mt-6">
-        <h2 className="text-2xl font-semibold">Ready to train</h2>
+        <h2 className="font-display text-3xl font-bold">Ready to train</h2>
         <p className="mt-1 flex items-center gap-1 text-stone-600">
           What are you training today?
           <InfoTip title="Day type">
@@ -158,7 +158,7 @@ function Stopwatch({ body, onLap, lapsOpen, onToggleLaps }: {
   return (
     <>
       <div className="min-w-0 flex-1">
-        <div className="text-3xl font-semibold tabular-nums" aria-label="Elapsed time">
+        <div className="font-display text-4xl font-semibold tabular-nums" aria-label="Elapsed time">
           {formatDuration(secondsBetween(body.startedAt))}
         </div>
         <button

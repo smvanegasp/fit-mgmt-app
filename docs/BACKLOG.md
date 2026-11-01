@@ -27,9 +27,26 @@ Sergio merges.
 ## Now
 
 All planned stages are done and live at https://gym.sergiovanegas.com. **Stage 8a (in-app feedback)**
-is in review on `stage-8a-feedback`; next is 8b, the training-log identity (plan agreed 2026-10-31:
-own logo from the set glyph, a condensed display font for numbers and headings, dark by default, a
-stats-led welcome page, a slimmer demo banner).
+is in review on `stage-8a-feedback`, and **8b (the training-log identity)** on `stage-8b-identity`
+(built on 8a: merge #17 first).
+
+## Stage 8b: the gym's own identity (2026-10-31)
+
+Sergio: "awesome, but too similar to the pantry"; same UX, own look.
+
+- **Logo** from the set glyph: three columns of squares growing 2-3-4, the past ones faded (the
+  progression ladder), replacing the Phosphor barbell tile (the pantry's style). Favicon, app icons,
+  sidebar, welcome page.
+- **Barlow Condensed** for big numbers and headings (stopwatch, steppers, targets, streak, stats,
+  titles); body text unchanged.
+- **Dark by default** for anyone who hasn't chosen (Sergio loves the dark look). Considered and left
+  as is: dark text on blue buttons in dark mode (it's the intended calmer style).
+- **Welcome page** rebuilt around the real log: Gym + "Sergio's training log", three stats
+  (workouts, week streak, since), the training-days heatmap, "In training now" (squat, deadlift,
+  dips with their set glyph and count), then the note and "How it works" clips; Continue / I'm
+  Sergio in a bar fixed at the bottom on phones; two columns on computers. Data from a new public
+  endpoint (days and targets only). The heatmap is now one shared component (Progress and Welcome).
+- Clips re-recorded (dark).
 
 ## Stage 8a: in-app feedback (2026-10-31)
 

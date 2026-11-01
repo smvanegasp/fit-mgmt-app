@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
-    <meta name="theme-color" content="#fafaf9" />
+    <meta name="theme-color" content="#0a0a0a" />
     <title>Gym</title>
     <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
     <!-- App icon and "Add to Home Screen". The manifest is .json so S3 serves it as JSON. -->
@@ -14,7 +14,8 @@
       // Apply dark mode before the first paint (no white flash). Same logic as src/lib/theme.ts.
       try {
         var t = localStorage.getItem("gym.theme");
-        if (t === "dark" || (t !== "light" && matchMedia("(prefers-color-scheme: dark)").matches)) {
+        // Dark unless Light is chosen, or Automatic and the phone is light.
+        if (t !== "light" && (t !== "system" || matchMedia("(prefers-color-scheme: dark)").matches)) {
           document.documentElement.classList.add("dark");
         }
       } catch (e) {}

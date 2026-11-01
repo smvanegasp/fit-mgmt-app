@@ -35,7 +35,7 @@ export function Stepper({ label, value, onChange, step, min = 0, unit, decimals,
           const n = Number(e.target.value.replace(",", "."));
           if (!Number.isNaN(n)) onChange(Math.max(min, n));
         }}
-        className="w-full min-w-0 bg-transparent text-center text-3xl font-semibold tabular-nums outline-none"
+        className="w-full min-w-0 bg-transparent text-center font-display text-4xl font-semibold tabular-nums outline-none"
       />
       <button
         type="button"

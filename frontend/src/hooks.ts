@@ -50,6 +50,10 @@ export function useMarkFeedback() {
   });
 }
 
+export function usePublicSummary() {
+  return useQuery({ queryKey: ["public-summary"], queryFn: api.publicSummary, staleTime: 5 * 60_000 });
+}
+
 export function useHealth() {
   return useQuery({ queryKey: ["health"], queryFn: api.health });
 }

@@ -8,9 +8,10 @@ const darkQuery = () => window.matchMedia("(prefers-color-scheme: dark)");
 export function storedTheme(): Theme {
   try {
     const value = localStorage.getItem(KEY);
-    return value === "light" || value === "dark" ? value : "system";
+    // Dark until someone picks otherwise (Sergio, 2026-10-31: the training-log look).
+    return value === "light" || value === "system" ? value : "dark";
   } catch {
-    return "system";
+    return "dark";
   }
 }
 
