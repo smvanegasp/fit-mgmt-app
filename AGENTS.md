@@ -122,7 +122,9 @@ A mobile-first web app where Sergio logs their gym workouts and sees their progr
 | 8a | In-app feedback: Settings and the guest banner, owner inbox in Settings, email on guest feedback, `scripts/feedback.py` for each session | #17 |
 | 8b | Own identity: set-glyph logo and icons, Barlow Condensed for numbers and headings, dark by default, stats-led welcome page (public summary endpoint, shared Heatmap), re-recorded clips | #18 |
 
-**Where things stand (2026-10-31):** all stages (0-8b) are merged and live (PRs up to #18).
+**Where things stand (2026-10-31):** all stages (0-8b) are merged and live (PRs up to #19), and
+Sergio has verified the live site (owner login, the feedback email, the icon). No open work: new
+requests come from Sergio or from the in-app feedback (`scripts/feedback.py`, section 2).
 **Production holds Sergio's real log** at https://gym.sergiovanegas.com (loaded
 in stage 7), so Sergio logs there from now on and visitors get a copy of it. The local stack has the
 same history and is now only for development: anything logged locally stays local. **Never change

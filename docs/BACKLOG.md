@@ -224,7 +224,8 @@ Sergio: "awesome, but too similar to the pantry"; same UX, own look.
 - Done: welcome note and photo (5b, 2026-10-30); alert email for 6a (given in chat; it goes only in the
   git-ignored `infra/terraform.tfvars`, never in the repo).
 - Done: OK on the 6a deploy (2026-10-30).
-- Now: **confirm the alarm email** (AWS sent a "Subscription Confirmation" link).
+- Done: alarm email confirmed; Sergio checked the live site end to end (owner login, the feedback
+  email, the new icon) on 2026-10-31.
 - Done: OK on the 6b apply (2026-10-30).
 - Done: the two CNAMEs at Hostinger (2026-10-31); keep the validation one for renewals.
 - Done: OK on the production import (2026-10-31).
@@ -317,10 +318,19 @@ Sergio: "awesome, but too similar to the pantry"; same UX, own look.
 - Session time and rest per set from laps, once there are app-logged workouts with laps (stage 4b
   left it out: no data yet). Weekly volume if it turns out useful.
 
-- Stage 6a: `GROQ_API_KEY` as SSM `/fit/GROQ_API_KEY`.
+- Check the real AWS cost (Cost Explorer, profile `gym`) after a few weeks; estimate ~$0.10-0.25 a
+  month.
+- Dependabot opens weekly update PRs; merging one deploys it (CI must be green).
 
 ## Done
 
+- 2026-10-31: Intro shortened (#19). Sergio verified the live site: owner login, feedback email,
+  icon.
+- 2026-10-31: Stage 8b own identity (#18) and 8a in-app feedback (#17).
+- 2026-10-31: Stage 6c gym.sergiovanegas.com and stage 7 production import (#16).
+- 2026-10-30: Stage 6b merges deploy (#15), stage 6a AWS (#14).
+- 2026-10-30: Stages 5b welcome page (#13) and 5a guests and passcode (#12).
+- 2026-10-30: Stage 4c desktop (#10, History months #11), 4b (#9), 4a Progress (#8).
 - 2026-10-30: Stage 3 History merged (#6), after two feedback rounds.
 - 2026-10-30: Stage 2 Train tab merged (#5), after four feedback rounds.
 - 2026-10-29: Stage 1 WhatsApp import merged (#4).
