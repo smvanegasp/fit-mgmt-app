@@ -58,9 +58,8 @@ export function WelcomePage() {
     <div className="flex items-start gap-3 rounded-2xl border border-stone-200 bg-white p-3">
       <img src="/sergio.jpg" alt="Sergio" width={48} height={48} className="h-12 w-12 shrink-0 rounded-full object-cover" />
       <p className="text-sm text-stone-700">
-        <b>Hi, I'm Sergio!</b> I've been training calisthenics and weightlifting for 12 years. This last year I logged
-        every workout in a WhatsApp chat with myself, and this app turns those messages into a log I can learn from:
-        what I lifted, what's next, and the cues that make each lift go better.
+        <b>Hi, I'm Sergio!</b> For 12 years, calisthenics and weightlifting have been one of the big rocks in my life.
+        I use this app to log every workout and see my progress. Take a look!
       </p>
     </div>
   );

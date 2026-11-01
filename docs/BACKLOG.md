@@ -26,9 +26,15 @@ Sergio merges.
 
 ## Now
 
-All planned stages are done and live at https://gym.sergiovanegas.com. **Stage 8a (in-app feedback)**
-is in review on `stage-8a-feedback`, and **8b (the training-log identity)** on `stage-8b-identity`
-(built on 8a: merge #17 first).
+All stages done and live at https://gym.sergiovanegas.com, including 8a (in-app feedback, #17)
+and 8b (the gym's own identity, #18). New requests come through the in-app feedback
+(`scripts/feedback.py` at the start of each session) or from Sergio directly.
+
+## Feedback on stage 8b (Sergio, 2026-10-31)
+
+| What Sergio said | Done |
+|---|---|
+| The intro is too long: more natural, training as a foundation of life, short, end with something like "Take a look!" | Three options offered; Sergio picked the first and tailored it ("one of the big rocks in my life") |
 
 ## Stage 8b: the gym's own identity (2026-10-31)
 
