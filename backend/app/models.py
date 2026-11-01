@@ -346,3 +346,25 @@ class Progress(BaseModel):
     lifts: list[Lift]
     # Newest first.
     routines: list[Routine] = Field(default_factory=list)
+
+
+class FeedbackCreate(BaseModel):
+    text: str = Field(min_length=1, max_length=2000)
+    # Where it was written about ("Train", "Exercise: Back squat"...).
+    page: str = Field("", max_length=80)
+
+
+class Feedback(BaseModel):
+    """Feedback left in the app, reviewed by the agent at the start of the next session."""
+
+    id: str
+    text: str
+    page: str = ""
+    role: Literal["owner", "guest"]
+    createdAt: str
+    status: Literal["new", "done"] = "new"
+    userAgent: str = ""
+
+
+class FeedbackUpdate(BaseModel):
+    status: Literal["new", "done"]

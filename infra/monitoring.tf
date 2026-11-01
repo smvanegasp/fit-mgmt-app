@@ -1,4 +1,4 @@
-# Email alerts: the API failing, and anyone getting the owner passcode wrong.
+# Email alerts: the API failing, anyone getting the owner passcode wrong, and guest feedback.
 # Free at this size (CloudWatch's first 10 alarms and metrics, SNS's first 1,000 emails).
 
 variable "alert_email" {
@@ -22,7 +22,23 @@ locals {
   log_signals = {
     WrongOwnerPasscode = "\"Wrong owner passcode\""
     CueCheckFailed     = "\"Cue check failed\""
+    GuestFeedback      = "\"Guest feedback received\""
   }
+}
+
+resource "aws_cloudwatch_metric_alarm" "guest_feedback" {
+  alarm_name          = "${local.name}-guest-feedback"
+  alarm_description   = "A guest left feedback in the app (Settings or the demo banner). Read it with scripts/feedback.py or in Settings."
+  namespace           = "Fit"
+  metric_name         = "GuestFeedback"
+  statistic           = "Sum"
+  period              = 900
+  evaluation_periods  = 1
+  threshold           = 1
+  comparison_operator = "GreaterThanOrEqualToThreshold"
+  treat_missing_data  = "notBreaching"
+  alarm_actions       = [aws_sns_topic.alerts.arn]
+  depends_on          = [aws_cloudwatch_log_metric_filter.signals]
 }
 
 resource "aws_cloudwatch_log_metric_filter" "signals" {

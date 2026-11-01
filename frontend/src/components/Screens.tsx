@@ -1,5 +1,6 @@
 import { createContext, useCallback, useContext, useMemo, useState, type ReactNode } from "react";
 
+import { rememberPlace } from "../lib/place";
 import { ExercisePage } from "./ExercisePage";
 import { WorkoutDetail } from "./WorkoutDetail";
 
@@ -19,8 +20,14 @@ export function useScreens(): Screens {
 
 export function ScreensProvider({ children }: { children: ReactNode }) {
   const [stack, setStack] = useState<ScreenRef[]>([]);
-  const openWorkout = useCallback((id: string) => setStack((s) => [...s, { kind: "workout", id }]), []);
-  const openExercise = useCallback((id: string) => setStack((s) => [...s, { kind: "exercise", id }]), []);
+  const openWorkout = useCallback((id: string) => {
+    rememberPlace("Workout");
+    setStack((s) => [...s, { kind: "workout", id }]);
+  }, []);
+  const openExercise = useCallback((id: string) => {
+    rememberPlace("Exercise");
+    setStack((s) => [...s, { kind: "exercise", id }]);
+  }, []);
   const close = useCallback(() => setStack((s) => s.slice(0, -1)), []);
   const value = useMemo(() => ({ openWorkout, openExercise }), [openWorkout, openExercise]);
 

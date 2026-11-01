@@ -1,11 +1,15 @@
-import { Desktop, Moon, SignOut, Sun, type Icon } from "@phosphor-icons/react";
+import { ChatCircleText, Check, Desktop, Moon, SignOut, Sun, type Icon } from "@phosphor-icons/react";
+import { useState } from "react";
 
-import { useLogout, useSession } from "../hooks";
+import { FeedbackSheet } from "../components/FeedbackSheet";
+import { useFeedback, useLogout, useMarkFeedback, useSession } from "../hooks";
+import { friendlyDate } from "../lib/time";
 import { useTheme, type Theme } from "../lib/theme";
 
 export function SettingsPage() {
   return (
     <div className="space-y-4 pb-24">
+      <FeedbackSettings />
       <AppearanceSettings />
       <Account />
     </div>
@@ -60,6 +64,51 @@ function Account() {
         className="flex items-center gap-2 rounded-lg px-3 py-2 font-medium text-stone-700 ring-1 ring-stone-200">
         <SignOut size={18} weight="fill" aria-hidden /> {owner ? "Log out" : "Leave the demo"}
       </button>
+    </section>
+  );
+}
+
+/** Send feedback (everyone); the owner also sees the inbox, newest first. */
+function FeedbackSettings() {
+  const session = useSession().data;
+  const owner = session?.role === "owner";
+  const inbox = useFeedback(owner);
+  const mark = useMarkFeedback();
+  const [writing, setWriting] = useState(false);
+  const fresh = (inbox.data ?? []).filter((f) => f.status === "new").length;
+  return (
+    <section className="rounded-xl border border-stone-200 bg-white p-4">
+      <h2 className="flex items-center gap-2 text-lg font-semibold">
+        Feedback
+        {owner && fresh > 0 && <span className="rounded-full bg-blue-600 px-2 py-0.5 text-xs font-semibold text-white">{fresh} new</span>}
+      </h2>
+      <p className="mb-3 text-sm text-stone-500">
+        {owner ? "Notes for the next round of changes, yours and your guests'." : "Something confusing, broken or missing? Sergio reads every note."}
+      </p>
+      <button type="button" onClick={() => setWriting(true)}
+        className="flex items-center gap-2 rounded-lg px-3 py-2 font-medium text-stone-700 ring-1 ring-stone-200">
+        <ChatCircleText size={18} weight="fill" aria-hidden /> Send feedback
+      </button>
+      {owner && (inbox.data ?? []).length > 0 && (
+        <ul className="mt-4 divide-y divide-stone-100">
+          {inbox.data!.map((f) => (
+            <li key={f.id} className={`flex items-start gap-2 py-2.5 ${f.status === "done" ? "opacity-50" : ""}`}>
+              <div className="min-w-0 flex-1">
+                <p className="text-sm whitespace-pre-wrap">{f.text}</p>
+                <p className="text-xs text-stone-500">
+                  {friendlyDate(f.createdAt.slice(0, 10))} · {f.role === "guest" ? "a guest" : "you"}{f.page ? ` · ${f.page}` : ""}
+                </p>
+              </div>
+              <button type="button" onClick={() => mark.mutate({ id: f.id, status: f.status === "new" ? "done" : "new" })}
+                className="shrink-0 rounded-lg px-2 py-1 text-xs font-medium text-stone-600 ring-1 ring-stone-200"
+                aria-label={f.status === "new" ? "Mark done" : "Mark new"}>
+                {f.status === "new" ? <span className="inline-flex items-center gap-1"><Check size={12} weight="bold" aria-hidden /> Done</span> : "Reopen"}
+              </button>
+            </li>
+          ))}
+        </ul>
+      )}
+      {writing && <FeedbackSheet onClose={() => setWriting(false)} />}
     </section>
   );
 }
