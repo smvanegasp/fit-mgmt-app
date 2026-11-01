@@ -1,9 +1,9 @@
 # Gym tracker
 
 A web app for logging gym workouts and seeing progress over time: a built-in stopwatch,
-structured sets (weight x reps, pre-filled from last time), a technique log of notes and photos
-per exercise, and charts for consistency, strength per exercise, volume, and how the routine
-has evolved. Years of training history logged in a WhatsApp chat are imported with their real
+structured sets (weight x reps, pre-filled from last time), a technique checklist and photos per
+exercise, a calendar of training days and streaks, each lift's progression of targets (sets, reps,
+then weight), drop sets, climbing grades, and how the routine has evolved. Years of training history logged in a WhatsApp chat are imported with their real
 dates.
 
 Designed phone first (that's where workouts get logged), and laid out as a dashboard on
@@ -12,8 +12,9 @@ real training log.
 
 Built in stages alongside its sibling project, the
 [pantry app](https://github.com/smvanegasp/pantry-mgmt-app), and shares its architecture.
-**Status:** logging, history, progress, the desktop dashboard, guest demos and the welcome page are
-built (stages 0-5b), and the app is live at https://gym.sergiovanegas.com with the full imported history (stages 6-7). The full plan is in [docs/BACKLOG.md](docs/BACKLOG.md).
+**Status:** live at **https://gym.sergiovanegas.com** with the full imported history (stages 0-8:
+logging, history, progress, a desktop dashboard, guest demos, a stats-led welcome page, AWS,
+in-app feedback and its own visual identity). The full plan is in [docs/BACKLOG.md](docs/BACKLOG.md).
 
 ## Stack
 
@@ -68,7 +69,11 @@ cd frontend && npm test && npm run build
 - Visitors get a **private 24-hour copy** of the log (a "sandbox" in the same table, its rows
   expiring with DynamoDB TTL); the space comes only from a signed httpOnly cookie, so a guest can't
   reach the owner's data. The owner logs in with a 6-digit passcode (scrypt hash; three wrong tries
-  pause login on that network). Demo creation and guest photo uploads are rate-limited.
+  pause login on that network). Demo creation, guest photo uploads and feedback are rate-limited.
+  Before signing in, the welcome page reads a public summary with only training days and current
+  targets.
+- In-app feedback (from the owner or guests) is stored outside every sandbox, read only by the
+  owner, and never copied into the repo.
 - On AWS, secrets live in SSM Parameter Store (SecureString) and the API only accepts requests
   that come through CloudFront.
 - One optional AI feature: when a note is written on an exercise, the API sends that note and the
