@@ -129,7 +129,7 @@ export function TargetGame({ streak, load, today }: { streak: Streak; load: Exer
     <div className="mt-2 flex items-center gap-3 rounded-xl bg-blue-50 px-3 py-2 text-blue-900">
       <SetGlyph sets={streak.scheme.sets} max={Math.max(...streak.scheme.sets)} color="var(--color-blue-600)" />
       <div className="min-w-0 flex-1">
-        <div className="text-sm font-semibold">Target {schemeText(streak.scheme, load)}</div>
+        <div className="font-display text-xl font-semibold">Target {schemeText(streak.scheme, load)}</div>
         <div className="text-xs">
           {done ? `${streak.times} in a row: time to go up` : `${streak.times} of ${streak.goal} in a row`}
           {reachedToday && <span className="font-semibold"> · reached today</span>}

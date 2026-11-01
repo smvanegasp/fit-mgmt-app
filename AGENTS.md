@@ -74,6 +74,17 @@ A mobile-first web app where Sergio logs their gym workouts and sees their progr
   Add an `InfoTip` (copy from the pantry) wherever a feature isn't obvious. Black/charcoal dark
   mode. Blue accent (Tailwind blue, mirrored in `index.css` for dark mode; Sergio, 2026-10-30, after
   trying red), so it looks different from the pantry. Red is only for errors and delete.
+- **The gym's own identity** (stage 8b, Sergio 2026-10-31: "not a pantry copycat", same UX):
+  - **Logo:** the set glyph as a ladder (three columns of squares growing 2-3-4, past ones faded) on
+    blue: `public/favicon.svg`, `components/Logo.tsx`; app icons from `scripts/make-icons.mjs`.
+  - **Display font:** Barlow Condensed (self-hosted, `@fontsource/barlow-condensed`, Latin 600/700),
+    class `font-display`, only for big numbers and headings (stopwatch, steppers, targets, streak,
+    stats, page titles). Body text stays system sans.
+  - **Dark by default** when nothing is stored (`lib/theme.ts` and the inline script in
+    `index.html`); Automatic and Light stay in Settings. Blue buttons in dark mode have dark text on
+    purpose (the calmer dark button style); don't "fix" `text-white`.
+  - **Welcome page** leads with the live log: stats, the training-days heatmap, current targets,
+    then the note and clips; Continue / I'm Sergio stay in a bottom bar on phones.
 - **Python** with **uv** (`uv sync`, `uv run pytest`, `uv add`). **Node 22+** (Vite 8).
 - **Testing against the local stack:** it holds Sergio's real history, and they may be using it from their
   phone. Browser checks that write (start/finish/discard a workout, rename, merge) can collide with
@@ -109,6 +120,7 @@ A mobile-first web app where Sergio logs their gym workouts and sees their progr
 | 6c | gym.sergiovanegas.com: ACM certificate (DNS-validated, auto-renewing) and CloudFront alias; two CNAMEs at Hostinger | open |
 | 7 | Production import (2026-10-31): 177 workouts, 1,780 sets, 50 cues, 4 routines, 15 photos into AWS `fit` (space main); identical to the local log row by row (only `hidden: false` spelled out and an old group name differ locally) | done (no code) |
 | 8a | In-app feedback: Settings and the guest banner, owner inbox in Settings, email on guest feedback, `scripts/feedback.py` for each session | open |
+| 8b | Own identity: set-glyph logo and icons, Barlow Condensed for numbers and headings, dark by default, stats-led welcome page (public summary endpoint, shared Heatmap), re-recorded clips | open |
 
 **Where things stand (2026-10-31):** all stages (0-7) are done; 6c and 7 are in review on
 `stage-6c-domain`. **Production holds Sergio's real log** at https://gym.sergiovanegas.com (loaded
@@ -280,6 +292,7 @@ frontend/
 | Area | Endpoints |
 |---|---|
 | Health | `GET /health` (no session needed) |
+| Public | `GET /public/summary` (no session; the welcome page): training days `{date, type}` and the main lifts' current targets only |
 | Feedback | `POST /feedback {text, page}` (owner or guest; 10/hour per IP, 200/day) · `GET /feedback` · `PATCH /feedback/{id} {status}` (owner only). Stored in `SPACE#feedback`, outside every sandbox, no TTL |
 | Session | `GET /session` · `POST /session/guest` · `POST /session/guest/reset[?sample=true]` · `POST /session/owner {passcode}` · `DELETE /session`. Everything else needs a session (401). Demos: 20/hour per IP (1000 locally), 500/hour total; 3 wrong passcodes pause owner login on that network for an hour (10/hour globally); guests upload at most 40 photos a day; the cue check is owner-only |
 | Progress | `GET /progress` (days with day type; the main lifts' progression ladders; routine eras newest first with their workouts) · `GET /exercises/{id}/progress` (one exercise's ladder: `steps` of `{scheme, sessions, times}`, oldest first) |

@@ -135,7 +135,7 @@ export function ProgressionLadder({ lift, color, load, today, onOpenWorkout }: {
             <li key={step.sessions[0].date} className={`flex items-center gap-3 rounded-xl px-2 py-2 ${current ? "bg-blue-50" : ""}`}>
               <div className="flex w-12 shrink-0 justify-center"><SetGlyph sets={step.scheme.sets} max={max} color={color} /></div>
               <div className="min-w-0 flex-1">
-                <div className="text-sm font-semibold">
+                <div className="font-display text-lg font-semibold">
                   {schemeText(step.scheme, load)}
                   {current && <span className="ml-1.5 text-xs font-medium text-blue-800">now</span>}
                 </div>
@@ -193,7 +193,7 @@ export function LiftCard({ lift, color, load, onOpen }: { lift: Lift; color: str
       {current ? (
         <>
           <div className="mt-0.5 flex items-center gap-2 text-sm text-stone-600">
-            <span>Target {schemeText(current.scheme, load)}</span>
+            <span className="font-display text-lg font-semibold text-stone-800">Target {schemeText(current.scheme, load)}</span>
             <GameDots times={current.times} />
           </div>
           <div className="mt-3"><LadderStrip lift={lift} color={color} /></div>

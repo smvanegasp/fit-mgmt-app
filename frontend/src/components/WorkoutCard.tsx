@@ -32,7 +32,7 @@ export function WorkoutCard({ workout, onClick }: { workout: Workout; onClick: (
     <button type="button" onClick={onClick} className="flex w-full items-start gap-4 rounded-2xl border border-stone-200 bg-white p-3 text-left">
       <div className="flex size-12 shrink-0 flex-col items-center justify-center rounded-xl bg-stone-100">
         <span className="text-[11px] leading-none font-medium text-stone-500 uppercase">{WEEKDAYS[day.getDay()]}</span>
-        <span className="mt-0.5 text-lg leading-none font-semibold">{day.getDate()}</span>
+        <span className="mt-0.5 font-display text-2xl leading-none font-bold">{day.getDate()}</span>
       </div>
       <div className="min-w-0 flex-1 py-0.5">
         <div className="flex items-baseline justify-between gap-2">

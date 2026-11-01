@@ -43,8 +43,8 @@ function Clip({
 
   return (
     <li ref={card} className="w-64 shrink-0 snap-center text-center lg:w-auto">
-      {/* Sized from the screen height so the welcome page fits without scrolling (fixed on computers). */}
-      <div className="mx-auto w-[clamp(6rem,calc((100dvh-37.5rem)*0.462),12rem)] lg:w-52 overflow-hidden rounded-[1.5rem] border-[5px] border-neutral-900 bg-neutral-900 shadow-lg">
+      {/* A phone-sized frame; the welcome page scrolls, so the clips keep one size. */}
+      <div className="mx-auto w-44 lg:w-52 overflow-hidden rounded-[1.5rem] border-[5px] border-neutral-900 bg-neutral-900 shadow-lg">
         <video
           ref={video}
           src={`/tutorials/${tutorial.id}.mp4`}

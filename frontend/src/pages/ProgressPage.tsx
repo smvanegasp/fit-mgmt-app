@@ -3,6 +3,7 @@ import { useLayoutEffect, useMemo, useRef, useState } from "react";
 
 import type { ProgressDay, Routine } from "../api";
 import { ComingSoon } from "../components/ComingSoon";
+import { Heatmap } from "../components/Heatmap";
 import { InfoTip } from "../components/InfoTip";
 import { PhotoStrip } from "../components/Photos";
 import { GradePyramid, LiftCard, TYPE_COLOR, TypeLegend, groupColor, typeColor } from "../components/Progression";
@@ -85,30 +86,15 @@ function LastWorkouts() {
  * mark under each week that reached the goal. Same data as the phone's weeks view, laid wide. */
 function YearConsistency({ days, today }: { days: ProgressDay[]; today: string }) {
   const screens = useScreens();
-  const byDate = useMemo(() => new Map(days.map((d) => [d.date, d])), [days]);
   const counts = useMemo(() => weekCounts(days), [days]);
   const streak = useMemo(() => streaks(days, today), [days, today]);
-  // As many recent weeks as fit at full size (a year on a wide screen).
-  const grid = useRef<HTMLDivElement>(null);
-  const [fit, setFit] = useState(52);
-  useLayoutEffect(() => {
-    const el = grid.current;
-    if (!el) return;
-    const measure = () => setFit(Math.max(8, Math.min(52, Math.floor((el.clientWidth - 24) / 17))));
-    measure();
-    const observer = new ResizeObserver(measure);
-    observer.observe(el);
-    return () => observer.disconnect();
-  }, []);
-  const weeks = weekRows(today, fit).reverse();
-  const thisWeek = counts.get(weeks.at(-1)!.monday) ?? 0;
+  const thisWeek = counts.get(weekRows(today, 1)[0].monday) ?? 0;
   const thisYear = days.filter((d) => d.date.startsWith(today.slice(0, 4))).length;
-  const first = days[0].date;
 
   return (
     <section className="flex gap-8 rounded-2xl border border-stone-200 bg-white p-6">
       <div className="w-44 shrink-0">
-        <div className="text-4xl font-semibold">{streak.current}</div>
+        <div className="font-display text-6xl font-bold">{streak.current}</div>
         <div className="flex items-center gap-1 text-sm text-stone-500">
           week streak
           <InfoTip title="Streak">
@@ -126,34 +112,7 @@ function YearConsistency({ days, today }: { days: ProgressDay[]; today: string }
           <h2 className="font-semibold">Consistency</h2>
           <TypeLegend />
         </div>
-        <div ref={grid} className="mt-4 flex gap-[3px]">
-          <div className="mr-1 flex flex-col gap-[3px] pt-5 text-[10px] text-stone-500">
-            {WEEKDAYS.map((d, i) => <span key={i} className="h-3.5 leading-[14px]">{i % 2 === 0 ? d : ""}</span>)}
-          </div>
-          {weeks.map((week, w) => {
-            const month = w === 0 || week.monday.slice(0, 7) !== weeks[w - 1].monday.slice(0, 7);
-            const n = counts.get(week.monday) ?? 0;
-            return (
-              <div key={week.monday} className="flex min-w-3.5 flex-1 flex-col gap-[3px]">
-                <span className="h-4 text-[10px] whitespace-nowrap text-stone-500">{month ? shortDate(week.monday).split(" ")[0] : ""}</span>
-                {week.days.map((day) => {
-                  const workout = byDate.get(day);
-                  if (workout) {
-                    return (
-                      <button key={day} type="button" onClick={() => screens.openWorkout(workout.workoutId)}
-                        title={`${longDate(day, today)}: ${workout.label}`} aria-label={`${longDate(day, today)}: ${workout.label}`}
-                        className={`h-3.5 rounded-[3px] hover:opacity-80 ${day === today ? "ring-2 ring-stone-400" : ""}`}
-                        style={{ background: typeColor(workout.type) }} />
-                    );
-                  }
-                  return <span key={day} className={`h-3.5 rounded-[3px] ${day > today || day < first ? "" : "bg-stone-100"}`} />;
-                })}
-                {/* The week reached the goal. */}
-                <span className={`mt-1 h-1 rounded-full ${n >= WEEKLY_GOAL ? "bg-blue-600" : ""}`} title={`${n} workouts`} />
-              </div>
-            );
-          })}
-        </div>
+        <div className="mt-4"><Heatmap days={days} today={today} onOpen={screens.openWorkout} /></div>
         <p className="mt-2 text-xs text-stone-500">The blue marks under the weeks reached {WEEKLY_GOAL} workouts. Click a day to open it.</p>
       </div>
     </section>
@@ -245,7 +204,7 @@ function Consistency({ days, today }: { days: ProgressDay[]; today: string }) {
     <section className="rounded-2xl border border-stone-200 bg-white p-4">
       <div className="flex items-start gap-2">
         <div className="min-w-0 flex-1">
-          <div className="text-2xl font-semibold">{streak.current}-week streak</div>
+          <div className="font-display text-3xl font-bold">{streak.current}-week streak</div>
           <div className="text-sm text-stone-500">Longest {streak.longest} weeks</div>
         </div>
         <InfoTip title="Streak">

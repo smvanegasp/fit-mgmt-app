@@ -227,6 +227,12 @@ export interface Feedback {
   status: "new" | "done";
 }
 
+/** The welcome page's live stats, public: training days and current targets only. */
+export interface PublicSummary {
+  days: { date: string; type: string }[];
+  lifts: { exerciseId: string; name: string; group: Group; load: Load; scheme: Scheme; times: number }[];
+}
+
 export interface SessionInfo {
   role: "owner" | "guest" | null;
   /** Unix seconds when a guest sandbox expires. */
@@ -270,6 +276,7 @@ export const api = {
   health: () => request<{ status: string }>("/health"),
 
   getSession: () => request<SessionInfo>("/session"),
+  publicSummary: () => request<PublicSummary>("/public/summary"),
   startGuest: () => request<SessionInfo>("/session/guest", { method: "POST" }),
   resetGuest: () => request<SessionInfo>("/session/guest/reset", { method: "POST" }),
   ownerLogin: (passcode: string) => request<SessionInfo>("/session/owner", json("POST", { passcode })),

@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 
 import { SESSION_EXPIRED, type SessionInfo } from "./api";
 import { DemoBanner } from "./components/DemoBanner";
+import { Logo } from "./components/Logo";
 import { NavContext, type Tab } from "./components/Nav";
 import { ScreensProvider } from "./components/Screens";
 import { DESKTOP, useRefreshSession, useSession } from "./hooks";
@@ -76,7 +77,7 @@ function MainApp({ session }: { session: SessionInfo }) {
 
           {/* Bottom tabs on phones and tablets; a sidebar on computers. */}
           <nav className="fixed inset-x-0 bottom-0 z-30 border-t border-stone-200 bg-white pb-[env(safe-area-inset-bottom)] lg:inset-y-0 lg:right-auto lg:w-56 lg:border-t-0 lg:border-r lg:pb-0">
-            <div className="hidden px-6 pt-8 pb-6 text-lg font-semibold lg:block">Gym</div>
+            <div className="hidden items-center gap-2.5 px-5 pt-8 pb-6 font-display text-2xl font-bold lg:flex"><Logo size={32} /> Gym</div>
             <div className="mx-auto grid max-w-lg grid-cols-4 lg:mx-0 lg:flex lg:max-w-none lg:flex-col lg:gap-1 lg:px-3">
               {TABS.map((t) => (
                 <button
