@@ -119,11 +119,11 @@ A mobile-first web app where Sergio logs their gym workouts and sees their progr
 | 6b | Merges deploy: IAM role `fit-github-deploy` (GitHub OIDC, main only; reads the account's existing OIDC provider), repo variables `DEPLOY_ENABLED`, `DISTRIBUTION_ID`, `SITE_URL`; tested with a manual run | #15 |
 | 6c | gym.sergiovanegas.com: ACM certificate (DNS-validated, auto-renewing) and CloudFront alias; two CNAMEs at Hostinger | open |
 | 7 | Production import (2026-10-31): 177 workouts, 1,780 sets, 50 cues, 4 routines, 15 photos into AWS `fit` (space main); identical to the local log row by row (only `hidden: false` spelled out and an old group name differ locally) | done (no code) |
-| 8a | In-app feedback: Settings and the guest banner, owner inbox in Settings, email on guest feedback, `scripts/feedback.py` for each session | open |
-| 8b | Own identity: set-glyph logo and icons, Barlow Condensed for numbers and headings, dark by default, stats-led welcome page (public summary endpoint, shared Heatmap), re-recorded clips | open |
+| 8a | In-app feedback: Settings and the guest banner, owner inbox in Settings, email on guest feedback, `scripts/feedback.py` for each session | #17 |
+| 8b | Own identity: set-glyph logo and icons, Barlow Condensed for numbers and headings, dark by default, stats-led welcome page (public summary endpoint, shared Heatmap), re-recorded clips | #18 |
 
-**Where things stand (2026-10-31):** all stages (0-7) are done; 6c and 7 are in review on
-`stage-6c-domain`. **Production holds Sergio's real log** at https://gym.sergiovanegas.com (loaded
+**Where things stand (2026-10-31):** all stages (0-8b) are merged and live (PRs up to #18).
+**Production holds Sergio's real log** at https://gym.sergiovanegas.com (loaded
 in stage 7), so Sergio logs there from now on and visitors get a copy of it. The local stack has the
 same history and is now only for development: anything logged locally stays local. **Never change
 or delete `SPACE#main` on AWS without Sergio's explicit OK** (section 6); test in sample demos.
