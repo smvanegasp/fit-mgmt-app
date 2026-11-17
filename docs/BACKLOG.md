@@ -26,15 +26,19 @@ Sergio merges.
 
 ## Now
 
-Stage 9: the first round of in-app feedback (19 notes from Sergio, 2026-11-02 to 11-17, agreed
-2026-11-17), in four PRs.
+Nothing open (2026-11-17): stage 9 is merged and live (#26-#29), with the Dependabot updates
+(#23-#25). New requests come from Sergio or the in-app feedback (`scripts/feedback.py`).
+
+### Stage 9 (done): the first round of in-app feedback
+
+19 notes from Sergio, 2026-11-02 to 11-17, agreed 2026-11-17, in four PRs.
 
 | Stage | Branch | What |
 |---|---|---|
 | 9a | `stage-9a-fixes` | **Bugs.** (1) The pull-up target showed the old scheme after Sergio went up in weight; find the cause by replaying the history and fix the target game. (2) Legs: squat and deadlift use different weights as the main lift and as the second lift, so the target breaks; keep one target per role (main = first lift of the day, second). (3) A workout left open ran 46 hours: auto-finish 2 hours after the start, ending at the last logged set; correct that workout on AWS (Sergio's OK, 2026-11-17). (4) Reps typed in the logger are lost when switching screens: keep the draft in the autosaved workout. (5) The phone in landscape looks broken. |
 | 9b | `stage-9b-train` | **Train flow.** Bigger numbers in the steppers; "Done" on an exercise folds it so the current one gets the room; the start screen shows the last two workouts and their day types; the exercise picker opens filtered to today's day type; today's usual exercises pre-filled in order, always starting with a timed warm-up; a short congrats when a target is reached (mainly the first, heavy lift). |
 | 9c | `stage-9c-history` | **History and progress.** Consistent workout names: day type plus the first exercise ("Legs · Squat"); a top-weight-over-time chart on each exercise page; log body weight (and add 159.4 lb on 2026-11-03). |
-| 9d | `stage-9d-peloton` | **Peloton** (cardio): the class summary screenshot from the Peloton app, attached to the entry. Sergio, 2026-11-17, after trying a typed form: no typing, just the photo, from the photo library. Reading the screenshot automatically was offered (a second AI feature) and not chosen. |
+| 9d | `stage-9d-peloton` | **Peloton** (cardio): the class summary screenshot from the Peloton app, attached to the entry. Sergio, 2026-11-17, after trying a typed form: no typing, just the photo, from the photo library. Then, after trying it: the stats are read from the screenshot after all (see 9d below). |
 
 ## Stage 9d: what's in it (2026-11-17)
 
@@ -426,7 +430,18 @@ Sergio: "awesome, but too similar to the pantry"; same UX, own look.
 
 - Check the real AWS cost (Cost Explorer, profile `gym`) after a few weeks; estimate ~$0.10-0.25 a
   month.
-- Dependabot opens weekly update PRs; merging one deploys it (CI must be green).
+- Dependabot opens weekly update PRs; merging one deploys it (CI must be green). Order that worked
+  (2026-11-17): backend, then frontend (wait for each deploy), then the Terraform provider last
+  (deploys nothing; run `terraform plan` after, expect "No changes").
+- An email alarm for "Peloton read failed" like the cue check's (needs a `terraform apply`); for now
+  the photo is kept and the error shows in the app.
+- Progress: the Peloton card sits in the "Strength" section next to Climbing; a "Cardio" heading
+  could fit if more cardio cards come.
+- The Peloton reader uses qwen/qwen3.8-27b, the only vision model on the account's Groq key
+  (2026-11-17); if Groq retires it, set `PELOTON_MODEL` (SSM) to another vision model.
+- Local frontend tests in the agent's Git Bash sometimes fail every file with "Cannot read properties
+  of undefined (reading 'config')" (flaky, environment only); rerun, or run `npx vitest run` from
+  PowerShell, where they pass.
 
 ## Done
 
