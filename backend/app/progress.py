@@ -22,7 +22,7 @@ def ladder(every: list[dict[str, Any]], exercise: Exercise) -> Lift:
     weighted = exercise.load in ("barbell", "dumbbell", "machine", "added")
     for game in replay([(w["date"], e) for w, e in done]):
         # A weighted lift done at body weight that day is a light day too.
-        if game.result == "light" or (weighted and not game.target.weightLb):
+        if game.track == "second" or (weighted and not game.target.weightLb):
             continue
         session = StepSession(date=game.date, workoutId=ids[game.date], result=game.result)
         if not steps or steps[-1].scheme != game.target:

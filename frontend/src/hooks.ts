@@ -1,7 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useCallback, useEffect, useRef, useState } from "react";
 
-import { api, type CueSection, type Group, type Note, type NotePatch, type SessionInfo, type WorkoutBody } from "./api";
+import { api, type CueSection, type Group, type Note, type NotePatch, type Role, type SessionInfo, type WorkoutBody } from "./api";
 
 const SESSION = ["session"];
 
@@ -95,11 +95,12 @@ export function useMergeExercise() {
   return useExerciseChange((v: { id: string; into: string }) => api.mergeExercise(v.id, v.into));
 }
 
-/** Cues, last time and streak for an exercise; `exclude` = the saved workout being edited. */
-export function useExerciseSummary(exerciseId: string, exclude?: string) {
+/** Cues, last time and streak for an exercise; `exclude` = the saved workout being edited; `role`
+ * = today's first lift or a later one (a lift done second has its own lighter target). */
+export function useExerciseSummary(exerciseId: string, exclude?: string, role?: Role) {
   return useQuery({
-    queryKey: ["summary", exerciseId, exclude ?? null],
-    queryFn: () => api.exerciseSummary(exerciseId, exclude),
+    queryKey: ["summary", exerciseId, exclude ?? null, role ?? null],
+    queryFn: () => api.exerciseSummary(exerciseId, exclude, role),
   });
 }
 

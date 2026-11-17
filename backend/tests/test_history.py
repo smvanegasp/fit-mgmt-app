@@ -28,17 +28,26 @@ def test_more_weight_or_a_deload_starts_a_new_target() -> None:
     assert game(lift([(3, 3, 190)]), lift([(4, 3, 185)])) == ([3] * 4, 185, 1)
 
 
-def test_after_three_times_more_reps_is_the_next_target() -> None:
+def test_more_reps_than_the_target_is_the_next_target() -> None:
     base = lift([(5, 3, 180)])
     assert game(base, base, base, lift([(5, 4, 180)])) == ([4] * 5, 180, 1)
-    # Before three, doing more still just counts as reaching it.
-    assert game(base, lift([(5, 4, 180)])) == ([3] * 5, 180, 2)
+    # At any count (progressive overload, Sergio 2026-11-14).
+    assert game(base, lift([(5, 4, 180)])) == ([4] * 5, 180, 1)
+    # Then falling short of the new target is a miss (the pull-ups: 4x4, then 4-4-4-3).
+    assert game(base, lift([(4, 4, 180)]), lift([(3, 4, 180), (1, 3, 180)])) == ([4] * 4, 180, 0)
 
 
-def test_light_days_do_not_count() -> None:
+def test_a_much_lighter_session_plays_its_own_target() -> None:
     heavy = lift([(5, 4, 180)])
-    volume_only = lift([(3, 6, 155)])  # more than 10% lighter
-    assert game(heavy, heavy, volume_only) == ([4] * 5, 180, 2)
+    second = lift([(3, 6, 155)])  # more than 10% lighter: squat done second, after deadlift
+    sessions = [(f"2026-10-{10 + i:02d}", e) for i, e in enumerate([heavy, heavy, second, second])]
+    roles = ["first", "first", "later", "later"]
+    main = progression(sessions, roles, "first")
+    assert (main.scheme.sets, main.scheme.weightLb, main.times) == ([4] * 5, 180, 2)
+    later = progression(sessions, roles, "later")
+    assert (later.scheme.sets, later.scheme.weightLb, later.times) == ([6] * 3, 155, 2)
+    # Never done second yet: the main target.
+    assert progression(sessions[:2], roles[:2], "later").scheme.weightLb == 180
 
 
 def test_volume_sets_after_the_heavy_ones_are_ignored() -> None:
@@ -46,8 +55,8 @@ def test_volume_sets_after_the_heavy_ones_are_ignored() -> None:
 
 
 def test_mixed_reps_reach_by_total() -> None:
-    # 3x4 + 1x3 = 15 reps; 4x4 = 16 reaches it.
-    assert game(lift([(3, 4, 90), (1, 3, 90)]), lift([(4, 4, 90)])) == ([4, 4, 4, 3], 90, 2)
+    # 3x4 + 1x3 = 15 reps; 4x4 + 3 = 15 in other sets reaches it.
+    assert game(lift([(3, 4, 90), (1, 3, 90)]), lift([(2, 4, 90), (1, 3, 90), (1, 4, 90)])) == ([4, 4, 4, 3], 90, 2)
 
 
 def test_written_targets_from_the_log_are_the_truth() -> None:

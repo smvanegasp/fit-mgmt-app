@@ -3,6 +3,8 @@ export type Group = "push" | "pull" | "legs" | "posterior" | "core" | "skill" | 
  * `each`, added = on top of body weight, bodyweight / none = no weight. */
 export type Load = "barbell" | "dumbbell" | "machine" | "added" | "bodyweight" | "none";
 export type Measure = "reps" | "seconds" | "run" | "climb";
+/** An exercise's place in a workout: the first lift, or a later one (done second, a lift is lighter). */
+export type Role = "first" | "later";
 
 export interface Exercise {
   id: string;
@@ -293,8 +295,10 @@ export const api = {
     request<Exercise>(`/exercises/${id}`, json("PATCH", patch)),
   mergeExercise: (id: string, into: string) => request<Exercise>(`/exercises/${id}/merge`, json("POST", { into })),
   exerciseHistory: (id: string) => request<ExerciseHistory>(`/exercises/${id}/history`),
-  exerciseSummary: (id: string, exclude?: string) =>
-    request<ExerciseSummary>(`/exercises/${id}/summary${exclude ? `?exclude=${encodeURIComponent(exclude)}` : ""}`),
+  exerciseSummary: (id: string, exclude?: string, role?: Role) => {
+    const query = new URLSearchParams({ ...(exclude ? { exclude } : {}), ...(role ? { role } : {}) }).toString();
+    return request<ExerciseSummary>(`/exercises/${id}/summary${query ? `?${query}` : ""}`);
+  },
   addNote: (exerciseId: string, text: string, date: string, section?: CueSection) =>
     request<Note>(`/exercises/${exerciseId}/notes`, json("POST", { text, date, section })),
   updateNote: (exerciseId: string, noteId: string, patch: NotePatch) =>

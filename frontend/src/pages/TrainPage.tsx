@@ -1,4 +1,4 @@
-import { CaretDown, CaretRight, CheckCircle, Flag, Play, Timer } from "@phosphor-icons/react";
+import { CaretDown, CaretRight, CheckCircle, Flag, Play, Timer, X } from "@phosphor-icons/react";
 import { useEffect, useRef, useState } from "react";
 
 import { api, type Workout, type WorkoutBody } from "../api";
@@ -20,23 +20,71 @@ import {
   useWorkouts,
 } from "../hooks";
 import { formatDuration } from "../lib/duration";
-import { currentLap, lapRows } from "../lib/laps";
+import { abandonedAt, currentLap, lapRows } from "../lib/laps";
 import { WEEKLY_GOAL, streaks, weekCounts } from "../lib/progress";
 import { dayType, heavyNext, nextUp, setCount } from "../lib/sets";
-import { friendlyDate, localIso, secondsBetween } from "../lib/time";
+import { clockTime, friendlyDate, localIso, secondsBetween } from "../lib/time";
 import { weekStart } from "../lib/weeks";
 
 export function TrainPage() {
   const active = useActive();
   const screens = useScreens();
+  const [ended, dismiss] = useAutoFinish(active.data);
 
   if (active.isLoading) return null;
   if (active.error) return <p className="mt-16 text-center text-red-600">Couldn't load: {active.error.message}</p>;
+  if (active.data) return <ActiveWorkout initial={active.data} />;
   return (
     <>
-      {active.data ? <ActiveWorkout initial={active.data} /> : <Idle onOpen={(w) => screens.openWorkout(w.id)} />}
+      {ended && (
+        <div role="status" className="mt-4 flex items-start gap-3 rounded-2xl border border-blue-200 bg-blue-50 p-3 text-sm">
+          <p className="flex-1 text-stone-700">
+            Your workout was left running, so it was saved for you, ending at your last set ({clockTime(ended.endedAt ?? ended.startedAt)}).{" "}
+            <button type="button" onClick={() => screens.openWorkout(ended.id)} className="font-semibold text-blue-700 underline">
+              Open it
+            </button>
+          </p>
+          <button type="button" onClick={dismiss} aria-label="Dismiss" className="rounded p-1 text-stone-500">
+            <X size={16} weight="bold" aria-hidden />
+          </button>
+        </div>
+      )}
+      <Idle onOpen={(w) => screens.openWorkout(w.id)} />
     </>
   );
+}
+
+/**
+ * A workout left running (2 hours without a set, Sergio 2026-11-09: one ran 46 hours) is finished
+ * by itself, ending at its last set; one with nothing logged is dropped. Checked on opening Train
+ * and every minute while it's open. Returns the saved workout, for a notice.
+ */
+function useAutoFinish(body: WorkoutBody | null | undefined): [Workout | null, () => void] {
+  const finish = useFinishWorkout();
+  const discard = useDiscardWorkout();
+  const [ended, setEnded] = useState<Workout | null>(null);
+  const [minute, setMinute] = useState(0);
+  const busy = useRef(false);
+
+  useEffect(() => {
+    const id = setInterval(() => setMinute((m) => m + 1), 60_000);
+    return () => clearInterval(id);
+  }, []);
+
+  useEffect(() => {
+    if (!body || busy.current) return;
+    const end = abandonedAt(body.startedAt, body.laps ?? []);
+    if (!end) return;
+    busy.current = true;
+    if (body.entries?.length) {
+      finish.mutateAsync(end).then(setEnded).finally(() => { busy.current = false; });
+    } else if (!body.notes?.length && !body.photos?.length) {
+      discard.mutateAsync().finally(() => { busy.current = false; });
+    }
+    // Only notes or photos and no exercises: left for Sergio to save or discard.
+  }, [body, minute]); // the mutations aren't dependencies: re-check on new data or each minute
+
+  return [ended, () => setEnded(null)];
 }
 
 // ------------------------------------------------------------------ before starting
@@ -92,7 +140,7 @@ function Idle({ onOpen }: { onOpen: (w: Workout) => void }) {
             <span className="text-stone-500">· {heavy === "squat" ? "deadlift" : "squats"} lighter</span>
             <InfoTip title="Legs day">
               Squats and deadlifts share one day: one goes heavy, the other lighter, and they swap each time. Last
-              Legs day was heavy {heavy === "squat" ? "deadlift" : "squat"}. Light sessions don't count for or against a target.
+              Legs day was heavy {heavy === "squat" ? "deadlift" : "squat"}. Done second and lighter, a lift has its own target.
             </InfoTip>
           </p>
         )}
@@ -227,7 +275,7 @@ function ActiveWorkout({ initial }: { initial: WorkoutBody }) {
 
   return (
     <div className="pb-28">
-      <header className="sticky top-0 z-10 -mx-4 mb-3 border-b border-stone-200 bg-stone-50/95 px-4 pt-[max(0.75rem,env(safe-area-inset-top))] pb-3 backdrop-blur">
+      <header className="sticky top-0 z-10 -mx-4 mb-3 border-b border-stone-200 bg-stone-50/95 px-4 pt-[max(0.75rem,env(safe-area-inset-top))] pb-3 backdrop-blur land:pt-2 land:pb-2">
         <div className="flex items-center gap-2">
           <Stopwatch body={body} onLap={() => lap()} lapsOpen={lapsOpen} onToggleLaps={() => setLapsOpen(!lapsOpen)} />
           <button

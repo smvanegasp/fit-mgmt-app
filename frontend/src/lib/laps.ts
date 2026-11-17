@@ -21,6 +21,18 @@ export function lapRows(startedAt: string, laps: Lap[]): LapRow[] {
   return rows.reverse();
 }
 
+/** A workout with no set or lap for this long was left running: it gets finished by itself. */
+export const ABANDONED_AFTER_S = 2 * 60 * 60;
+
+/**
+ * When a workout left running really ended (its last set or lap, else its start), or null while
+ * it's still going (something logged in the last 2 hours).
+ */
+export function abandonedAt(startedAt: string, laps: Lap[], now = new Date()): string | null {
+  const last = laps.at(-1)?.at ?? startedAt;
+  return secondsBetween(last, now) > ABANDONED_AFTER_S ? last : null;
+}
+
 /** Seconds into the lap running now. */
 export function currentLap(startedAt: string, laps: Lap[], now = new Date()): number {
   return secondsBetween(laps.at(-1)?.at ?? startedAt, now);
