@@ -143,10 +143,12 @@ def exercise_progress(exercise_id: str, space: str = Depends(current_space)) -> 
 
 
 @router.get("/{exercise_id}/summary", response_model_exclude_none=True)
-def exercise_summary(exercise_id: str, exclude: str | None = None, space: str = Depends(current_space)) -> ExerciseSummary:
-    """What the Train screen shows when an exercise is added: cues, last time, the streak."""
+def exercise_summary(exercise_id: str, exclude: str | None = None, role: history.Role | None = None,
+                     space: str = Depends(current_space)) -> ExerciseSummary:
+    """What the Train screen shows when an exercise is added: cues, last time, the streak. `role`:
+    whether it's today's first lift or a later one (a lift done second is lighter)."""
     exercise = get_exercise(space, exercise_id)
-    last, streak, photos, best = history.summary(space, exercise_id, exclude=exclude)
+    last, streak, photos, best = history.summary(space, exercise_id, exclude=exclude, want=role)
     return ExerciseSummary(exercise=exercise, cues=cues(space, exercise_id), last=last, streak=streak, photos=photos,
                            bestDrop=best)
 

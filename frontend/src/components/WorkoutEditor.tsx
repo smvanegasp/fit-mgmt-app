@@ -23,6 +23,11 @@ export function WorkoutEditor({ body, onChange, workoutId, onSetLogged }: Props)
   const byId = new Map((exercises.data ?? []).map((e) => [e.id, e]));
 
   const setEntries = (next: Entry[]) => onChange({ ...body, entries: next });
+  // Today's first lift (a run or climbing before it doesn't count); the server judges saved workouts the same way.
+  const firstLift = entries.findIndex((e) => {
+    const measure = byId.get(e.exerciseId)?.measure;
+    return measure === "reps" || measure === "seconds";
+  });
 
   function add(exercise: Exercise) {
     setPicking(false);
@@ -42,6 +47,8 @@ export function WorkoutEditor({ body, onChange, workoutId, onSetLogged }: Props)
             entry={entry}
             exercise={exercise}
             excludeWorkoutId={workoutId}
+            role={i === firstLift ? "first" : "later"}
+            draftKey={`${workoutId ?? body.startedAt}|${i}|${entry.exerciseId}`}
             onChange={(next) => setEntries(entries.map((e, j) => (j === i ? next : e)))}
             onRemove={() => setEntries(entries.filter((_, j) => j !== i))}
             onSetLogged={(label) => onSetLogged?.(label)}

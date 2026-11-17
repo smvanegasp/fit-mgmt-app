@@ -32,7 +32,7 @@ def test_the_ladder_shows_more_reps_then_more_weight(client: TestClient) -> None
     day("2026-09-04", "Legs", [squat((5, 3, 135))])
     day("2026-09-08", "Legs", [squat((5, 3, 135), (3, 8, 105))])  # 3 of 3
     day("2026-09-11", "Legs", [squat((5, 4, 135))])  # more reps: the next target
-    day("2026-09-14", "Legs", [squat((3, 6, 105))])  # light day: left out
+    day("2026-09-14", "Legs", [squat((3, 6, 105))])  # much lighter (its own target): left out
     day("2026-09-18", "Legs", [squat((4, 4, 135), (1, 3, 135))])  # missed
     day("2026-09-22", "Legs", [squat((5, 4, 140))])  # more weight
     lifts = {x["exerciseId"]: x for x in client.get("/api/progress").json()["lifts"]}
@@ -54,11 +54,27 @@ def test_the_ladder_shows_more_reps_then_more_weight(client: TestClient) -> None
 
 def test_body_weight_work_climbs_by_reps(client: TestClient) -> None:
     day("2026-10-01", "Pull", [{"exerciseId": "front-raise", "sets": [{"reps": 5}] * 3}])
-    day("2026-10-04", "Pull", [{"exerciseId": "front-raise", "sets": [{"reps": 6}] * 3}])
+    day("2026-10-04", "Pull", [{"exerciseId": "front-raise", "sets": [{"reps": 5}] * 3}])
+    day("2026-10-08", "Pull", [{"exerciseId": "front-raise", "sets": [{"reps": 6}] * 3}])
     steps = client.get("/api/exercises/front-raise/progress").json()["steps"]
     assert [(s["scheme"]["sets"], [x["result"] for x in s["sessions"]], s["times"]) for s in steps] == [
         ([5, 5, 5], ["new", "reached"], 2),
+        ([6, 6, 6], ["new"], 1),
     ]
+
+
+def test_a_lift_done_second_shows_its_own_last_time_and_target(client: TestClient) -> None:
+    deadlift = {"exerciseId": "deadlift", "sets": [{"reps": 3, "weightLb": 190}] * 4}
+    day("2026-10-23", "Legs", [squat((5, 4, 180))])
+    day("2026-10-28", "Legs", [deadlift, squat((3, 6, 155))])
+    day("2026-11-05", "Legs", [squat((5, 4, 180))])
+    day("2026-11-11", "Legs", [deadlift, squat((3, 6, 155))])
+    later = client.get("/api/exercises/squat/summary?role=later").json()
+    assert later["last"]["date"] == "2026-11-11"
+    assert (later["streak"]["scheme"]["weightLb"], later["streak"]["times"]) == (155, 2)
+    first = client.get("/api/exercises/squat/summary?role=first").json()
+    assert first["last"]["date"] == "2026-11-05"
+    assert (first["streak"]["scheme"]["weightLb"], first["streak"]["times"]) == (180, 2)
 
 
 def test_unknown_exercise_is_404(client: TestClient) -> None:

@@ -26,9 +26,35 @@ Sergio merges.
 
 ## Now
 
-All stages done and live at https://gym.sergiovanegas.com, including 8a (in-app feedback, #17)
-and 8b (the gym's own identity, #18). New requests come through the in-app feedback
-(`scripts/feedback.py` at the start of each session) or from Sergio directly.
+Stage 9: the first round of in-app feedback (19 notes from Sergio, 2026-11-02 to 11-17, agreed
+2026-11-17), in four PRs.
+
+| Stage | Branch | What |
+|---|---|---|
+| 9a | `stage-9a-fixes` | **Bugs.** (1) The pull-up target showed the old scheme after Sergio went up in weight; find the cause by replaying the history and fix the target game. (2) Legs: squat and deadlift use different weights as the main lift and as the second lift, so the target breaks; keep one target per role (main = first lift of the day, second). (3) A workout left open ran 46 hours: auto-finish 2 hours after the start, ending at the last logged set; correct that workout on AWS (Sergio's OK, 2026-11-17). (4) Reps typed in the logger are lost when switching screens: keep the draft in the autosaved workout. (5) The phone in landscape looks broken. |
+| 9b | `stage-9b-train` | **Train flow.** Bigger numbers in the steppers; "Done" on an exercise folds it so the current one gets the room; the start screen shows the last two workouts and their day types; the exercise picker opens filtered to today's day type; today's usual exercises pre-filled in order, always starting with a timed warm-up; a short congrats when a target is reached (mainly the first, heavy lift). |
+| 9c | `stage-9c-history` | **History and progress.** Consistent workout names: day type plus the first exercise ("Legs · Squat"); a top-weight-over-time chart on each exercise page; log body weight (and add 159.4 lb on 2026-11-03). |
+| 9d | `stage-9d-peloton` | **Peloton** (cardio): a quick form (class, time, distance, output) with the screenshot attached as a photo. Reading the screenshot automatically was offered (a second AI feature) and not chosen. |
+
+## Stage 9a: what's in it (2026-11-17)
+
+- **Pull-ups (weighted chin-ups):** on 10-29 Sergio did 4x4 at 90 over a 3x4+1x3 target, but the game
+  only moved to more reps after a count of 3, so it kept the old target and counted 11-14's 4-4-4-3
+  as reached. Now more reps than the target is the new target at any count: chin-ups show 4x4 @ 90,
+  0 of 3. Checked against Sergio's own written targets: the new rule agrees with them where the old
+  one didn't (high pull-ups in September, deadlift 3x3 on 09-19).
+- **Legs, the lift done second:** squat after deadlift (3x6 @ 155) was a "light day" against the
+  main 5x4 @ 180, so it never had a target and the card pre-filled 180. Sessions >10% lighter now
+  play a second track; the Train card passes its role (first lift or later) and gets that role's
+  target and last time (squat second: 3x6 @ 155, 2 of 3).
+- **Left running:** 2 hours without a set or lap finishes the workout at its last set (Train checks
+  on open and every minute; an empty one is discarded) with a notice linking to it. The 11-07 Pull
+  workout's end on AWS was corrected to its last set (12:54) with Sergio's OK; the 11-14 one (ended
+  11-17) is the same case and waits for their OK.
+- **Dialed-in set kept:** the weight and reps being set up stay on the phone (`lib/drafts.ts`) until
+  logged, so switching tabs or apps doesn't reset them to the suggestion.
+- **Landscape:** on a phone turned sideways the bottom tabs took ~45% of the height; now a slim left
+  rail (safe-area aware) and a compact stopwatch bar.
 
 ## Feedback on stage 8b (Sergio, 2026-10-31)
 

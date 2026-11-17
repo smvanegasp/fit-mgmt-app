@@ -1,10 +1,11 @@
 import { ArrowsDownUp, CaretDown, CaretRight, Check, Images, Lightbulb, NotePencil, Trash, X } from "@phosphor-icons/react";
 import { useQuery } from "@tanstack/react-query";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
-import { api, type CueSection, type Entry, type Exercise, type Note, type Photo, type Problem, type Scheme, type SetData, type Streak } from "../api";
+import { api, type CueSection, type Entry, type Exercise, type Note, type Photo, type Problem, type Role, type Scheme, type SetData, type Streak } from "../api";
 import { useAddNote, useExerciseSummary, useUpdateNote } from "../hooks";
 import { ladderWeights, nextSet, reachesTarget, schemeText, summarizeSets, weightText } from "../lib/sets";
+import { clearDraft, loadDraft, saveDraft } from "../lib/drafts";
 import { friendlyDate, localIso } from "../lib/time";
 import { BottomSheet } from "./BottomSheet";
 import { CueList } from "./Cues";
@@ -19,14 +20,18 @@ interface Props {
   exercise: Exercise;
   /** The saved workout being edited, so "last time" means the one before it. */
   excludeWorkoutId?: string;
+  /** Today's first lift or a later one: its target and "last time" follow (squat after deadlift is lighter). */
+  role?: Role;
+  /** Where the set being dialed in is kept on the phone: workout, position and exercise. */
+  draftKey: string;
   onChange: (entry: Entry) => void;
   onRemove: () => void;
   /** A set was logged ("Set 2 · Weighted dips"): starts a new lap. */
   onSetLogged: (label: string) => void;
 }
 
-export function EntryCard({ entry, exercise, excludeWorkoutId, onChange, onRemove, onSetLogged }: Props) {
-  const summary = useExerciseSummary(exercise.id, excludeWorkoutId);
+export function EntryCard({ entry, exercise, excludeWorkoutId, role, draftKey, onChange, onRemove, onSetLogged }: Props) {
+  const summary = useExerciseSummary(exercise.id, excludeWorkoutId, role);
   const [confirmRemove, setConfirmRemove] = useState(false);
   const screens = useScreens();
   const last = summary.data?.last;
@@ -64,7 +69,7 @@ export function EntryCard({ entry, exercise, excludeWorkoutId, onChange, onRemov
       ) : exercise.measure === "run" ? (
         <RunLog entry={entry} onChange={onChange} />
       ) : (
-        <SetLog entry={entry} exercise={exercise} lastSets={last?.entry.sets} bestDrop={summary.data?.bestDrop} target={streak?.scheme}
+        <SetLog entry={entry} exercise={exercise} draftKey={draftKey} lastSets={last?.entry.sets} bestDrop={summary.data?.bestDrop} target={streak?.scheme}
           onChange={onChange} onSetLogged={onSetLogged} />
       )}
 
@@ -147,27 +152,40 @@ export function TargetGame({ streak, load, today }: { streak: Streak; load: Exer
 // ------------------------------------------------------------------ lifting
 
 
-function SetLog({ entry, exercise, lastSets, bestDrop, target, onChange, onSetLogged }: {
-  entry: Entry; exercise: Exercise; lastSets?: SetData[]; bestDrop?: { date: string; sets: SetData[] }; target?: Scheme;
+function SetLog({ entry, exercise, draftKey, lastSets, bestDrop, target, onChange, onSetLogged }: {
+  entry: Entry; exercise: Exercise; draftKey: string; lastSets?: SetData[]; bestDrop?: { date: string; sets: SetData[] }; target?: Scheme;
   onChange: (e: Entry) => void; onSetLogged: (label: string) => void;
 }) {
   const sets = entry.sets ?? [];
   const [editing, setEditing] = useState<number | null>(null);
-  const [draft, setDraft] = useState<SetData>(() => nextSet(sets, lastSets, exercise, target));
+  // What was dialed in before switching screens comes back; otherwise the suggestion.
+  const kept = useRef(loadDraft(draftKey, sets.length));
+  const [draft, setDraft] = useState<SetData>(() => kept.current ?? nextSet(sets, lastSets, exercise, target));
   const [dropOpen, setDropOpen] = useState(false);
   const hasWeight = exercise.load !== "bodyweight" && exercise.load !== "none";
   const seconds = exercise.measure === "seconds";
 
-  // When "last time" arrives (or a set is logged), suggest the next set.
+  // When "last time" arrives (or a set is logged), suggest the next set, unless Sergio already dialed one in.
   useEffect(() => {
-    if (editing === null) setDraft(nextSet(sets, lastSets, exercise, target));
+    if (editing === null && !kept.current) setDraft(nextSet(sets, lastSets, exercise, target));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [lastSets, target, sets.length, editing]);
 
+  /** A stepper changed the set: keep it on the phone until it's logged. */
+  function dial(next: SetData) {
+    setDraft(next);
+    if (editing !== null) return;
+    kept.current = next;
+    saveDraft(draftKey, next, sets.length);
+  }
+
   function save() {
     const next = [...sets];
-    if (editing === null) next.push(draft);
-    else next[editing] = { ...next[editing], ...draft };
+    if (editing === null) {
+      next.push(draft);
+      kept.current = null;
+      clearDraft(draftKey);
+    } else next[editing] = { ...next[editing], ...draft };
     // Save the set first, then start the lap (the lap builds on the saved workout).
     onChange({ ...entry, sets: next });
     if (editing === null) onSetLogged(`Set ${next.length} · ${exercise.name}`);
@@ -222,7 +240,7 @@ function SetLog({ entry, exercise, lastSets, bestDrop, target, onChange, onSetLo
               layout="row"
               label="Weight"
               value={draft.weightLb ?? 0}
-              onChange={(weightLb) => setDraft({ ...draft, weightLb })}
+              onChange={(weightLb) => dial({ ...draft, weightLb })}
               step={exercise.load === "dumbbell" ? 2.5 : 5}
               unit={weightUnit}
               decimals
@@ -232,7 +250,7 @@ function SetLog({ entry, exercise, lastSets, bestDrop, target, onChange, onSetLo
             layout="row"
             label={seconds ? "Seconds" : "Reps"}
             value={(seconds ? draft.seconds : draft.reps) ?? 0}
-            onChange={(v) => setDraft(seconds ? { ...draft, seconds: v } : { ...draft, reps: v })}
+            onChange={(v) => dial(seconds ? { ...draft, seconds: v } : { ...draft, reps: v })}
             step={1}
           />
         </div>

@@ -21,16 +21,22 @@ from app.models import BestSet, DatedPhoto, DatedSets, Entry, ExerciseHistory, E
 GOAL = 3
 
 
+Track = Literal["main", "second"]
+Role = Literal["first", "later"]
+
+
 @dataclass
 class GameStep:
-    """One session in the target game: "new" (first session, more weight, a deload, or the next
-    target after 3), "reached" (+1), "missed" (-1) or "light" (a light day, doesn't count); and the
-    target and count after it."""
+    """One session in the target game: "new" (first session, more weight, a deload, or more than
+    the target), "reached" (+1) or "missed" (-1); the track it was played on ("main", or "second"
+    for a session much lighter than the main target: the same lift done second and lighter, like
+    squat after deadlift); and that track's target and count after it."""
 
     date: str
-    result: Literal["new", "reached", "missed", "light"]
+    result: Literal["new", "reached", "missed"]
     target: Scheme
     times: int
+    track: Track = "main"
 
 
 def workouts(space: str) -> list[dict[str, Any]]:
@@ -106,54 +112,86 @@ def written_target(text: str) -> tuple[Scheme, int, float | None] | None:
     return Scheme(sets=reps, weightLb=weight), int(times.group(1)), weight
 
 
-def progression(sessions: list[tuple[str, Entry]]) -> Streak | None:
-    """The target game after the last session (see replay)."""
-    last = None
-    for last in replay(sessions):
-        pass
-    return Streak(scheme=last.target, times=last.times, goal=GOAL) if last else None
+def role(workout: dict[str, Any], exercise_id: str) -> Role:
+    """Whether the exercise was the workout's first lift (the first entry with sets logged; a
+    warm-up, a run or climbing before it don't count) or came later."""
+    entries = workout.get("entries", [])
+    first = next((e for e in entries if e.get("sets")), entries[0] if entries else None)
+    return "first" if first and first.get("exerciseId") == exercise_id else "later"
+
+
+def progression(sessions: list[tuple[str, Entry]], roles: list[Role] | None = None, want: Role | None = None) -> Streak | None:
+    """The target game after the last session (see replay). With `want`, the target of the track
+    last played in that role: done second and lighter, the lift shows its lighter target."""
+    steps = list(replay(sessions))
+    if not steps:
+        return None
+    track: Track = steps[-1].track
+    if want and roles:
+        played = [s.track for s, r in zip(steps, _played_roles(sessions, roles)) if r == want]
+        track = played[-1] if played else "main"
+    last = next(s for s in reversed(steps) if s.track == track)
+    return Streak(scheme=last.target, times=last.times, goal=GOAL)
+
+
+def _played_roles(sessions: list[tuple[str, Entry]], roles: list[Role]) -> list[Role]:
+    """The roles of the sessions replay() yields a step for (it skips ones with no working sets)."""
+    return [r for (_, entry), r in zip(sessions, roles) if scheme(entry) is not None]
+
+
+@dataclass
+class _Game:
+    target: Scheme | None = None
+    times: int = 0
+    since: str = ""  # the date the target was set or last played
+
+    def sync(self, written: Scheme, times: int, day: str) -> None:
+        self.target, self.times, self.since = written, times, day
+
+    def play(self, day: str, entry: Entry, main: Scheme) -> Literal["new", "reached", "missed"]:
+        """A session at or above the target's weight (or the first, or a deload)."""
+        weight = main.weightLb or 0
+        if self.target is None or weight != (self.target.weightLb or 0):
+            self.target, self.times, self.since = main, 1, day  # first session, more weight, or a deload
+            return "new"
+        self.since = day
+        if not reached(entry, self.target):
+            self.times = max(0, self.times - 1)
+            return "missed"
+        if main.total > self.target.total:
+            # More than the target (progressive overload, Sergio 2026-11-14): the new target.
+            self.target, self.times = main, 1
+            return "new"
+        self.times += 1
+        return "reached"
 
 
 def replay(sessions: list[tuple[str, Entry]]) -> Iterator[GameStep]:
     """Replay the target game over an exercise's (date, entry) sessions, oldest first, yielding
-    each session's result. Where the log has Sergio's own written target for the session's top
-    weight, it's the truth: the count syncs to it before the session's result is applied."""
-    target: Scheme | None = None
-    target_date = ""
-    times = 0
+    each session's result. A session more than 10% lighter than the main target plays a second
+    track (the lift done second and lighter that day, or a light day), unless the main target is
+    stale. Where the log has Sergio's own written target for the session's top weight, it's the
+    truth: the count syncs to it before the session's result is applied."""
+    games: dict[Track, _Game] = {"main": _Game(), "second": _Game()}
     for day, entry in sessions:
         main = scheme(entry)
         if main is None:
             continue
         weight = main.weightLb or 0
+        first = games["main"]
+        first_weight = (first.target.weightLb or 0) if first.target else 0
+        stale = first.target is not None and date.fromisoformat(day) - date.fromisoformat(first.since) > STALE
+        track: Track = "second" if first.target and weight < first_weight * LIGHT_DAY and not stale else "main"
+        game = games[track]
         for written in entry.targets:
             parsed = written_target(written.text) if written.kind != "dropset" else None
             if parsed and (parsed[2] is None or parsed[2] == weight):
-                target = parsed[0].model_copy(update={"weightLb": main.weightLb, "each": main.each})
-                times, target_date = parsed[1], day
+                game.sync(parsed[0].model_copy(update={"weightLb": main.weightLb, "each": main.each}), parsed[1], day)
                 break
-        target_weight = (target.weightLb or 0) if target else 0
-        stale = target is not None and date.fromisoformat(day) - date.fromisoformat(target_date) > STALE
-        if target is None or weight > target_weight:
-            target, times, target_date = main, 1, day  # first session, or went up
-            result = "new"
-        elif weight < target_weight * LIGHT_DAY and not stale:
-            result = "light"
-        elif weight < target_weight:
-            target, times, target_date = main, 1, day  # deload, or the lighter work became the norm
-            result = "new"
-        else:
-            if reached(entry, target):
-                result = "reached"
-                if times >= GOAL and main.total > target.total:
-                    target, times, result = main, 1, "new"  # done 3 times, then more reps: the next target
-                else:
-                    times += 1
-            else:
-                result = "missed"
-                times = max(0, times - 1)
-            target_date = day
-        yield GameStep(date=day, result=result, target=target, times=times)
+        if track == "second" and game.since and date.fromisoformat(day) - date.fromisoformat(game.since) > STALE:
+            game.target = None  # the lighter work from months ago doesn't count
+        result = game.play(day, entry, main)
+        yield GameStep(date=day, result=result, target=game.target, times=game.times, track=track)
 
 
 def best_drop(sessions: list[tuple[str, Entry]]) -> DatedSets | None:
@@ -168,9 +206,10 @@ def best_drop(sessions: list[tuple[str, Entry]]) -> DatedSets | None:
     return best
 
 
-def summary(space: str, exercise_id: str, exclude: str | None = None) -> tuple[LastTime | None, Streak | None, list[DatedPhoto], DatedSets | None]:
+def summary(space: str, exercise_id: str, exclude: str | None = None, want: Role | None = None) -> tuple[LastTime | None, Streak | None, list[DatedPhoto], DatedSets | None]:
     """Last session, target game, photos and best drop set for an exercise, ignoring the workout
-    being edited."""
+    being edited. With `want` (its role in today's workout), "last time" and the target come from
+    the sessions where it had that role, when there are any."""
     every = workouts(space)
     edited = next((w for w in every if w.get("id") == exclude), None)
     # Editing a past workout: only what came before it counts (its "last time" and its target then).
@@ -182,11 +221,13 @@ def summary(space: str, exercise_id: str, exclude: str | None = None) -> tuple[L
     ]
     if not done:
         return None, None, [], None
-    workout, entry = done[-1]
+    roles = [role(w, exercise_id) for w, _ in done]
+    same = [d for d, r in zip(done, roles) if r == want]
+    workout, entry = (same or done)[-1]
     last = LastTime(workoutId=workout["id"], date=workout["date"], entry=entry)
     photos = [DatedPhoto(**p.model_dump(), date=w["date"]) for w, e in reversed(done) for p in e.photos][:12]
     sessions = [(w["date"], e) for w, e in done]
-    return last, progression(sessions), photos, best_drop(sessions)
+    return last, progression(sessions, roles, want), photos, best_drop(sessions)
 
 
 def usage(space: str) -> dict[str, tuple[str, int]]:

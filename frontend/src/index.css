@@ -4,6 +4,10 @@
 @import "@fontsource/barlow-condensed/latin-600.css";
 @import "@fontsource/barlow-condensed/latin-700.css";
 
+/* A phone turned sideways (Sergio, 2026-11-14): little height, so the tabs become a slim rail on the
+   left and the stopwatch bar gets compact. Tablets and computers are taller than this. */
+@custom-variant land (@media (orientation: landscape) and (max-height: 500px));
+
 @theme {
   --font-display: "Barlow Condensed", system-ui, sans-serif;
 }

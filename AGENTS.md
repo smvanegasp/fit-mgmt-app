@@ -121,10 +121,12 @@ A mobile-first web app where Sergio logs their gym workouts and sees their progr
 | 7 | Production import (2026-10-31): 177 workouts, 1,780 sets, 50 cues, 4 routines, 15 photos into AWS `fit` (space main); identical to the local log row by row (only `hidden: false` spelled out and an old group name differ locally) | done (no code) |
 | 8a | In-app feedback: Settings and the guest banner, owner inbox in Settings, email on guest feedback, `scripts/feedback.py` for each session | #17 |
 | 8b | Own identity: set-glyph logo and icons, Barlow Condensed for numbers and headings, dark by default, stats-led welcome page (public summary endpoint, shared Heatmap), re-recorded clips | #18 |
+| 9a | Feedback fixes: more reps than the target is the new target; a much lighter session (a lift done second) plays its own target, shown by role; a workout left 2 hours without a set finishes itself at its last set; the set being dialed in survives switching screens; landscape phones get a side rail | open |
 
-**Where things stand (2026-10-31):** all stages (0-8b) are merged and live (PRs up to #19), and
-Sergio has verified the live site (owner login, the feedback email, the icon). No open work: new
-requests come from Sergio or from the in-app feedback (`scripts/feedback.py`, section 2).
+**Where things stand (2026-11-17):** stages 0-8b are merged and live (PRs up to #20). Stage 9 works
+through the first round of in-app feedback (19 notes) in four PRs (9a fixes, 9b Train flow, 9c
+history and progress, 9d Peloton; [docs/BACKLOG.md](docs/BACKLOG.md)); 9a is open. New requests come
+from Sergio or from the in-app feedback (`scripts/feedback.py`, section 2).
 **Production holds Sergio's real log** at https://gym.sergiovanegas.com (loaded
 in stage 7), so Sergio logs there from now on and visitors get a copy of it. The local stack has the
 same history and is now only for development: anything logged locally stays local. **Never change
@@ -217,7 +219,8 @@ frontend/
                             colors), Nav (useGoTo: switch tabs from a page), DemoBanner, PasscodeSheet,
                             TutorialStrip (from the pantry), FeedbackSheet
   src/lib/                  pure logic + tests: sets (summaries, next set, ladder, volume, next up),
-                            time (local ISO), weeks (week grouping, long dates), laps, duration, search (fuzzy), images, theme,
+                            time (local ISO), weeks (week grouping, long dates), laps (and when a
+                            workout was left running), drafts (the set being dialed in, kept on the phone), duration, search (fuzzy), images, theme,
                             progress (week rows and counts, streaks, step dates), cues (sections and order),
                             kinds (drop ladders, climbing grades)
 ```
@@ -251,10 +254,14 @@ frontend/
   - **targets** `[{text, times?, kind?}]`: the previous goal Sergio wrote in parentheses,
     "(5x5 185 lbs 2 veces)" = reached twice so far (imported sessions only).
   - **The target game** (`app/history.py`, Sergio 2026-10-30): the target is the working sets at
-    a session's top weight; a session that reaches it (same total reps at that weight or more) adds
-    one, a miss takes one away (not a reset); 3 means go up. More weight or a small deload starts a
-    new target; a session >10% lighter is a light or comeback day and doesn't count (for up to 60
-    days); after 3, more reps at the same weight is the next target. Replayed over the whole
+    a session's top weight; a session that reaches it (same total reps at that weight) adds one, a
+    miss takes one away (not a reset); 3 means go up. More weight or a small deload starts a new
+    target, and so does **more reps than the target at any count** (progressive overload, Sergio
+    2026-11-14: 4x4 after a 3x4+1x3 target is the new target). A session >10% lighter than the
+    main target plays a **second track** with the same rules (squat done second after deadlift,
+    2026-11-11); after 60 days the lighter work becomes the main target. The summary takes the
+    exercise's `role` in today's workout (`first` lift or `later`) and returns the target and "last
+    time" of the sessions with that role. Ladders show only the main track. Replayed over the whole
     history; where the log has their written target for that weight, it syncs to their count first.
   - **problems** (bouldering) `[{grade, color?, result: sent|attempted, count?, attempts?, note?}]`;
     **segments** (treadmill) `[{mph, minutes}]` plus `distanceMi`.
@@ -300,7 +307,7 @@ frontend/
 | Progress | `GET /progress` (days with day type; the main lifts' progression ladders; routine eras newest first with their workouts) · `GET /exercises/{id}/progress` (one exercise's ladder: `steps` of `{scheme, sessions, times}`, oldest first) |
 | Day types | `GET /session-types` (label, usual exercises in order, last date, sessions) |
 | Exercise page | `GET /exercises/{id}/history` (sessions newest first, all photos, best set) · `PATCH /exercises/{id} {name?, group?}` (old name stays an alias) · `POST /exercises/{id}/merge {into}` (sessions and cues move; the duplicate is hidden) |
-| Exercises | `GET /exercises` (catalog + custom, with `lastDone`, `timesDone`) · `POST /exercises` · `GET /exercises/{id}/summary[?exclude=workoutId]` (cues, last, streak = target game, photos, bestDrop) |
+| Exercises | `GET /exercises` (catalog + custom, with `lastDone`, `timesDone`) · `POST /exercises` · `GET /exercises/{id}/summary[?exclude=workoutId&role=first|later]` (cues, last, streak = target game, photos, bestDrop; `role` = today's first lift or a later one) |
 | Cues | `POST /exercises/{id}/notes {text, date, section?}` · `PATCH /exercises/{id}/notes/{noteId} {text?, hidden?, section?, rank?}` · `DELETE` (same path) · `POST /exercises/{id}/cue-check {note}` (suggestion `{action: add|update|none, noteId?, text?, section?}`; 503 without `GROQ_API_KEY`) |
 | Workouts | `GET /workouts?limit=` (newest first) · `GET/PUT/DELETE /workouts/{id}` (PUT keeps id, date, source; label recomputed) |
 | In progress | `GET /active` · `POST /active {startedAt}` (keeps an existing one) · `PUT /active` (autosave; startedAt fixed) · `POST /active/finish {endedAt}` · `DELETE /active` |
@@ -370,7 +377,8 @@ cd backend && uv run python ../scripts/import_whatsapp.py load --local # stack m
   year heatmap shows as many weeks as fit; lifts in 2 columns, 3 from `xl:`), `Screen` pages as a
   panel on the right (click outside or Escape to close), History in two columns. Train and
   Settings stay one centered column (logging happens on the phone). Tablets (768-1023px) keep the
-  phone layout. Same components and `src/lib/` logic for both; only classes and composition
+  phone layout. A phone turned sideways (`land:` variant in `index.css`: landscape, under 500px
+  tall) gets the tabs as a slim left rail and a compact stopwatch bar. Same components and `src/lib/` logic for both; only classes and composition
   differ.
 - Inputs are 16px on touch screens (`index.css`) so iOS doesn't zoom. Big tap targets: this is
   used between sets with sweaty hands. Hover states are only extras (touch has none).
