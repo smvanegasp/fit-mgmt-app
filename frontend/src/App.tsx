@@ -65,7 +65,7 @@ function MainApp({ session }: { session: SessionInfo }) {
   return (
     <NavContext.Provider value={setTab}>
       <ScreensProvider>
-        <div className="min-h-dvh land:pl-[calc(4.5rem+env(safe-area-inset-left))] lg:pl-56">
+        <div className="min-h-dvh land:pl-[calc(3.75rem+env(safe-area-inset-left)*0.75)] lg:pl-56">
           <main className={`mx-auto max-w-lg px-4 pt-[max(1rem,env(safe-area-inset-top))] land:pr-[max(1rem,env(safe-area-inset-right))] lg:px-10 lg:pt-8 ${WIDE[tab]}`}>
             {/* The tab bar shows where you are; the heading is for screen readers. */}
             <h1 className="sr-only">{current.label}</h1>
@@ -76,7 +76,7 @@ function MainApp({ session }: { session: SessionInfo }) {
           </main>
 
           {/* Bottom tabs on phones and tablets; a rail on a phone turned sideways; a sidebar on computers. */}
-          <nav className="fixed inset-x-0 bottom-0 z-30 border-t border-stone-200 bg-white pb-[env(safe-area-inset-bottom)] land:inset-y-0 land:right-auto land:w-[calc(4.5rem+env(safe-area-inset-left))] land:border-t-0 land:border-r land:pb-0 land:pl-[env(safe-area-inset-left)] lg:inset-y-0 lg:right-auto lg:w-56 lg:border-t-0 lg:border-r lg:pb-0">
+          <nav className="fixed inset-x-0 bottom-0 z-30 border-t border-stone-200 bg-white pb-[env(safe-area-inset-bottom)] land:inset-y-0 land:right-auto land:w-[calc(3.75rem+env(safe-area-inset-left)*0.75)] land:border-t-0 land:border-r land:pb-0 land:pl-[calc(env(safe-area-inset-left)*0.75)] lg:inset-y-0 lg:right-auto lg:w-56 lg:border-t-0 lg:border-r lg:pb-0">
             <div className="hidden items-center gap-2.5 px-5 pt-8 pb-6 font-display text-2xl font-bold lg:flex"><Logo size={32} /> Gym</div>
             <div className="mx-auto grid max-w-lg grid-cols-4 land:flex land:h-full land:flex-col land:justify-center land:gap-1 lg:mx-0 lg:flex lg:h-auto lg:max-w-none lg:flex-col lg:justify-start lg:gap-1 lg:px-3">
               {TABS.map((t) => (

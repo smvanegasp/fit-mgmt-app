@@ -36,6 +36,28 @@ Stage 9: the first round of in-app feedback (19 notes from Sergio, 2026-11-02 to
 | 9c | `stage-9c-history` | **History and progress.** Consistent workout names: day type plus the first exercise ("Legs · Squat"); a top-weight-over-time chart on each exercise page; log body weight (and add 159.4 lb on 2026-11-03). |
 | 9d | `stage-9d-peloton` | **Peloton** (cardio): a quick form (class, time, distance, output) with the screenshot attached as a photo. Reading the screenshot automatically was offered (a second AI feature) and not chosen. |
 
+## Stage 9b: what's in it (2026-11-17)
+
+- **The day is filled in:** starting a workout adds the warm-up and the day type's usual exercises in
+  their usual order (Legs: the heavy lift first). Ones never done are dropped when it's saved; the
+  finish sheet counts only what was logged.
+- **Warm-up, timed:** a catalog exercise (`warm-up`, measure `time`); its time runs from the start
+  until "Done warming up" (a lap), then can be adjusted. Not shown as a highlight on workout cards.
+- **Room for the current exercise:** only the exercise being done is open; "Done with ..." folds it
+  into a one-line summary (tap to reopen) and opens the next, scrolled to just under the stopwatch;
+  the rest wait in "Up next" (tap to do one now). Editing a saved workout is unchanged.
+- **Last two:** the start screen lists the last two workouts of the chosen day type; in a workout,
+  "Push day · last two" folds out both.
+- **Exercise picker:** opens on "Usual on <day> days" even when those load after it opens (it fell
+  back to Recent before).
+- **Bigger steppers:** numbers 48px (36px for long weights like 112.5, so they fit a phone), 56px
+  buttons.
+- **Congrats:** the set that reaches the target shows the logo's ladder building, "Target reached"
+  (or "3 in a row") and the dots, for ~3 s (tap to close; vibrates on Android; still with reduce
+  motion).
+- **Landscape rail** narrower (Sergio, after 9a): 60px plus three quarters of the side safe area
+  (enough to clear the notch) instead of 72px plus all of it.
+
 ## Stage 9a: what's in it (2026-11-17)
 
 - **Pull-ups (weighted chin-ups):** on 10-29 Sergio did 4x4 at 90 over a 3x4+1x3 target, but the game

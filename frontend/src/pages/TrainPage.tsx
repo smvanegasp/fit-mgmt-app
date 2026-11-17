@@ -12,6 +12,7 @@ import {
   useActive,
   useAutosave,
   useDiscardWorkout,
+  useExercises,
   useFinishWorkout,
   useProgress,
   useSaveActive,
@@ -21,6 +22,7 @@ import {
 } from "../hooks";
 import { formatDuration } from "../lib/duration";
 import { abandonedAt, currentLap, lapRows } from "../lib/laps";
+import { isLogged, startingEntries } from "../lib/plan";
 import { WEEKLY_GOAL, streaks, weekCounts } from "../lib/progress";
 import { dayType, heavyNext, nextUp, setCount } from "../lib/sets";
 import { clockTime, friendlyDate, localIso, secondsBetween } from "../lib/time";
@@ -76,7 +78,7 @@ function useAutoFinish(body: WorkoutBody | null | undefined): [Workout | null, (
     const end = abandonedAt(body.startedAt, body.laps ?? []);
     if (!end) return;
     busy.current = true;
-    if (body.entries?.length) {
+    if (body.entries?.some(isLogged)) {
       finish.mutateAsync(end).then(setEnded).finally(() => { busy.current = false; });
     } else if (!body.notes?.length && !body.photos?.length) {
       discard.mutateAsync().finally(() => { busy.current = false; });
@@ -98,13 +100,18 @@ function useDayTypes() {
 function Idle({ onOpen }: { onOpen: (w: Workout) => void }) {
   const start = useStartWorkout();
   const workouts = useWorkouts(30);
+  const types = useSessionTypes();
+  const exercises = useExercises();
   const dayTypes = useDayTypes();
   const today = localIso().slice(0, 10);
   const suggestion = workouts.data ? nextUp(workouts.data, today) : null;
   const [picked, setPicked] = useState<string | null>(null);
   const plan = picked ?? suggestion?.label ?? null;
   const heavy = workouts.data ? heavyNext(workouts.data) : null;
-  const last = (workouts.data ?? []).slice(0, 2);
+  // The last two of the chosen day type (Sergio, 2026-11-03), else the last two of any.
+  const all = workouts.data ?? [];
+  const ofType = plan ? all.filter((w) => dayType(w.label) === plan) : [];
+  const last = (ofType.length > 0 ? ofType : all).slice(0, 2);
 
   return (
     <div className="pb-28">
@@ -146,7 +153,11 @@ function Idle({ onOpen }: { onOpen: (w: Workout) => void }) {
         )}
         <button
           type="button"
-          onClick={() => start.mutate({ startedAt: localIso(), plan: plan ?? undefined })}
+          onClick={() => start.mutate({
+            startedAt: localIso(),
+            plan: plan ?? undefined,
+            entries: startingEntries(plan ?? undefined, types.data ?? [], workouts.data ?? [], new Set((exercises.data ?? []).map((e) => e.id))),
+          })}
           disabled={start.isPending}
           className="mt-5 inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-blue-600 py-5 text-xl font-semibold text-white shadow-sm active:bg-blue-700"
         >
@@ -159,7 +170,7 @@ function Idle({ onOpen }: { onOpen: (w: Workout) => void }) {
       {last.length > 0 && (
         <section className="mt-10 space-y-2">
           <WeekLink today={today} />
-          <h2 className="pt-2 text-sm font-semibold tracking-wide text-stone-500 uppercase">Last workouts</h2>
+          <h2 className="pt-2 text-sm font-semibold tracking-wide text-stone-500 uppercase">{ofType.length > 0 ? `Last ${plan} workouts` : "Last workouts"}</h2>
           {last.map((w) => <WorkoutCard key={w.id} workout={w} onClick={() => onOpen(w)} />)}
         </section>
       )}
@@ -294,6 +305,7 @@ function ActiveWorkout({ initial }: { initial: WorkoutBody }) {
         body={body}
         onChange={change}
         onSetLogged={(label) => lap(label)}
+        focus
       />
       {finishing && (
         <FinishSheet
@@ -310,21 +322,25 @@ function ActiveWorkout({ initial }: { initial: WorkoutBody }) {
   );
 }
 
-/** "Push day" with the last Push workout one tap away (folded), to see what was done last time. */
+/** "Push day" with the last two Push workouts one tap away (folded), to see what was done (Sergio, 2026-11-11). */
 function LastOfType({ plan }: { plan: string }) {
   const workouts = useWorkouts(30);
   const screens = useScreens();
   const [open, setOpen] = useState(false);
-  const last = (workouts.data ?? []).find((w) => dayType(w.label) === plan);
-  if (!last) return <p className="mb-2 text-sm font-medium text-stone-500">{plan} day</p>;
+  const last = (workouts.data ?? []).filter((w) => dayType(w.label) === plan).slice(0, 2);
+  if (last.length === 0) return <p className="mb-2 text-sm font-medium text-stone-500">{plan} day</p>;
   return (
     <div className="mb-3">
       <button type="button" onClick={() => setOpen(!open)} aria-expanded={open}
         className="flex w-full items-center gap-1.5 py-1 text-left text-sm font-medium text-stone-500">
-        {plan} day · last one {friendlyDate(last.date)}
+        {plan} day · last {last.length === 2 ? "two" : "one"} {last.map((w) => friendlyDate(w.date)).join(", ")}
         <CaretDown size={14} className={`ml-auto ${open ? "rotate-180" : ""}`} aria-hidden />
       </button>
-      {open && <div className="mt-1"><WorkoutCard workout={last} onClick={() => screens.openWorkout(last.id)} /></div>}
+      {open && (
+        <div className="mt-1 space-y-2">
+          {last.map((w) => <WorkoutCard key={w.id} workout={w} onClick={() => screens.openWorkout(w.id)} />)}
+        </div>
+      )}
     </div>
   );
 }
@@ -335,7 +351,8 @@ function FinishSheet({ body, onClose, onEnding }: {
   const finish = useFinishWorkout();
   const discard = useDiscardWorkout();
   const [confirmDiscard, setConfirmDiscard] = useState(false);
-  const entries = body.entries ?? [];
+  // The filled-in exercises not done aren't saved.
+  const entries = (body.entries ?? []).filter(isLogged);
   const seconds = secondsBetween(body.startedAt);
 
   return (
@@ -357,7 +374,7 @@ function FinishSheet({ body, onClose, onEnding }: {
       >
         <CheckCircle size={22} weight="fill" aria-hidden /> Save workout
       </button>
-      {entries.length === 0 && <p className="mt-2 text-center text-sm text-stone-500">Add an exercise first, or discard.</p>}
+      {entries.length === 0 && <p className="mt-2 text-center text-sm text-stone-500">Log a set first, or discard.</p>}
       <button type="button" onClick={onClose} className="mt-2 w-full rounded-xl border border-stone-300 py-3 font-medium">
         Keep training
       </button>

@@ -6,8 +6,10 @@ import { api, type CueSection, type Entry, type Exercise, type Note, type Photo,
 import { useAddNote, useExerciseSummary, useUpdateNote } from "../hooks";
 import { ladderWeights, nextSet, reachesTarget, schemeText, summarizeSets, weightText } from "../lib/sets";
 import { clearDraft, loadDraft, saveDraft } from "../lib/drafts";
-import { friendlyDate, localIso } from "../lib/time";
+import { formatDuration } from "../lib/duration";
+import { friendlyDate, localIso, secondsBetween } from "../lib/time";
 import { BottomSheet } from "./BottomSheet";
+import { Celebration } from "./Celebration";
 import { CueList } from "./Cues";
 import { InfoTip } from "./InfoTip";
 import { PhotoButton, PhotoStrip } from "./Photos";
@@ -28,14 +30,28 @@ interface Props {
   onRemove: () => void;
   /** A set was logged ("Set 2 · Weighted dips"): starts a new lap. */
   onSetLogged: (label: string) => void;
+  /** The workout's start, for the warm-up's running time. */
+  startedAt?: string;
+  /** The workout in progress: offer "Done" to fold the exercise away. */
+  focus?: boolean;
 }
 
-export function EntryCard({ entry, exercise, excludeWorkoutId, role, draftKey, onChange, onRemove, onSetLogged }: Props) {
+export function EntryCard({ entry, exercise, excludeWorkoutId, role, draftKey, onChange, onRemove, onSetLogged, startedAt, focus }: Props) {
   const summary = useExerciseSummary(exercise.id, excludeWorkoutId, role);
   const [confirmRemove, setConfirmRemove] = useState(false);
+  const [celebrate, setCelebrate] = useState(false);
   const screens = useScreens();
   const last = summary.data?.last;
   const streak = summary.data?.streak;
+
+  if (exercise.measure === "time") {
+    return (
+      <article className="rounded-2xl border border-stone-200 bg-white p-4">
+        <h2 className="text-lg leading-tight font-semibold">{exercise.name}</h2>
+        <WarmUpLog entry={entry} startedAt={startedAt} onChange={onChange} onSetLogged={onSetLogged} focus={focus} />
+      </article>
+    );
+  }
 
   return (
     <article className="rounded-2xl border border-stone-200 bg-white p-4">
@@ -70,12 +86,67 @@ export function EntryCard({ entry, exercise, excludeWorkoutId, role, draftKey, o
         <RunLog entry={entry} onChange={onChange} />
       ) : (
         <SetLog entry={entry} exercise={exercise} draftKey={draftKey} lastSets={last?.entry.sets} bestDrop={summary.data?.bestDrop} target={streak?.scheme}
-          onChange={onChange} onSetLogged={onSetLogged} />
+          onChange={onChange} onSetLogged={onSetLogged} onReached={focus ? () => setCelebrate(true) : undefined} />
       )}
 
       <EntryNotes entry={entry} exercise={exercise} cues={summary.data?.cues ?? []} setupPhotos={summary.data?.photos ?? []} onChange={onChange} />
       {summary.data && <CueList exerciseId={exercise.id} exerciseName={exercise.name} cues={summary.data.cues} />}
+      {focus && !entry.done && <DoneButton name={exercise.name} onDone={() => onChange({ ...entry, done: true })} />}
+      {celebrate && streak && (
+        <Celebration scheme={streak.scheme} load={exercise.load} times={streak.times + 1} goal={streak.goal} onClose={() => setCelebrate(false)} />
+      )}
     </article>
+  );
+}
+
+/** Folds the exercise away so the next one gets the screen. */
+function DoneButton({ name, onDone }: { name: string; onDone: () => void }) {
+  return (
+    <button type="button" onClick={onDone}
+      className="mt-4 flex w-full items-center justify-center gap-2 rounded-xl border border-stone-300 py-3 font-semibold text-stone-800">
+      <Check size={20} weight="bold" aria-hidden /> Done with {name}
+    </button>
+  );
+}
+
+/**
+ * The warm-up (Sergio, 2026-11-05: every workout starts with one, and its time counts): its time
+ * runs from the start of the workout until "Done warming up", then it can be adjusted.
+ */
+function WarmUpLog({ entry, startedAt, onChange, onSetLogged, focus }: {
+  entry: Entry; startedAt?: string; onChange: (e: Entry) => void; onSetLogged: (label: string) => void; focus?: boolean;
+}) {
+  const [, tick] = useState(0);
+  const running = entry.minutes === undefined && startedAt !== undefined;
+  useEffect(() => {
+    if (!running) return;
+    const id = setInterval(() => tick((n) => n + 1), 1000);
+    return () => clearInterval(id);
+  }, [running]);
+
+  if (running) {
+    const seconds = secondsBetween(startedAt);
+    return (
+      <div className="mt-2">
+        <p className="font-display text-5xl font-semibold tabular-nums">{formatDuration(seconds)}</p>
+        <p className="text-sm text-stone-500">Take your time: it counts.</p>
+        <button type="button"
+          onClick={() => {
+            onChange({ ...entry, minutes: Math.max(1, Math.round(seconds / 60)), ...(focus ? { done: true } : {}) });
+            onSetLogged("Warm-up");
+          }}
+          className="mt-3 flex w-full items-center justify-center gap-2 rounded-xl bg-blue-600 py-3.5 text-lg font-semibold text-white">
+          <Check size={22} weight="bold" aria-hidden /> Done warming up
+        </button>
+      </div>
+    );
+  }
+  return (
+    <div className="mt-3 space-y-3">
+      <Stepper layout="row" label="Time" unit="minutes" value={Math.round(entry.minutes ?? 0)} step={1}
+        onChange={(m) => onChange({ ...entry, minutes: m })} />
+      {focus && !entry.done && <DoneButton name="the warm-up" onDone={() => onChange({ ...entry, done: true })} />}
+    </div>
   );
 }
 
@@ -152,9 +223,11 @@ export function TargetGame({ streak, load, today }: { streak: Streak; load: Exer
 // ------------------------------------------------------------------ lifting
 
 
-function SetLog({ entry, exercise, draftKey, lastSets, bestDrop, target, onChange, onSetLogged }: {
+function SetLog({ entry, exercise, draftKey, lastSets, bestDrop, target, onChange, onSetLogged, onReached }: {
   entry: Entry; exercise: Exercise; draftKey: string; lastSets?: SetData[]; bestDrop?: { date: string; sets: SetData[] }; target?: Scheme;
   onChange: (e: Entry) => void; onSetLogged: (label: string) => void;
+  /** This set reached today's target (the moment for a congrats). */
+  onReached?: () => void;
 }) {
   const sets = entry.sets ?? [];
   const [editing, setEditing] = useState<number | null>(null);
@@ -189,6 +262,7 @@ function SetLog({ entry, exercise, draftKey, lastSets, bestDrop, target, onChang
     // Save the set first, then start the lap (the lap builds on the saved workout).
     onChange({ ...entry, sets: next });
     if (editing === null) onSetLogged(`Set ${next.length} · ${exercise.name}`);
+    if (target && !reachesTarget(sets, target) && reachesTarget(next, target)) onReached?.();
     setEditing(null);
   }
 

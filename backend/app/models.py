@@ -66,6 +66,13 @@ class Entry(BaseModel):
     segments: list[Segment] = Field(default_factory=list, max_length=60)
     distanceMi: float | None = Field(None, ge=0, le=200)
     minutes: float | None = Field(None, ge=0, le=1000)
+    # Marked done during the workout (it folds away); dropped when the workout is saved.
+    done: bool | None = None
+
+    def logged(self) -> bool:
+        """Anything recorded (a workout starts with its usual exercises filled in, not all get done)."""
+        return bool(self.sets or self.problems or self.segments or self.notes or self.photos
+                    or self.minutes or self.distanceMi)
 
     @field_validator("notes")
     @classmethod

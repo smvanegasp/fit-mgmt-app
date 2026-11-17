@@ -21,10 +21,10 @@ export function Stepper({ label, value, onChange, step, min = 0, unit, decimals,
       <button
         type="button"
         onClick={() => set(value - step)}
-        className="flex size-12 shrink-0 items-center justify-center rounded-full bg-stone-100 text-stone-700 active:bg-stone-200"
+        className="flex size-14 shrink-0 items-center justify-center rounded-full bg-stone-100 text-stone-700 active:bg-stone-200"
         aria-label={`Less ${label.toLowerCase()}`}
       >
-        <Minus size={22} weight="bold" aria-hidden />
+        <Minus size={24} weight="bold" aria-hidden />
       </button>
       <input
         aria-label={label}
@@ -35,15 +35,16 @@ export function Stepper({ label, value, onChange, step, min = 0, unit, decimals,
           const n = Number(e.target.value.replace(",", "."));
           if (!Number.isNaN(n)) onChange(Math.max(min, n));
         }}
-        className="w-full min-w-0 bg-transparent text-center font-display text-4xl font-semibold tabular-nums outline-none"
+        // Big (Sergio, 2026-11-03); one size down for long weights like 112.5 so they fit a phone.
+        className={`w-full min-w-0 bg-transparent text-center font-display font-semibold tabular-nums outline-none ${String(value).length > 4 ? "text-4xl" : "text-5xl"}`}
       />
       <button
         type="button"
         onClick={() => set(value + step)}
-        className="flex size-12 shrink-0 items-center justify-center rounded-full bg-stone-100 text-stone-700 active:bg-stone-200"
+        className="flex size-14 shrink-0 items-center justify-center rounded-full bg-stone-100 text-stone-700 active:bg-stone-200"
         aria-label={`More ${label.toLowerCase()}`}
       >
-        <Plus size={22} weight="bold" aria-hidden />
+        <Plus size={24} weight="bold" aria-hidden />
       </button>
     </div>
   );
@@ -51,7 +52,7 @@ export function Stepper({ label, value, onChange, step, min = 0, unit, decimals,
   if (layout === "row") {
     return (
       <div className="flex items-center gap-3">
-        <div className="w-24 shrink-0">
+        <div className="w-20 shrink-0">
           <div className="text-xs font-medium tracking-wide text-stone-500 uppercase">{label}</div>
           {unit && <div className="text-xs leading-tight text-stone-500">{unit}</div>}
         </div>
