@@ -117,8 +117,10 @@ def finish_workout(body: FinishBody, space: str = Depends(current_space)) -> Wor
     if row is None:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "No workout in progress")
     active = WorkoutBody(**row)
+    # Exercises filled in at the start but never done don't belong in the log.
+    active.entries = [e.model_copy(update={"done": None}) for e in active.entries if e.logged()]
     if not active.entries:
-        raise HTTPException(status.HTTP_400_BAD_REQUEST, "Add at least one exercise before finishing")
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, "Log at least one set before finishing")
     date = active.startedAt[:10]
     same_day = db.query(space, f"WORKOUT#{date}#")
     if same_day:

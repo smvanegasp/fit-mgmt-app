@@ -2,7 +2,7 @@ export type Group = "push" | "pull" | "legs" | "posterior" | "core" | "skill" | 
 /** How a set's weight reads: barbell = plates (bar added for totals), dumbbell = per hand with
  * `each`, added = on top of body weight, bodyweight / none = no weight. */
 export type Load = "barbell" | "dumbbell" | "machine" | "added" | "bodyweight" | "none";
-export type Measure = "reps" | "seconds" | "run" | "climb";
+export type Measure = "reps" | "seconds" | "run" | "climb" | "time";
 /** An exercise's place in a workout: the first lift, or a later one (done second, a lift is lighter). */
 export type Role = "first" | "later";
 
@@ -64,6 +64,8 @@ export interface Entry {
   segments?: Segment[];
   distanceMi?: number;
   minutes?: number;
+  /** Marked done during the workout (it folds away); dropped when it's saved. */
+  done?: boolean;
 }
 
 /** A stopwatch lap: when it ended and what it was ("Set 2 · Weighted dips"). */
@@ -319,7 +321,7 @@ export const api = {
   deleteWorkout: (id: string) => request<void>(`/workouts/${id}`, { method: "DELETE" }),
 
   getActive: () => request<WorkoutBody | null>("/active"),
-  startWorkout: (body: { startedAt: string; plan?: string }) => request<WorkoutBody>("/active", json("POST", body)),
+  startWorkout: (body: WorkoutBody) => request<WorkoutBody>("/active", json("POST", body)),
   saveActive: (body: WorkoutBody) => request<WorkoutBody>("/active", json("PUT", body)),
   finishWorkout: (endedAt: string) => request<Workout>("/active/finish", json("POST", { endedAt })),
   discardWorkout: () => request<void>("/active", { method: "DELETE" }),

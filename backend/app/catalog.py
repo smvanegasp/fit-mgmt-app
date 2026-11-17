@@ -17,7 +17,8 @@ Group = Literal["push", "pull", "legs", "posterior", "core", "skill", "cardio", 
 #   bodyweight - no weight
 #   none      - not a set-based exercise (runs, climbing)
 Load = Literal["barbell", "dumbbell", "machine", "added", "bodyweight", "none"]
-Measure = Literal["reps", "seconds", "run", "climb"]
+# "time": only how long it took (the warm-up), kept in the entry's `minutes`.
+Measure = Literal["reps", "seconds", "run", "climb", "time"]
 
 
 @dataclass(frozen=True)
@@ -118,6 +119,8 @@ EXERCISES: tuple[CatalogExercise, ...] = (
                     aliases=("leg raises",)),
     CatalogExercise("knee-raises", "Hanging knee raises", "core", "bodyweight",
                     aliases=("knee raises",)),
+    # Every workout starts with it, timed (Sergio, 2026-11-05).
+    CatalogExercise("warm-up", "Warm-up", "cardio", "none", measure="time", aliases=("warmup",)),
     # Cardio (once a week from 2026-10-30: a Peloton run or a walk)
     CatalogExercise("peloton-run", "Peloton run", "cardio", "none", measure="run",
                     aliases=("peloton", "peloton run", "run")),

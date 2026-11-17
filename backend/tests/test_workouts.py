@@ -44,6 +44,22 @@ def test_cannot_finish_an_empty_workout_and_can_discard(client: TestClient) -> N
     assert client.get("/api/active").json() is None
 
 
+def test_finishing_drops_the_filled_in_exercises_never_done(client: TestClient) -> None:
+    client.post("/api/active", json={"startedAt": "2026-11-18T18:00:00", "plan": "Push"})
+    client.put("/api/active", json={"startedAt": "2026-11-18T18:00:00", "plan": "Push", "entries": [
+        {"exerciseId": "warm-up", "minutes": 12, "done": True},
+        {"exerciseId": "dips", "sets": [{"reps": 4, "weightLb": 115}], "done": True},
+        {"exerciseId": "bench-press"},
+    ]})
+    workout = client.post("/api/active/finish", json={"endedAt": "2026-11-18T19:00:00"}).json()
+    assert [e["exerciseId"] for e in workout["entries"]] == ["warm-up", "dips"]
+    assert "done" not in workout["entries"][1] and workout["label"] == "Push"
+    # Only filled-in exercises: nothing to save.
+    client.post("/api/active", json={"startedAt": "2026-11-19T18:00:00"})
+    client.put("/api/active", json={"startedAt": "2026-11-19T18:00:00", "entries": [{"exerciseId": "dips"}]})
+    assert client.post("/api/active/finish", json={"endedAt": "2026-11-19T18:30:00"}).status_code == 400
+
+
 def test_times_must_be_local_iso(client: TestClient) -> None:
     assert client.post("/api/active", json={"startedAt": "yesterday"}).status_code == 422
 

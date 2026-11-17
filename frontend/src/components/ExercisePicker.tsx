@@ -3,7 +3,7 @@ import { useMemo, useState } from "react";
 
 import type { Exercise, Group, Load } from "../api";
 import { useCreateExercise, useExercises, useSessionTypes, useWorkouts } from "../hooks";
-import { heavyNext } from "../lib/sets";
+import { usualFor } from "../lib/plan";
 import { fuzzyMatch } from "../lib/search";
 import { friendlyDate } from "../lib/time";
 import { BottomSheet } from "./BottomSheet";
@@ -52,15 +52,11 @@ export function ExercisePicker({ onPick, onClose, inWorkout, plan, title = "Add 
   const all = exercises.data ?? [];
   const byId = useMemo(() => new Map(all.map((e) => [e.id, e])), [all]);
   const workouts = useWorkouts(30);
-  let usual = (types.data ?? []).find((t) => t.label === plan)?.exercises ?? [];
-  // On a Legs day the heavy lift goes first, then the lighter one.
-  const heavy = plan === "Legs" && workouts.data ? heavyNext(workouts.data) : null;
-  if (heavy) {
-    const light = heavy === "squat" ? "deadlift" : "squat";
-    usual = [heavy, light, ...usual.filter((id) => id !== heavy && id !== light)];
-  }
+  const usual = usualFor(plan, types.data ?? [], workouts.data ?? []);
   const usualLeft = usual.filter((id) => !inWorkout.includes(id) && byId.has(id));
-  const [tab, setTab] = useState<string>(usualLeft.length > 0 ? "usual" : "recent");
+  // Opens on the day's usual exercises, even when they arrive after the sheet opened.
+  const [chosen, setTab] = useState<string | null>(null);
+  const tab = chosen ?? (usualLeft.length > 0 ? "usual" : "recent");
 
   const list = useMemo(() => {
     if (query.trim()) return all.filter((e) => fuzzyMatch(query, e.name, ...e.aliases));

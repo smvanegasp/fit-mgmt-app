@@ -25,8 +25,10 @@ export function WorkoutCard({ workout, onClick }: { workout: Workout; onClick: (
   const byId = new Map((exercises.data ?? []).map((e) => [e.id, e]));
   const minutes = workoutMinutes(workout);
   const day = new Date(`${workout.date}T12:00:00`);
-  const lines = (workout.entries ?? []).slice(0, 3).map((e) => highlight(e, byId.get(e.exerciseId))).filter(Boolean);
-  const more = (workout.entries?.length ?? 0) - lines.length;
+  // The warm-up isn't a highlight (its time shows on the workout page).
+  const entries = (workout.entries ?? []).filter((e) => byId.get(e.exerciseId)?.measure !== "time");
+  const lines = entries.slice(0, 3).map((e) => highlight(e, byId.get(e.exerciseId))).filter(Boolean);
+  const more = entries.length - lines.length;
 
   return (
     <button type="button" onClick={onClick} className="flex w-full items-start gap-4 rounded-2xl border border-stone-200 bg-white p-3 text-left">

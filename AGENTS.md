@@ -121,11 +121,12 @@ A mobile-first web app where Sergio logs their gym workouts and sees their progr
 | 7 | Production import (2026-10-31): 177 workouts, 1,780 sets, 50 cues, 4 routines, 15 photos into AWS `fit` (space main); identical to the local log row by row (only `hidden: false` spelled out and an old group name differ locally) | done (no code) |
 | 8a | In-app feedback: Settings and the guest banner, owner inbox in Settings, email on guest feedback, `scripts/feedback.py` for each session | #17 |
 | 8b | Own identity: set-glyph logo and icons, Barlow Condensed for numbers and headings, dark by default, stats-led welcome page (public summary endpoint, shared Heatmap), re-recorded clips | #18 |
-| 9a | Feedback fixes: more reps than the target is the new target; a much lighter session (a lift done second) plays its own target, shown by role; a workout left 2 hours without a set finishes itself at its last set; the set being dialed in survives switching screens; landscape phones get a side rail | open |
+| 9a | Feedback fixes: more reps than the target is the new target; a much lighter session (a lift done second) plays its own target, shown by role; a workout left 2 hours without a set finishes itself at its last set; the set being dialed in survives switching screens; landscape phones get a side rail | #26 |
+| 9b | Train flow: a workout starts with a timed warm-up and the day's usual exercises filled in (never-done ones dropped on save); only the current exercise is open (Done folds it, the rest wait as Up next); last two workouts of the day type; bigger steppers; a congrats when a set reaches the target; the picker opens on the day's usual exercises; a narrower landscape rail | open |
 
 **Where things stand (2026-11-17):** stages 0-8b are merged and live (PRs up to #20). Stage 9 works
 through the first round of in-app feedback (19 notes) in four PRs (9a fixes, 9b Train flow, 9c
-history and progress, 9d Peloton; [docs/BACKLOG.md](docs/BACKLOG.md)); 9a is open. New requests come
+history and progress, 9d Peloton; [docs/BACKLOG.md](docs/BACKLOG.md)); 9a is merged (#26), 9b is open. New requests come
 from Sergio or from the in-app feedback (`scripts/feedback.py`, section 2).
 **Production holds Sergio's real log** at https://gym.sergiovanegas.com (loaded
 in stage 7), so Sergio logs there from now on and visitors get a copy of it. The local stack has the
@@ -212,7 +213,8 @@ frontend/
                             weeks + streak, lift ladders), SettingsPage
   src/components/           Screens (stack of full-screen pages: useScreens().openWorkout / openExercise),
                             Screen, WorkoutDetail, ExercisePage, EditWorkout, WorkoutCard,
-                            WorkoutEditor, EntryCard (set logger, drop sets, climbing, run, notes),
+                            WorkoutEditor (focus mode: current exercise open, done ones folded, Up next),
+                            EntryCard (set logger, drop sets, climbing, run, warm-up, notes, Done), Celebration,
                             Cues (checklist + manage sheet), ExercisePicker, Stepper,
                             Photos, BottomSheet, InfoTip (both from the pantry), ComingSoon,
                             Progression (SetGlyph, GameDots, ProgressionLadder, LiftCard, day-type
@@ -220,7 +222,8 @@ frontend/
                             TutorialStrip (from the pantry), FeedbackSheet
   src/lib/                  pure logic + tests: sets (summaries, next set, ladder, volume, next up),
                             time (local ISO), weeks (week grouping, long dates), laps (and when a
-                            workout was left running), drafts (the set being dialed in, kept on the phone), duration, search (fuzzy), images, theme,
+                            workout was left running), drafts (the set being dialed in, kept on the phone), plan (what a
+                            workout starts with, usual order, logged entries), duration, search (fuzzy), images, theme,
                             progress (week rows and counts, streaks, step dates), cues (sections and order),
                             kinds (drop ladders, climbing grades)
 ```
@@ -245,7 +248,9 @@ frontend/
   20 min warm-up + 40 min first exercise, and ends with its last message), `label` ("Push",
   "Squat + Climb"...), `notes`, `photos` `[{key, caption}]`, `source` (`whatsapp` / `app`), and
   `entries` in order, each `{exerciseId, sets?, targets?, notes?, photos?, problems?, segments?,
-  distanceMi?}`:
+  distanceMi?, minutes?, done?}`. A new workout starts with the `warm-up` (catalog, measure `time`:
+  only `minutes`) and the day's usual exercises filled in (stage 9b); `POST /active/finish` drops
+  entries with nothing logged and the `done` flag (it only folds an exercise during the workout):
   - **set** `{reps?, weightLb?, each?, seconds?, drop?, detail?}`. `weightLb` is **as written**:
     plates for `barbell` exercises (total = `weightLb + barLb`, the 45 lb bar), per hand when
     `each`, and the **added** weight for `added` exercises (weighted dips and chin-ups; Sergio

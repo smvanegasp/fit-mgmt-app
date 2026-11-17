@@ -8,6 +8,11 @@
    left and the stopwatch bar gets compact. Tablets and computers are taller than this. */
 @custom-variant land (@media (orientation: landscape) and (max-height: 500px));
 
+/* The congrats on reaching a target (components/Celebration.tsx). */
+@keyframes fade-in { from { opacity: 0; } }
+@keyframes pop-in { from { opacity: 0; transform: scale(0.8); } }
+@keyframes square-in { from { opacity: 0; transform: translateY(8px) scale(0.4); } }
+
 @theme {
   --font-display: "Barlow Condensed", system-ui, sans-serif;
 }
