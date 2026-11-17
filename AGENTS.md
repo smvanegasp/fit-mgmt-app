@@ -122,11 +122,12 @@ A mobile-first web app where Sergio logs their gym workouts and sees their progr
 | 8a | In-app feedback: Settings and the guest banner, owner inbox in Settings, email on guest feedback, `scripts/feedback.py` for each session | #17 |
 | 8b | Own identity: set-glyph logo and icons, Barlow Condensed for numbers and headings, dark by default, stats-led welcome page (public summary endpoint, shared Heatmap), re-recorded clips | #18 |
 | 9a | Feedback fixes: more reps than the target is the new target; a much lighter session (a lift done second) plays its own target, shown by role; a workout left 2 hours without a set finishes itself at its last set; the set being dialed in survives switching screens; landscape phones get a side rail | #26 |
-| 9b | Train flow: a workout starts with a timed warm-up and the day's usual exercises filled in (never-done ones dropped on save); only the current exercise is open (Done folds it, the rest wait as Up next); last two workouts of the day type; bigger steppers; a congrats when a set reaches the target; the picker opens on the day's usual exercises; a narrower landscape rail | open |
+| 9b | Train flow: a workout starts with a timed warm-up and the day's usual exercises filled in (never-done ones dropped on save); only the current exercise is open (Done folds it, the rest wait as Up next); last two workouts of the day type; bigger steppers; a congrats when a set reaches the target; the picker opens on the day's usual exercises; a narrower landscape rail | #27 |
+| 9c | Workout names are the day type and first exercise ("Legs · Deadlift", computed in the app; stored labels unchanged); a top-weight (or most reps, longest hold) chart on each exercise page; body weight on Progress (log, latest, change, line; `/api/body`); shared `LineChart` | open |
 
 **Where things stand (2026-11-17):** stages 0-8b are merged and live (PRs up to #20). Stage 9 works
 through the first round of in-app feedback (19 notes) in four PRs (9a fixes, 9b Train flow, 9c
-history and progress, 9d Peloton; [docs/BACKLOG.md](docs/BACKLOG.md)); 9a is merged (#26), 9b is open. New requests come
+history and progress, 9d Peloton; [docs/BACKLOG.md](docs/BACKLOG.md)); 9a and 9b are merged (#26, #27), 9c is open. New requests come
 from Sergio or from the in-app feedback (`scripts/feedback.py`, section 2).
 **Production holds Sergio's real log** at https://gym.sergiovanegas.com (loaded
 in stage 7), so Sergio logs there from now on and visitors get a copy of it. The local stack has the
@@ -134,7 +135,7 @@ same history and is now only for development: anything logged locally stays loca
 or delete `SPACE#main` on AWS without Sergio's explicit OK** (section 6); test in sample demos.
 
 **Next:** whatever Sergio asks for; open ideas are in [docs/BACKLOG.md](docs/BACKLOG.md). Load the `dataviz` skill
-before writing chart code. Visuals are plain SVG/HTML in `components/Progression.tsx` (no chart
+before writing chart code. Visuals are plain SVG/HTML in `components/Progression.tsx` and `components/LineChart.tsx` (one series over time: crosshair, tooltip, arrow keys, table view; no chart
 library). Day-type colors are CSS variables in `index.css` (`--chart-push/legs/pull/cardio`),
 checked with the dataviz palette validator in both modes.
 
@@ -223,7 +224,7 @@ frontend/
   src/lib/                  pure logic + tests: sets (summaries, next set, ladder, volume, next up),
                             time (local ISO), weeks (week grouping, long dates), laps (and when a
                             workout was left running), drafts (the set being dialed in, kept on the phone), plan (what a
-                            workout starts with, usual order, logged entries), duration, search (fuzzy), images, theme,
+                            workout starts with, usual order, logged entries), series (each session's top weight / reps / hold), duration, search (fuzzy), images, theme,
                             progress (week rows and counts, streaks, step dates), cues (sections and order),
                             kinds (drop ladders, climbing grades)
 ```
@@ -277,7 +278,7 @@ frontend/
   Sergio's own cues, kept in the corrections' `cueOrder`). Imported cues are the ones written in 2+
   sessions plus hand-picked ones; per-session comments stay on the workout entry. Re-importing keeps
   `hidden`, `section` and `rank` set in the app.
-- **`BODY#<date>`** `{weightLb}` · **`ROUTINE#<from>#<id>`** `{name, from, to, days[], notes,
+- **`BODY#<date>`** `{date, weightLb, source}` (Progress, `/api/body`) · **`ROUTINE#<from>#<id>`** `{name, from, to, days[], notes,
   photos}` (the routine eras, for the evolution timeline) · later `ACTIVE` (workout in progress,
   server-side `startedAt`) and `SETTINGS`.
 - Photos in S3 (S3Mock locally): `<space>/<id>.img` plus `<space>/<id>-thumb.img` (1600 and
@@ -316,6 +317,7 @@ frontend/
 | Cues | `POST /exercises/{id}/notes {text, date, section?}` · `PATCH /exercises/{id}/notes/{noteId} {text?, hidden?, section?, rank?}` · `DELETE` (same path) · `POST /exercises/{id}/cue-check {note}` (suggestion `{action: add|update|none, noteId?, text?, section?}`; 503 without `GROQ_API_KEY`) |
 | Workouts | `GET /workouts?limit=` (newest first) · `GET/PUT/DELETE /workouts/{id}` (PUT keeps id, date, source; label recomputed) |
 | In progress | `GET /active` · `POST /active {startedAt}` (keeps an existing one) · `PUT /active` (autosave; startedAt fixed) · `POST /active/finish {endedAt}` · `DELETE /active` |
+| Body weight | `GET /body` (oldest first) · `PUT /body/{date} {weightLb}` (one per day, replaces) · `DELETE /body/{date}` |
 | Photos | `POST /photos` (multipart photo + thumb, resized on the phone) · `GET /photos/{space}/{id}[?size=thumb]` |
 
 Times are the phone local time without a zone (`2026-10-30T18:00:00`), like the import.

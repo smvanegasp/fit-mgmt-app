@@ -1,6 +1,6 @@
 """A small sample training log for demos when the owner has none yet (and for browser tests):
 eight weeks of Push / Legs / Pull ending this week, each lift going up 5 lb after three
-sessions at a target, a few cues and one routine."""
+sessions at a target, a few cues, weekly weigh-ins and one routine."""
 
 from datetime import date, timedelta
 from typing import Any
@@ -48,6 +48,11 @@ def sample_rows(today: date) -> dict[str, dict[str, Any]]:
                 "id": note_id, "exerciseId": exercise_id, "text": text, "date": first, "lastSeen": today.isoformat(),
                 "sessions": WEEKS, "section": section, "rank": rank, "source": "app",
             }
+    # A weigh-in every Monday, drifting down a little.
+    for week, weight in enumerate([164.0, 163.4, 163.6, 162.8, 162.2, 162.6, 161.8, 161.4]):
+        day = start + timedelta(weeks=week)
+        if day <= today:
+            rows[f"BODY#{day.isoformat()}"] = {"date": day.isoformat(), "weightLb": weight, "source": "app"}
     rows[f"ROUTINE#{first}#sample"] = {
         "id": "sample", "name": "3-day split", "from": first, "to": None,
         "days": ["Push: weighted dips, bench press", "Legs: squat, deadlift, Romanian deadlift", "Pull: weighted chin-ups, pull-ups"],

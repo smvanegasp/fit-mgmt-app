@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { dayType, heavyNext, ladderWeights, nextSet, nextUp, reachesTarget, schemeText, summarizeSets, volume, weightText } from "./sets";
+import { dayType, heavyNext, ladderWeights, nextSet, nextUp, reachesTarget, schemeText, summarizeSets, volume, weightText, workoutTitle } from "./sets";
 
 const barbell = { load: "barbell" as const, measure: "reps" as const, barLb: 45 };
 const added = { load: "added" as const, measure: "reps" as const, barLb: 0 };
@@ -137,5 +137,15 @@ describe("Legs days", () => {
     expect(heavyNext([deadliftFirst])).toBe("squat");
     expect(heavyNext([deadliftFirst, squatFirst, push])).toBe("deadlift");
     expect(heavyNext([push])).toBeNull();
+  });
+});
+
+describe("workoutTitle", () => {
+  const names = new Map([["deadlift", "Deadlift"], ["squat", "Back squat"], ["bouldering", "Bouldering"], ["warm-up", "Warm-up"]]);
+  it("is the day type and the first exercise, warm-up aside", () => {
+    expect(workoutTitle({ label: "Squat + Climb", entries: [{ exerciseId: "squat" }, { exerciseId: "bouldering" }] }, names)).toBe("Legs · Back squat");
+    expect(workoutTitle({ label: "Legs", entries: [{ exerciseId: "warm-up" }, { exerciseId: "deadlift" }] }, names)).toBe("Legs · Deadlift");
+    expect(workoutTitle({ label: "Climb", entries: [{ exerciseId: "bouldering" }] }, names)).toBe("Pull · Bouldering");
+    expect(workoutTitle({ label: "Push", entries: [] }, names)).toBe("Push");
   });
 });

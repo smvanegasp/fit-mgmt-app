@@ -118,6 +118,17 @@ export function dayType(label: string): string {
 }
 
 /**
+ * A workout's name everywhere it's shown (Sergio, 2026-11-11: the stored names were inconsistent):
+ * its day type and the first exercise done, "Legs · Deadlift". The warm-up doesn't count.
+ */
+export function workoutTitle(workout: Pick<Workout, "label" | "entries">, names: Map<string, string>): string {
+  const type = dayType(workout.label || "Workout");
+  const first = (workout.entries ?? []).find((e) => e.exerciseId !== "warm-up");
+  const name = first && names.get(first.exerciseId);
+  return name ? `${type} · ${name}` : type;
+}
+
+/**
  * Which lift goes heavy on the next Legs day: the one that was light last time. On a Legs day the
  * heavy lift comes first, so the last Legs day's first squat or deadlift was its heavy one.
  */

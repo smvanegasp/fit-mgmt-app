@@ -36,6 +36,25 @@ Stage 9: the first round of in-app feedback (19 notes from Sergio, 2026-11-02 to
 | 9c | `stage-9c-history` | **History and progress.** Consistent workout names: day type plus the first exercise ("Legs · Squat"); a top-weight-over-time chart on each exercise page; log body weight (and add 159.4 lb on 2026-11-03). |
 | 9d | `stage-9d-peloton` | **Peloton** (cardio): a quick form (class, time, distance, output) with the screenshot attached as a photo. Reading the screenshot automatically was offered (a second AI feature) and not chosen. |
 
+## Stage 9c: what's in it (2026-11-17)
+
+- **Data first (Sergio's OK):** the 11-14 Pull workout's end on AWS corrected to its last set (15:25,
+  so 1 h 15 min); a scan found no other outliers (the three imported days over 3 hours had two
+  sessions and already show their training minutes). The 11-03 weigh-in (159.4 lb) added.
+- **Workout names:** "day type · first exercise" ("Legs · Deadlift", the warm-up aside), computed in
+  the app from the stored label and entries, so nothing in the log changes. Cards put the name on
+  its own line with the date and time under it; exercise pages list sessions by day type.
+- **Exercise page chart:** each session's top working weight as logged (plates for barbell lifts,
+  added weight for dips and chin-ups; body-weight sessions of a weighted lift left out), most reps
+  in a set for body-weight work, longest hold for holds; in the exercise's group color. Tap a point
+  to open that workout.
+- **Body weight on Progress:** the latest weigh-in, the change since the first, the line, and "Log"
+  (weight and date; one per day, logging a day again replaces it). `GET/PUT/DELETE /api/body`. The
+  sample demo log has weekly weigh-ins.
+- **`LineChart`:** one series over time, built to the dataviz skill (2px line, recessive grid, the
+  last value labeled, crosshair and tooltip that snap to the nearest point, arrow keys, a table
+  view); the series blue passes the palette validator on both card surfaces.
+
 ## Stage 9b: what's in it (2026-11-17)
 
 - **The day is filled in:** starting a workout adds the warm-up and the day type's usual exercises in

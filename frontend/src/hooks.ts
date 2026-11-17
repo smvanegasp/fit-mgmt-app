@@ -113,6 +113,18 @@ export function useWorkouts(limit = 20) {
 }
 
 // Under "workouts" so every save, delete, rename or merge that refreshes workouts refreshes these.
+export function useBodyWeights() {
+  return useQuery({ queryKey: ["body"], queryFn: api.bodyWeights });
+}
+
+export function useLogBodyWeight() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (v: { date: string; weightLb: number }) => api.logBodyWeight(v.date, v.weightLb),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["body"] }),
+  });
+}
+
 export function useProgress() {
   return useQuery({ queryKey: ["workouts", "progress"], queryFn: api.progress });
 }
