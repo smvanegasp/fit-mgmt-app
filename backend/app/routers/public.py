@@ -14,7 +14,7 @@ def summary() -> PublicSummary:
     type) and the main lifts' current targets."""
     exercises = all_exercises(OWNER_SPACE)
     data = progress.progress(OWNER_SPACE, exercises)
-    days = [PublicDay(date=d.date, type=d.type) for d in data.days]
+    days = [PublicDay(date=d.date, type=d.type, cardio=d.cardio) for d in data.days]
     lifts = [
         PublicLift(exerciseId=lift.exerciseId, name=lift.name, group=exercises[lift.exerciseId].group, load=lift.load,
                    scheme=lift.steps[-1].scheme, times=lift.steps[-1].times)

@@ -4,7 +4,7 @@ import type { Point } from "../lib/series";
 import { friendlyDate } from "../lib/time";
 
 const HEIGHT = 160;
-const PAD = { top: 16, right: 12, bottom: 22, left: 36 };
+const PAD = { top: 24, right: 12, bottom: 22, left: 36 };
 const DAY = 86_400_000;
 
 const time = (date: string) => new Date(`${date}T12:00:00`).getTime();

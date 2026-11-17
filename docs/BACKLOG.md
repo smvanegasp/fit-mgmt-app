@@ -44,6 +44,23 @@ Stage 9: the first round of in-app feedback (19 notes from Sergio, 2026-11-02 to
 - **Peloton:** a Peloton entry (distance and time, as before) gets "Add the Peloton screenshot";
   the summary is stored as the entry's photo. A typed form (class, output, calories, heart rate) was
   built first and dropped at Sergio's request: no typing, just the screenshot.
+- **Feedback round 1 on 9d (Sergio, same day):** the stats should be saved from the photo, Peloton
+  progress should show, the weekly goal becomes 3 strength + 1 cardio, and their three rides
+  (screenshots in the workspace) should be added. Done:
+  - **Reading the screenshot** (the second AI feature, now wanted): qwen/qwen3.8-27b on Groq (the only
+    vision model on the account's key; Llama vision models aren't offered) reads the class, instructor,
+    length, output, distance, calories, watts, cadence, resistance and speed. Tested on the three real
+    screenshots: every stat right, but one date misread (11/1 as 11/12), so dates aren't read. Owner
+    only; ~1 s; the photo is saved even if reading fails. Distance and time fill in when empty.
+  - **Peloton ride** in the catalog (Sergio rides the bike; Cardio days start with it).
+  - **Progress:** the ride's page charts total output per ride (distance for runs without output);
+    a "Peloton rides" card on Progress (rides, last, best, the line).
+  - **Weekly goal:** 3 strength days + 1 cardio day, from the week of 2026-10-26; older weeks keep 3
+    workouts, so the streak carries over. Days carry `cardio` (a ride/run/walk entry, a Cardio day,
+    or an old "+ Run"); Train, Progress (both layouts), the heatmap marks and the welcome page use it.
+  - **The three rides** (Nov 1 Metal Ride 291 kJ, Nov 8 Reggaeton 274 kJ, Nov 15 Reggaeton 526 kJ):
+    new Cardio workouts on days that had none, with the screenshot as the photo. Added locally; on AWS
+    after the merge (the live app needs the new code to show them).
 
 ## Stage 9c: what's in it (2026-11-17)
 

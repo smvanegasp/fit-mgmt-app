@@ -28,4 +28,12 @@ describe("topSeries", () => {
     expect(topSeries([session("2026-10-01", [{ seconds: 20 }])], { load: "none", measure: "seconds", barLb: 0 })!.title).toBe("Longest hold");
     expect(topSeries([session("2026-10-01", [])], { load: "none", measure: "run", barLb: 0 })).toBeNull();
   });
+
+  it("plots a Peloton class's output, or a run's distance", () => {
+    const ride = (date: string, outputKj: number) => ({ date, workoutId: date, entry: { exerciseId: "peloton-ride", distanceMi: 14, peloton: { outputKj } } });
+    const s = topSeries([ride("2026-11-15", 526), ride("2026-11-01", 291)], { load: "none", measure: "run", barLb: 0 })!;
+    expect([s.title, s.points.map((p) => p.value)]).toEqual(["Total output", [291, 526]]);
+    const run = topSeries([{ date: "2026-10-01", workoutId: "w", entry: { exerciseId: "walk", distanceMi: 2.5 } }], { load: "none", measure: "run", barLb: 0 })!;
+    expect([run.title, run.format(2.5)]).toEqual(["Distance", "2.5 mi"]);
+  });
 });

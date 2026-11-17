@@ -1,4 +1,4 @@
-import type { ExerciseSession, Problem, SetData } from "../api";
+import type { ExerciseSession, Peloton, Problem, SetData } from "../api";
 
 /** Every drop-set ladder of an exercise, newest first, with its total reps (the best is marked). */
 export function dropLadders(sessions: ExerciseSession[]): { date: string; workoutId: string; sets: SetData[]; total: number; best: boolean }[] {
@@ -34,4 +34,19 @@ export function climbing(sessions: ExerciseSession[]): {
   }
   const grades = [...byGrade.values()].sort((a, b) => gradeNumber(b.grade) - gradeNumber(a.grade));
   return { grades, hardest };
+}
+
+/** A Peloton class's numbers as label/value pairs, in the order the Peloton app shows them. */
+export function pelotonStats(p: Peloton): { label: string; value: string }[] {
+  const rows: [string, number | undefined, string][] = [
+    ["Output", p.outputKj, "kJ"], ["Distance", p.distanceMi, "mi"], ["Calories", p.calories, "kcal"],
+    ["Avg output", p.avgWatts, "W"], ["Cadence", p.avgCadence, "rpm"], ["Resistance", p.avgResistance, "%"],
+    ["Speed", p.avgSpeedMph, "mph"],
+  ];
+  return rows.filter(([, v]) => v !== undefined).map(([label, v, unit]) => ({ label, value: `${v} ${unit}` }));
+}
+
+/** "60 min Reggaeton Ride · Camila Ramón · 526 kJ" for a workout page. */
+export function pelotonText(p: Peloton): string {
+  return [p.title, p.instructor, p.outputKj !== undefined && `${p.outputKj} kJ`].filter(Boolean).join(" · ");
 }

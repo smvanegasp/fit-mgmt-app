@@ -13,12 +13,20 @@ GROUPS = {
     "Legs": SQUAT | HINGE,
     "Pull": {"chin-ups", "pull-ups", "muscle-up-complex", "wide-pull-ups", "close-pull-ups", "french-chin-ups"} | FRONT_LEVER,
 }
-CARDIO = {"treadmill", "peloton-run", "walk"}
+CARDIO = {"treadmill", "peloton-run", "peloton-ride", "walk"}
 
 
 # Old day names and the day type they belong to now (2026-10-30: front lever and climbing are pull
 # days; runs are cardio).
 DAY_TYPE = {"Squat": "Legs", "Deadlift": "Legs", "Front lever": "Pull", "Climb": "Pull", "Run": "Cardio"}
+
+
+def did_cardio(workout: dict) -> bool:
+    """A ride, run or walk that day (the weekly goal: 3 strength days and 1 cardio, Sergio
+    2026-11-17), whether alone or after lifting; an old "Run" day counts too."""
+    label = workout.get("label") or ""
+    entries = {e.get("exerciseId") for e in workout.get("entries", [])}
+    return bool(CARDIO & entries) or day_type(label) == "Cardio" or "Run" in label.split(" + ")
 
 
 def day_type(label: str) -> str:

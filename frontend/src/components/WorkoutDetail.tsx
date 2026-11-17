@@ -7,6 +7,7 @@ import { formatDuration } from "../lib/duration";
 import { lapRows } from "../lib/laps";
 import { summarizeSets, workoutTitle } from "../lib/sets";
 import { clockTime, localIso, minutesText, workoutMinutes } from "../lib/time";
+import { pelotonStats, pelotonText } from "../lib/kinds";
 import { longDate } from "../lib/weeks";
 import { EditWorkout } from "./EditWorkout";
 import { HOLD_COLORS, Ladder } from "./EntryCard";
@@ -130,6 +131,14 @@ function EntryView({ entry, exercise }: { entry: Entry; exercise?: Exercise }) {
               ? `${entry.segments.reduce((m, s) => m + s.minutes, 0)} min, up to ${Math.max(...entry.segments.map((s) => s.mph))} mph`
               : ""}
         </p>
+      )}
+      {entry.peloton && (
+        <div className="mt-1 text-sm text-stone-700">
+          {pelotonText(entry.peloton)}
+          {pelotonStats(entry.peloton).length > 1 && (
+            <p className="text-xs text-stone-500">{pelotonStats(entry.peloton).slice(1).map((s) => `${s.label} ${s.value}`).join(" · ")}</p>
+          )}
+        </div>
       )}
       {(entry.notes ?? []).length > 0 && (
         <ul className="mt-2 list-disc space-y-0.5 pl-5 text-sm text-stone-600">

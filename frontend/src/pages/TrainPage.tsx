@@ -23,7 +23,7 @@ import {
 import { formatDuration } from "../lib/duration";
 import { abandonedAt, currentLap, lapRows } from "../lib/laps";
 import { isLogged, startingEntries } from "../lib/plan";
-import { WEEKLY_GOAL, streaks, weekCounts } from "../lib/progress";
+import { goalText, streaks, weekCounts } from "../lib/progress";
 import { dayType, heavyNext, nextUp, setCount } from "../lib/sets";
 import { clockTime, friendlyDate, localIso, secondsBetween } from "../lib/time";
 import { weekStart } from "../lib/weeks";
@@ -184,13 +184,14 @@ function WeekLink({ today }: { today: string }) {
   const goTo = useGoTo();
   const days = progress.data?.days;
   if (!days) return null;
-  const thisWeek = weekCounts(days).get(weekStart(today)) ?? 0;
+  const monday = weekStart(today);
+  const thisWeek = goalText(monday, weekCounts(days).get(monday));
   const streak = streaks(days, today).current;
   return (
     <button type="button" onClick={() => goTo("progress")}
       className="flex w-full items-center gap-3 rounded-2xl border border-stone-200 bg-white px-4 py-3 text-left">
       <span className="min-w-0 flex-1">
-        <span className="block font-semibold">This week: {thisWeek} of {WEEKLY_GOAL}</span>
+        <span className="block font-semibold">This week: {thisWeek}</span>
         <span className="text-sm text-stone-500">{streak}-week streak</span>
       </span>
       <CaretRight size={16} className="shrink-0 text-stone-400" aria-hidden />

@@ -18,12 +18,25 @@ export interface Series {
 const WEIGHTED = new Set<Exercise["load"]>(["barbell", "dumbbell", "machine", "added"]);
 
 /**
+ * Rides and runs (Sergio, 2026-11-17: Peloton progress): each class's total output when the
+ * screenshot showed one, otherwise the distance.
+ */
+function cardioSeries(sessions: { date: string; workoutId: string; entry: Entry }[]): Series | null {
+  const sorted = [...sessions].sort((a, b) => a.date.localeCompare(b.date));
+  const output = sorted.filter((s) => s.entry.peloton?.outputKj).map((s) => ({ date: s.date, value: s.entry.peloton!.outputKj!, workoutId: s.workoutId }));
+  if (output.length > 0) return { title: "Total output", format: (v) => `${v} kJ`, points: output };
+  const distance = sorted.filter((s) => s.entry.distanceMi).map((s) => ({ date: s.date, value: s.entry.distanceMi!, workoutId: s.workoutId }));
+  return distance.length > 0 ? { title: "Distance", format: (v) => `${v} mi`, points: distance } : null;
+}
+
+/**
  * One point per session, oldest first (Sergio, 2026-11-05: a plot of the whole history): the top
  * working weight as logged (plates for barbell lifts, added weight for dips and chin-ups); for
  * body-weight work the most reps in a set, or the longest hold. Sessions without that (a weighted
  * lift done at body weight, drop sets only) are left out.
  */
 export function topSeries(sessions: { date: string; workoutId: string; entry: Entry }[], exercise: Pick<Exercise, "load" | "measure" | "barLb">): Series | null {
+  if (exercise.measure === "run") return cardioSeries(sessions);
   if (exercise.measure !== "reps" && exercise.measure !== "seconds") return null;
   const weighted = WEIGHTED.has(exercise.load);
   const seconds = exercise.measure === "seconds";
