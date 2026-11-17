@@ -225,7 +225,9 @@ def summary(space: str, exercise_id: str, exclude: str | None = None, want: Role
     same = [d for d, r in zip(done, roles) if r == want]
     workout, entry = (same or done)[-1]
     last = LastTime(workoutId=workout["id"], date=workout["date"], entry=entry)
-    photos = [DatedPhoto(**p.model_dump(), date=w["date"]) for w, e in reversed(done) for p in e.photos][:12]
+    # Setup photos only: a Peloton summary screenshot is a record of that ride, not how to set up.
+    photos = [DatedPhoto(**p.model_dump(), date=w["date"]) for w, e in reversed(done) for p in e.photos
+              if p.kind != "screenshot"][:12]
     sessions = [(w["date"], e) for w, e in done]
     return last, progression(sessions, roles, want), photos, best_drop(sessions)
 

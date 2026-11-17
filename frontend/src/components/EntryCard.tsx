@@ -520,7 +520,8 @@ function PelotonScreenshot({ entry, onChange }: { entry: Entry; onChange: (e: En
   const stats = entry.peloton;
 
   async function added(photo: Photo) {
-    const withPhoto = { ...latest.current.entry, photos: [...(latest.current.entry.photos ?? []), photo] };
+    // A record of the ride, kept apart from the setup photos (Sergio, 2026-11-17).
+    const withPhoto = { ...latest.current.entry, photos: [...(latest.current.entry.photos ?? []), { ...photo, kind: "screenshot" as const }] };
     latest.current.onChange(withPhoto);
     if (!owner) return;
     setReading(true);

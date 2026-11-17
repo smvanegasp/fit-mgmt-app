@@ -64,3 +64,15 @@ def test_days_with_a_ride_or_run_count_as_cardio(client: TestClient) -> None:
     day("2025-10-04", "Squat + Run", ["squat"])
     days = {d["date"]: d["cardio"] for d in client.get("/api/progress").json()["days"]}
     assert days == {"2025-10-04": True, "2026-11-01": True, "2026-11-02": True, "2026-11-03": False}
+
+
+def test_screenshots_are_not_setup_photos(client: TestClient) -> None:
+    db.put("main", "WORKOUT#2026-11-15#2026-11-15-1", {
+        "id": "2026-11-15-1", "date": "2026-11-15", "startedAt": "2026-11-15T15:45:00", "label": "Cardio", "source": "app",
+        "entries": [{"exerciseId": "peloton-ride", "minutes": 60,
+                     "photos": [{"key": "main/shot", "kind": "screenshot"}, {"key": "main/seat-height"}]}],
+    })
+    assert [p["key"] for p in client.get("/api/exercises/peloton-ride/summary").json()["photos"]] == ["main/seat-height"]
+    # The exercise page keeps both, with their kind.
+    kinds = {p["key"]: p.get("kind") for p in client.get("/api/exercises/peloton-ride/history").json()["photos"]}
+    assert kinds == {"main/shot": "screenshot", "main/seat-height": None}

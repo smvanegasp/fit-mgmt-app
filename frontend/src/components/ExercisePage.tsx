@@ -85,12 +85,16 @@ export function ExercisePage({ exerciseId, onClose }: { exerciseId: string; onCl
             <CueManager exerciseId={exercise.id} cues={summary.data?.cues ?? []} />
           </section>
 
-          {(history.data?.photos.length ?? 0) > 0 && (
-            <section className="rounded-2xl border border-stone-200 bg-white p-4">
-              <h2 className="font-semibold">Photos</h2>
-              <PhotoStrip grid photos={history.data!.photos.map((p) => ({ ...p, caption: p.caption ?? friendlyDate(p.date) }))} />
+          {/* Setup photos, and apart from them the screenshots of workouts (Peloton summaries). */}
+          {[
+            { title: "Photos", photos: (history.data?.photos ?? []).filter((p) => p.kind !== "screenshot") },
+            { title: "Screenshots", photos: (history.data?.photos ?? []).filter((p) => p.kind === "screenshot") },
+          ].filter((g) => g.photos.length > 0).map((g) => (
+            <section key={g.title} className="rounded-2xl border border-stone-200 bg-white p-4">
+              <h2 className="font-semibold">{g.title}</h2>
+              <PhotoStrip grid photos={g.photos.map((p) => ({ ...p, caption: p.caption ?? friendlyDate(p.date) }))} />
             </section>
-          )}
+          ))}
 
           <section className="rounded-2xl border border-stone-200 bg-white p-4">
             <h2 className="font-semibold">Sessions</h2>

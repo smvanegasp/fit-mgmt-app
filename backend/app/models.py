@@ -71,6 +71,9 @@ class Target(BaseModel):
 class Photo(BaseModel):
     key: str = Field(max_length=120)
     caption: str | None = Field(None, max_length=300)
+    # "screenshot": a record of the workout itself (a Peloton summary), not how to set up the
+    # exercise; left out of the setup photos shown while training (Sergio, 2026-11-17).
+    kind: Literal["screenshot"] | None = None
 
 
 class Entry(BaseModel):

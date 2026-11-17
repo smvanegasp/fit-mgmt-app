@@ -52,6 +52,8 @@ export interface Target {
 export interface Photo {
   key: string;
   caption?: string;
+  /** "screenshot": a record of the workout itself (a Peloton summary), not a setup photo. */
+  kind?: "screenshot";
 }
 
 /** A Peloton class as read from its summary screenshot (all optional: whatever the screen showed). */

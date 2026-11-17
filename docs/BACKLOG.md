@@ -61,6 +61,14 @@ Stage 9: the first round of in-app feedback (19 notes from Sergio, 2026-11-02 to
   - **The three rides** (Nov 1 Metal Ride 291 kJ, Nov 8 Reggaeton 274 kJ, Nov 15 Reggaeton 526 kJ):
     new Cardio workouts on days that had none, with the screenshot as the photo. Added locally; on AWS
     after the merge (the live app needs the new code to show them).
+- **Feedback round 2 on 9d (Sergio, same day):**
+  - **Screenshots aren't setup photos:** photos carry an optional `kind`; a Peloton screenshot is
+    `"screenshot"`. The setup photos shown while training leave screenshots out; the exercise page
+    shows "Photos" (setup) and "Screenshots" apart.
+  - **A Cardio day is one activity:** choosing Cardio shows the choices (Peloton ride, run, walk,
+    treadmill; last time's preselected) and the workout starts with the warm-up and that one, not all
+    of them. Other day types keep their full usual list (Sergio likes it there). Cardio is always
+    offered as a day type now (part of the weekly goal).
 
 ## Stage 9c: what's in it (2026-11-17)
 

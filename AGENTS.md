@@ -129,7 +129,7 @@ A mobile-first web app where Sergio logs their gym workouts and sees their progr
 | 9a | Feedback fixes: more reps than the target is the new target; a much lighter session (a lift done second) plays its own target, shown by role; a workout left 2 hours without a set finishes itself at its last set; the set being dialed in survives switching screens; landscape phones get a side rail | #26 |
 | 9b | Train flow: a workout starts with a timed warm-up and the day's usual exercises filled in (never-done ones dropped on save); only the current exercise is open (Done folds it, the rest wait as Up next); last two workouts of the day type; bigger steppers; a congrats when a set reaches the target; the picker opens on the day's usual exercises; a narrower landscape rail | #27 |
 | 9c | Workout names are the day type and first exercise ("Legs · Deadlift", computed in the app; stored labels unchanged); a top-weight (or most reps, longest hold) chart on each exercise page; body weight on Progress (log, latest, change, line; `/api/body`); shared `LineChart` | #28 |
-| 9d | Peloton: the summary screenshot (from the photo library: no more forced camera, for every photo) is read into the class stats (`entry.peloton`); Peloton ride in the catalog; output chart on the ride's page and a Peloton card on Progress; weekly goal 3 strength + 1 cardio; Sergio's three November rides added | open |
+| 9d | Peloton: the summary screenshot (from the photo library: no more forced camera, for every photo) is read into the class stats (`entry.peloton`); Peloton ride in the catalog; output chart on the ride's page and a Peloton card on Progress; weekly goal 3 strength + 1 cardio; Sergio's three November rides added; screenshots kept apart from setup photos; a Cardio day starts with the one activity picked | open |
 
 **Where things stand (2026-11-17):** stages 0-8b are merged and live (PRs up to #20). Stage 9 works
 through the first round of in-app feedback (19 notes) in four PRs (9a fixes, 9b Train flow, 9c
@@ -289,7 +289,8 @@ frontend/
 - **`BODY#<date>`** `{date, weightLb, source}` (Progress, `/api/body`) · **`ROUTINE#<from>#<id>`** `{name, from, to, days[], notes,
   photos}` (the routine eras, for the evolution timeline) · later `ACTIVE` (workout in progress,
   server-side `startedAt`) and `SETTINGS`.
-- Photos in S3 (S3Mock locally): `<space>/<id>.img` plus `<space>/<id>-thumb.img` (1600 and
+- Photos (`{key, caption?, kind?}`; `kind: "screenshot"` = a record of the workout, like a Peloton
+  summary, kept out of the setup photos shown while training) in S3 (S3Mock locally): `<space>/<id>.img` plus `<space>/<id>-thumb.img` (1600 and
   400 px JPEG). Imported photos are `main/wa-<chat file number>`. App uploads (stage 2) will be
   resized on the device like the pantry (`lib/images.ts`, `Photo.tsx` to copy).
 - Numbers: `db.py` stores floats as Decimals and returns whole numbers as ints, others as floats
