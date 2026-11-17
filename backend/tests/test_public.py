@@ -15,7 +15,7 @@ def test_the_summary_needs_no_session_and_holds_only_days_and_targets(anon):
     assert body.status_code == 200
     data = body.json()
     assert [(d["date"], d["type"]) for d in data["days"]] == [("2026-10-28", "Legs")]
-    assert all(set(d) == {"date", "type"} for d in data["days"])
+    assert all(set(d) == {"date", "type", "cardio"} for d in data["days"])  # cardio: the weekly goal
     assert [(x["exerciseId"], x["scheme"]["sets"], x["scheme"]["weightLb"]) for x in data["lifts"]] == [("squat", [4] * 5, 180)]
     assert "private" not in body.text.lower()
 

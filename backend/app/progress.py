@@ -5,7 +5,7 @@ from typing import Any
 
 from app import db
 from app.history import merged_entry, replay, workouts
-from app.labels import day_type
+from app.labels import day_type, did_cardio
 from app.models import Exercise, Lift, Progress, ProgressDay, Routine, Step, StepSession
 
 # The lifts on the Progress tab.
@@ -38,7 +38,7 @@ def progress(space: str, exercises: dict[str, Exercise]) -> Progress:
     every = workouts(space)
     days = [
         ProgressDay(date=w["date"], workoutId=w["id"], label=w.get("label") or "Workout",
-                    type=day_type(w.get("label") or "Workout"))
+                    type=day_type(w.get("label") or "Workout"), cardio=did_cardio(w))
         for w in every
     ]
     lifts = [ladder(every, exercises[x]) for x in MAIN_LIFTS if x in exercises]

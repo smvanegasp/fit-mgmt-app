@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import type { Step } from "../api";
-import { shortDate, stepDates, streaks, weekCounts, weekRows } from "./progress";
+import { goalText, shortDate, stepDates, streaks, weekCounts, weekMet, weekRows } from "./progress";
 
 describe("weekRows", () => {
   it("lists weeks newest first, Monday to Sunday", () => {
@@ -10,10 +10,43 @@ describe("weekRows", () => {
     expect(rows[0].days).toEqual(["2026-10-26", "2026-10-27", "2026-10-28", "2026-10-29", "2026-10-30", "2026-10-31", "2026-11-01"]);
   });
 
-  it("counts workouts per week", () => {
-    expect(weekCounts([{ date: "2026-10-26" }, { date: "2026-11-01" }, { date: "2026-11-02" }])).toEqual(
-      new Map([["2026-10-26", 2], ["2026-11-02", 1]]),
-    );
+  it("counts workouts, strength days and cardio days per week", () => {
+    expect(weekCounts([
+      { date: "2026-10-26", type: "Push" }, { date: "2026-11-01", type: "Cardio", cardio: true },
+      { date: "2026-11-02", type: "Legs", cardio: true },
+    ])).toEqual(new Map([
+      ["2026-10-26", { workouts: 2, strength: 1, cardio: 1 }],
+      ["2026-11-02", { workouts: 1, strength: 1, cardio: 1 }],
+    ]));
+  });
+});
+
+describe("the weekly goal", () => {
+  const strength = (date: string) => ({ date, type: "Push" });
+  const ride = (date: string) => ({ date, type: "Cardio", cardio: true });
+
+  it("from the week of Oct 26, 2026: 3 strength days and 1 cardio day", () => {
+    const c = (days: { date: string; type: string; cardio?: boolean }[]) => weekCounts(days).get("2026-11-09");
+    const lifting = [strength("2026-11-09"), strength("2026-11-11"), strength("2026-11-14")];
+    expect(weekMet("2026-11-09", c(lifting))).toBe(false);
+    expect(weekMet("2026-11-09", c([...lifting, ride("2026-11-15")]))).toBe(true);
+    expect(weekMet("2026-11-09", c([strength("2026-11-09"), ride("2026-11-10"), ride("2026-11-12"), ride("2026-11-15")]))).toBe(false);
+    expect(goalText("2026-11-09", c(lifting))).toBe("3 of 3 strength · 0 of 1 cardio");
+  });
+
+  it("before it: 3 workouts of any kind", () => {
+    const c = weekCounts([strength("2026-10-12"), strength("2026-10-14"), strength("2026-10-16")]).get("2026-10-12");
+    expect(weekMet("2026-10-12", c)).toBe(true);
+    expect(goalText("2026-10-12", c)).toBe("3 of 3 workouts");
+  });
+
+  it("keeps the streak across the change", () => {
+    const days = [
+      strength("2026-10-12"), strength("2026-10-14"), strength("2026-10-16"),
+      strength("2026-10-19"), strength("2026-10-21"), strength("2026-10-23"),
+      strength("2026-10-26"), strength("2026-10-28"), strength("2026-10-29"), ride("2026-11-01"),
+    ];
+    expect(streaks(days, "2026-11-02")).toEqual({ current: 3, longest: 3 });
   });
 });
 

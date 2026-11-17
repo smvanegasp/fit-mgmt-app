@@ -188,6 +188,11 @@ def test_sandbox_creation_is_rate_limited(anon):
     assert anon.post("/api/session/guest/reset").status_code == 429
 
 
-def test_the_cue_check_is_off_for_guests(guest, monkeypatch):
+def test_guests_get_the_cue_check_up_to_a_daily_cap(guest, monkeypatch):
+    # Visitors get the same experience (Sergio, 2026-11-17); a cap keeps the bill small.
+    from app import ai_limits, cue_check
     monkeypatch.setenv("GROQ_API_KEY", "test")
-    assert guest.post("/api/exercises/squat/cue-check", json={"note": "bar lower"}).status_code == 503
+    monkeypatch.setattr(cue_check, "_ask", lambda messages: '{"action": "none"}')
+    for _ in range(ai_limits.PER_DEMO_PER_DAY):
+        assert guest.post("/api/exercises/squat/cue-check", json={"note": "bar lower"}).status_code == 200
+    assert guest.post("/api/exercises/squat/cue-check", json={"note": "bar lower"}).status_code == 429

@@ -45,6 +45,23 @@ class Segment(BaseModel):
     minutes: float = Field(ge=0, le=600)
 
 
+class Peloton(BaseModel):
+    """A Peloton class as read from its summary screenshot (app/peloton.py; Sergio, 2026-11-17: no
+    typing). Every field is optional: whatever the screen showed."""
+
+    discipline: str | None = Field(None, max_length=40)
+    title: str | None = Field(None, max_length=120)
+    instructor: str | None = Field(None, max_length=80)
+    minutes: float | None = Field(None, ge=0, le=600)
+    outputKj: float | None = Field(None, ge=0, le=5000)
+    distanceMi: float | None = Field(None, ge=0, le=200)
+    calories: float | None = Field(None, ge=0, le=5000)
+    avgWatts: float | None = Field(None, ge=0, le=2000)
+    avgCadence: float | None = Field(None, ge=0, le=250)
+    avgResistance: float | None = Field(None, ge=0, le=100)
+    avgSpeedMph: float | None = Field(None, ge=0, le=60)
+
+
 class Target(BaseModel):
     text: str = Field(max_length=200)
     times: int | None = None
@@ -54,6 +71,9 @@ class Target(BaseModel):
 class Photo(BaseModel):
     key: str = Field(max_length=120)
     caption: str | None = Field(None, max_length=300)
+    # "screenshot": a record of the workout itself (a Peloton summary), not how to set up the
+    # exercise; left out of the setup photos shown while training (Sergio, 2026-11-17).
+    kind: Literal["screenshot"] | None = None
 
 
 class Entry(BaseModel):
@@ -66,13 +86,14 @@ class Entry(BaseModel):
     segments: list[Segment] = Field(default_factory=list, max_length=60)
     distanceMi: float | None = Field(None, ge=0, le=200)
     minutes: float | None = Field(None, ge=0, le=1000)
+    peloton: Peloton | None = None
     # Marked done during the workout (it folds away); dropped when the workout is saved.
     done: bool | None = None
 
     def logged(self) -> bool:
         """Anything recorded (a workout starts with its usual exercises filled in, not all get done)."""
         return bool(self.sets or self.problems or self.segments or self.notes or self.photos
-                    or self.minutes or self.distanceMi)
+                    or self.minutes or self.distanceMi or self.peloton)
 
     @field_validator("notes")
     @classmethod
@@ -301,6 +322,8 @@ class ProgressDay(BaseModel):
     label: str
     # Today's day type: Push, Legs, Pull, Cardio (old names map, see labels.day_type).
     type: str
+    # Cardio done that day (a ride or run, alone or after lifting): the weekly goal counts it.
+    cardio: bool = False
 
 
 class StepSession(BaseModel):
@@ -380,6 +403,7 @@ class FeedbackUpdate(BaseModel):
 class PublicDay(BaseModel):
     date: str
     type: str
+    cardio: bool = False
 
 
 class PublicLift(BaseModel):

@@ -225,7 +225,9 @@ def summary(space: str, exercise_id: str, exclude: str | None = None, want: Role
     same = [d for d, r in zip(done, roles) if r == want]
     workout, entry = (same or done)[-1]
     last = LastTime(workoutId=workout["id"], date=workout["date"], entry=entry)
-    photos = [DatedPhoto(**p.model_dump(), date=w["date"]) for w, e in reversed(done) for p in e.photos][:12]
+    # Setup photos only: a Peloton summary screenshot is a record of that ride, not how to set up.
+    photos = [DatedPhoto(**p.model_dump(), date=w["date"]) for w, e in reversed(done) for p in e.photos
+              if p.kind != "screenshot"][:12]
     sessions = [(w["date"], e) for w, e in done]
     return last, progression(sessions, roles, want), photos, best_drop(sessions)
 
@@ -259,7 +261,9 @@ def session_types(space: str, recent: int = 40) -> list[SessionType]:
         usual.sort(key=lambda x: sum(seen[x]) / len(seen[x]))
         if label == "Cardio":
             # Weekly cardio from 2026-10-30: a Peloton run or a walk.
-            usual = ["peloton-run", "walk", *[x for x in usual if x not in ("peloton-run", "walk")]]
+            # Rides on the Peloton bike from 2026-11-01 (Sergio's screenshots).
+            first = ["peloton-ride", "peloton-run", "walk"]
+            usual = [*first, *[x for x in usual if x not in first]]
         types.append(SessionType(label=label, exercises=usual, lastDate=sessions[-1]["date"], sessions=len(sessions)))
     return sorted(types, key=lambda t: -t.sessions)
 

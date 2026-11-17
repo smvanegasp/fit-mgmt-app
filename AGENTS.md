@@ -43,10 +43,16 @@ A mobile-first web app where Sergio logs their gym workouts and sees their progr
   (one line per cue, newest wording only).
 - **Everything in English** (Sergio insists): imported notes go through `private/note_translations.json`
   and cues through `cueTranslations`; never show Spanish in the UI (originals are stored, not shown).
-- **Units:** pounds (lb). **One AI feature** (Sergio, 2026-10-30): the cue check. When a note is
-  written on an exercise, gpt-oss-120b on Groq (`app/cue_check.py`) suggests adding a cue or
-  rewording one, using only Sergio's words; nothing changes until they accept. It's off without
-  `GROQ_API_KEY`. Decisions from stage 1 (2026-10-29): barbell weights
+- **Units:** pounds (lb). **Two AI features**, both on Groq, on for the owner and in demos (Sergio, 2026-11-17: visitors get the
+  same experience; demos are capped in `app/ai_limits.py`), off without
+  `GROQ_API_KEY`: the **cue check** (Sergio, 2026-10-30): when a note is written on an exercise,
+  gpt-oss-120b (`app/cue_check.py`) suggests adding a cue or rewording one, using only Sergio's words;
+  nothing changes until they accept. **Peloton screenshots** (Sergio, 2026-11-17: "I just want to add a
+  photo"): qwen/qwen3.8-27b (`app/peloton.py`, `PELOTON_MODEL`) reads a class summary screenshot into
+  stats; the date on the screen isn't read (it misread one in testing; the workout has its own).
+- **Weekly goal** (Sergio, 2026-11-17): 3 strength days (Push, Legs, Pull) and 1 cardio day (a ride,
+  run or walk, alone or after lifting), from the week of 2026-10-26 (the first ride); weeks before
+  keep the old goal of 3 workouts, so the streak carries over (`lib/progress.ts`: `GOAL`, `GOAL_FROM`). Decisions from stage 1 (2026-10-29): barbell weights
   are written as plates and the app adds a 45 lb bar for totals; weighted dips and chin-ups track
   only the added weight; exercise names are English (Spanish spellings are aliases; notes stay
   as written, mostly Spanish); **bouldering and treadmill runs are part of the app** alongside
@@ -123,11 +129,12 @@ A mobile-first web app where Sergio logs their gym workouts and sees their progr
 | 8b | Own identity: set-glyph logo and icons, Barlow Condensed for numbers and headings, dark by default, stats-led welcome page (public summary endpoint, shared Heatmap), re-recorded clips | #18 |
 | 9a | Feedback fixes: more reps than the target is the new target; a much lighter session (a lift done second) plays its own target, shown by role; a workout left 2 hours without a set finishes itself at its last set; the set being dialed in survives switching screens; landscape phones get a side rail | #26 |
 | 9b | Train flow: a workout starts with a timed warm-up and the day's usual exercises filled in (never-done ones dropped on save); only the current exercise is open (Done folds it, the rest wait as Up next); last two workouts of the day type; bigger steppers; a congrats when a set reaches the target; the picker opens on the day's usual exercises; a narrower landscape rail | #27 |
-| 9c | Workout names are the day type and first exercise ("Legs · Deadlift", computed in the app; stored labels unchanged); a top-weight (or most reps, longest hold) chart on each exercise page; body weight on Progress (log, latest, change, line; `/api/body`); shared `LineChart` | open |
+| 9c | Workout names are the day type and first exercise ("Legs · Deadlift", computed in the app; stored labels unchanged); a top-weight (or most reps, longest hold) chart on each exercise page; body weight on Progress (log, latest, change, line; `/api/body`); shared `LineChart` | #28 |
+| 9d | Peloton: the summary screenshot (from the photo library: no more forced camera, for every photo) is read into the class stats (`entry.peloton`); Peloton ride in the catalog; output chart on the ride's page and a Peloton card on Progress; weekly goal 3 strength + 1 cardio; Sergio's three November rides added; screenshots kept apart from setup photos; a Cardio day starts with the one activity picked | open |
 
 **Where things stand (2026-11-17):** stages 0-8b are merged and live (PRs up to #20). Stage 9 works
 through the first round of in-app feedback (19 notes) in four PRs (9a fixes, 9b Train flow, 9c
-history and progress, 9d Peloton; [docs/BACKLOG.md](docs/BACKLOG.md)); 9a and 9b are merged (#26, #27), 9c is open. New requests come
+history and progress, 9d Peloton; [docs/BACKLOG.md](docs/BACKLOG.md)); 9a-9c are merged (#26-#28), 9d is open (the last of stage 9). New requests come
 from Sergio or from the in-app feedback (`scripts/feedback.py`, section 2).
 **Production holds Sergio's real log** at https://gym.sergiovanegas.com (loaded
 in stage 7), so Sergio logs there from now on and visitors get a copy of it. The local stack has the
@@ -192,6 +199,7 @@ backend/
   app/history.py            last session per exercise, main-set scheme, the target game (replay yields
                             each session's result), usage counts
   app/cue_check.py          the cue check: a note -> add / reword a cue (gpt-oss-120b on Groq)
+  app/peloton.py            a Peloton summary screenshot -> class stats (qwen/qwen3.8-27b on Groq)
   app/progress.py           Progress tab: training days with day type; each exercise's progression
                             ladder (one step per target, from the target-game replay; MAIN_LIFTS)
   app/labels.py             session labels ("Push", "Squat + Climb"); shared with the importer
@@ -249,7 +257,8 @@ frontend/
   20 min warm-up + 40 min first exercise, and ends with its last message), `label` ("Push",
   "Squat + Climb"...), `notes`, `photos` `[{key, caption}]`, `source` (`whatsapp` / `app`), and
   `entries` in order, each `{exerciseId, sets?, targets?, notes?, photos?, problems?, segments?,
-  distanceMi?, minutes?, done?}`. A new workout starts with the `warm-up` (catalog, measure `time`:
+  distanceMi?, minutes?, peloton?, done?}` (`peloton`: the class stats read from the screenshot in
+  `photos`, see the Peloton API). A new workout starts with the `warm-up` (catalog, measure `time`:
   only `minutes`) and the day's usual exercises filled in (stage 9b); `POST /active/finish` drops
   entries with nothing logged and the `done` flag (it only folds an exercise during the workout):
   - **set** `{reps?, weightLb?, each?, seconds?, drop?, detail?}`. `weightLb` is **as written**:
@@ -281,7 +290,8 @@ frontend/
 - **`BODY#<date>`** `{date, weightLb, source}` (Progress, `/api/body`) · **`ROUTINE#<from>#<id>`** `{name, from, to, days[], notes,
   photos}` (the routine eras, for the evolution timeline) · later `ACTIVE` (workout in progress,
   server-side `startedAt`) and `SETTINGS`.
-- Photos in S3 (S3Mock locally): `<space>/<id>.img` plus `<space>/<id>-thumb.img` (1600 and
+- Photos (`{key, caption?, kind?}`; `kind: "screenshot"` = a record of the workout, like a Peloton
+  summary, kept out of the setup photos shown while training) in S3 (S3Mock locally): `<space>/<id>.img` plus `<space>/<id>-thumb.img` (1600 and
   400 px JPEG). Imported photos are `main/wa-<chat file number>`. App uploads (stage 2) will be
   resized on the device like the pantry (`lib/images.ts`, `Photo.tsx` to copy).
 - Numbers: `db.py` stores floats as Decimals and returns whole numbers as ints, others as floats
@@ -309,8 +319,9 @@ frontend/
 | Health | `GET /health` (no session needed) |
 | Public | `GET /public/summary` (no session; the welcome page): training days `{date, type}` and the main lifts' current targets only |
 | Feedback | `POST /feedback {text, page}` (owner or guest; 10/hour per IP, 200/day) · `GET /feedback` · `PATCH /feedback/{id} {status}` (owner only). Stored in `SPACE#feedback`, outside every sandbox, no TTL |
-| Session | `GET /session` · `POST /session/guest` · `POST /session/guest/reset[?sample=true]` · `POST /session/owner {passcode}` · `DELETE /session`. Everything else needs a session (401). Demos: 20/hour per IP (1000 locally), 500/hour total; 3 wrong passcodes pause owner login on that network for an hour (10/hour globally); guests upload at most 40 photos a day; the cue check is owner-only |
-| Progress | `GET /progress` (days with day type; the main lifts' progression ladders; routine eras newest first with their workouts) · `GET /exercises/{id}/progress` (one exercise's ladder: `steps` of `{scheme, sessions, times}`, oldest first) |
+| Session | `GET /session` · `POST /session/guest` · `POST /session/guest/reset[?sample=true]` · `POST /session/owner {passcode}` · `DELETE /session`. Everything else needs a session (401). Demos: 20/hour per IP (1000 locally), 500/hour total; 3 wrong passcodes pause owner login on that network for an hour (10/hour globally); guests upload at most 40 photos a day; the cue check and Peloton reads: 20 a day per demo each, 300 a day across all demos (429 past that) |
+| Peloton | `POST /peloton/read {key}` (an uploaded photo -> `{discipline?, title?, instructor?, minutes?, outputKj?, distanceMi?, calories?, avgWatts?, avgCadence?, avgResistance?, avgSpeedMph?}`; capped in demos, 503 without `GROQ_API_KEY`, 502 + "Peloton read failed" log line when Groq fails) |
+| Progress | `GET /progress` (days with day type and `cardio`; the main lifts' progression ladders; routine eras newest first with their workouts) · `GET /exercises/{id}/progress` (one exercise's ladder: `steps` of `{scheme, sessions, times}`, oldest first) |
 | Day types | `GET /session-types` (label, usual exercises in order, last date, sessions) |
 | Exercise page | `GET /exercises/{id}/history` (sessions newest first, all photos, best set) · `PATCH /exercises/{id} {name?, group?}` (old name stays an alias) · `POST /exercises/{id}/merge {into}` (sessions and cues move; the duplicate is hidden) |
 | Exercises | `GET /exercises` (catalog + custom, with `lastDone`, `timesDone`) · `POST /exercises` · `GET /exercises/{id}/summary[?exclude=workoutId&role=first|later]` (cues, last, streak = target game, photos, bestDrop; `role` = today's first lift or a later one) |
@@ -360,7 +371,7 @@ cd backend && uv run python ../scripts/import_whatsapp.py load --local # stack m
   tests with made-up lines); parsed workouts go straight into DynamoDB, never into a seed file in
   git. The chat also has non-training messages (to-do lists, links, a birthday list): the
   importer drops them, and they must never be quoted in commits, PRs or docs.
-- `backend/.env` (git-ignored) holds `GROQ_API_KEY` (the cue check), `PASSCODE_HASH` and
+- `backend/.env` (git-ignored) holds `GROQ_API_KEY` (the cue check and Peloton screenshots), `PASSCODE_HASH` and
   `SESSION_SECRET` (written by `scripts/set_passcode.py`, which Sergio runs: a hidden prompt; it
   keeps the other keys). Compose reads the file when the `api` container is created, so run
   `docker compose up -d api` after changing it. **Never

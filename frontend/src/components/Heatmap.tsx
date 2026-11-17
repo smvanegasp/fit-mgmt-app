@@ -1,6 +1,6 @@
 import { useLayoutEffect, useMemo, useRef, useState } from "react";
 
-import { WEEKLY_GOAL, shortDate, weekCounts, weekRows } from "../lib/progress";
+import { goalText, shortDate, weekCounts, weekMet, weekRows } from "../lib/progress";
 import { longDate } from "../lib/weeks";
 import { typeColor } from "./Progression";
 
@@ -10,7 +10,7 @@ const WEEKDAYS = ["M", "T", "W", "T", "F", "S", "S"];
  * top, each day in its day type's color, and a blue mark under weeks that reached the goal. Shared by
  * the desktop Progress dashboard and the welcome page. Days with a workoutId open it when tapped. */
 export function Heatmap({ days, today, onOpen }: {
-  days: { date: string; type: string; workoutId?: string; label?: string }[];
+  days: { date: string; type: string; cardio?: boolean; workoutId?: string; label?: string }[];
   today: string;
   onOpen?: (workoutId: string) => void;
 }) {
@@ -37,7 +37,7 @@ export function Heatmap({ days, today, onOpen }: {
       </div>
       {weeks.map((week, w) => {
         const month = w === 0 || week.monday.slice(0, 7) !== weeks[w - 1].monday.slice(0, 7);
-        const n = counts.get(week.monday) ?? 0;
+        const count = counts.get(week.monday);
         return (
           <div key={week.monday} className="flex min-w-3.5 flex-1 flex-col gap-[3px]">
             <span className="h-4 text-[10px] whitespace-nowrap text-stone-500">{month ? shortDate(week.monday).split(" ")[0] : ""}</span>
@@ -58,7 +58,7 @@ export function Heatmap({ days, today, onOpen }: {
               return <span key={day} className={`h-3.5 rounded-[3px] ${day > today || day < first ? "" : "bg-stone-100"}`} />;
             })}
             {/* The week reached the goal. */}
-            <span className={`mt-1 h-1 rounded-full ${n >= WEEKLY_GOAL ? "bg-blue-600" : ""}`} title={`${n} workouts`} />
+            <span className={`mt-1 h-1 rounded-full ${weekMet(week.monday, count) ? "bg-blue-600" : ""}`} title={goalText(week.monday, count)} />
           </div>
         );
       })}

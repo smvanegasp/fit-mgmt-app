@@ -1,4 +1,4 @@
-import { ArrowsDownUp, CaretDown, CaretRight, Check, Images, Lightbulb, NotePencil, Trash, X } from "@phosphor-icons/react";
+import { ArrowsDownUp, CaretDown, CaretRight, Check, CircleNotch, Images, Lightbulb, NotePencil, Trash, X } from "@phosphor-icons/react";
 import { useQuery } from "@tanstack/react-query";
 import { useEffect, useRef, useState } from "react";
 
@@ -6,6 +6,7 @@ import { api, type CueSection, type Entry, type Exercise, type Note, type Photo,
 import { useAddNote, useExerciseSummary, useUpdateNote } from "../hooks";
 import { ladderWeights, nextSet, reachesTarget, schemeText, summarizeSets, weightText } from "../lib/sets";
 import { clearDraft, loadDraft, saveDraft } from "../lib/drafts";
+import { pelotonStats } from "../lib/kinds";
 import { formatDuration } from "../lib/duration";
 import { friendlyDate, localIso, secondsBetween } from "../lib/time";
 import { BottomSheet } from "./BottomSheet";
@@ -83,7 +84,7 @@ export function EntryCard({ entry, exercise, excludeWorkoutId, role, draftKey, o
       {exercise.measure === "climb" ? (
         <ClimbLog entry={entry} onChange={onChange} />
       ) : exercise.measure === "run" ? (
-        <RunLog entry={entry} onChange={onChange} />
+        <RunLog entry={entry} exercise={exercise} onChange={onChange} />
       ) : (
         <SetLog entry={entry} exercise={exercise} draftKey={draftKey} lastSets={last?.entry.sets} bestDrop={summary.data?.bestDrop} target={streak?.scheme}
           onChange={onChange} onSetLogged={onSetLogged} onReached={focus ? () => setCelebrate(true) : undefined} />
@@ -489,7 +490,7 @@ function ClimbLog({ entry, onChange }: { entry: Entry; onChange: (e: Entry) => v
   );
 }
 
-function RunLog({ entry, onChange }: { entry: Entry; onChange: (e: Entry) => void }) {
+function RunLog({ entry, exercise, onChange }: { entry: Entry; exercise: Exercise; onChange: (e: Entry) => void }) {
   const segments = entry.segments ?? [];
   const minutes = entry.minutes ?? segments.reduce((sum, s) => sum + s.minutes, 0);
   return (
@@ -498,6 +499,71 @@ function RunLog({ entry, onChange }: { entry: Entry; onChange: (e: Entry) => voi
         onChange={(distanceMi) => onChange({ ...entry, distanceMi })} />
       <Stepper layout="row" label="Time" unit="minutes" value={Math.round(minutes)} step={1}
         onChange={(m) => onChange({ ...entry, minutes: m })} />
+      {exercise.id.startsWith("peloton") && <PelotonScreenshot entry={entry} onChange={onChange} />}
+    </div>
+  );
+}
+
+/**
+ * A Peloton class is its summary screenshot (Sergio, 2026-11-17: no typing). The photo is attached
+ * right away; then the stats are read from it (in demos too: visitors get the same app) and fill in the
+ * distance and time when those are still empty.
+ */
+function PelotonScreenshot({ entry, onChange }: { entry: Entry; onChange: (e: Entry) => void }) {
+  const [reading, setReading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  // The card may re-render while the screenshot is read: build on its latest version.
+  const latest = useRef({ entry, onChange });
+  latest.current = { entry, onChange };
+  const stats = entry.peloton;
+
+  async function added(photo: Photo) {
+    // A record of the ride, kept apart from the setup photos (Sergio, 2026-11-17).
+    const withPhoto = { ...latest.current.entry, photos: [...(latest.current.entry.photos ?? []), { ...photo, kind: "screenshot" as const }] };
+    latest.current.onChange(withPhoto);
+    setReading(true);
+    setError(null);
+    try {
+      const read = await api.readPeloton(photo.key);
+      const now = latest.current.entry;
+      latest.current.onChange({
+        ...now,
+        peloton: read,
+        distanceMi: now.distanceMi || read.distanceMi,
+        minutes: now.minutes || read.minutes,
+      });
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Couldn't read the screenshot; the photo is saved");
+    } finally {
+      setReading(false);
+    }
+  }
+
+  return (
+    <div className="space-y-2 border-t border-stone-200 pt-2">
+      {stats && (
+        <div>
+          {(stats.title || stats.instructor) && (
+            <p className="text-sm"><span className="font-semibold">{stats.title}</span>{stats.instructor ? ` · ${stats.instructor}` : ""}</p>
+          )}
+          <dl className="mt-1.5 grid grid-cols-3 gap-x-3 gap-y-1.5">
+            {pelotonStats(stats).map((s) => (
+              <div key={s.label}>
+                <dt className="text-[11px] font-medium tracking-wide text-stone-500 uppercase">{s.label}</dt>
+                <dd className="font-display text-lg font-semibold tabular-nums">{s.value}</dd>
+              </div>
+            ))}
+          </dl>
+        </div>
+      )}
+      {reading ? (
+        <p className="flex items-center gap-2 py-1 text-sm text-stone-600" role="status">
+          <CircleNotch size={16} className="animate-spin" aria-hidden /> Reading the screenshot...
+        </p>
+      ) : (
+        <PhotoButton label={stats ? "Add another screenshot" : "Add the Peloton screenshot"} onAdded={(p) => void added(p)} />
+      )}
+      {error && <p className="text-sm text-red-600">{error}</p>}
     </div>
   );
 }

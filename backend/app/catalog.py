@@ -124,6 +124,8 @@ EXERCISES: tuple[CatalogExercise, ...] = (
     # Cardio (once a week from 2026-10-30: a Peloton run or a walk)
     CatalogExercise("peloton-run", "Peloton run", "cardio", "none", measure="run",
                     aliases=("peloton", "peloton run", "run")),
+    CatalogExercise("peloton-ride", "Peloton ride", "cardio", "none", measure="run",
+                    aliases=("peloton ride", "peloton bike")),
     CatalogExercise("walk", "Walk", "cardio", "none", measure="run",
                     aliases=("walk", "walking", "caminata")),
     CatalogExercise("treadmill", "Treadmill run", "cardio", "none", measure="run",

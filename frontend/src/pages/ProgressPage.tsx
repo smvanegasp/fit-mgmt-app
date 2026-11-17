@@ -10,10 +10,12 @@ import { GradePyramid, LiftCard, TYPE_COLOR, TypeLegend, groupColor, typeColor }
 import { useGoTo } from "../components/Nav";
 import { useScreens } from "../components/Screens";
 import { BodyWeightCard } from "../components/BodyWeightCard";
+import { LineChart } from "../components/LineChart";
 import { WorkoutCard } from "../components/WorkoutCard";
 import { useDesktop, useExerciseHistory, useExercises, useProgress, useWorkouts } from "../hooks";
 import { climbing } from "../lib/kinds";
-import { WEEKLY_GOAL, shortDate, streaks, weekCounts, weekRows } from "../lib/progress";
+import { topSeries } from "../lib/series";
+import { GOAL, OLD_GOAL, goalText, shortDate, streaks, weekCounts, weekMet, weekRows } from "../lib/progress";
 import { localIso } from "../lib/time";
 import { longDate } from "../lib/weeks";
 
@@ -54,6 +56,7 @@ export function ProgressPage() {
             );
           })}
           <ClimbingCard />
+          <PelotonCard />
         </div>
       </section>
 
@@ -96,7 +99,7 @@ function YearConsistency({ days, today }: { days: ProgressDay[]; today: string }
   const screens = useScreens();
   const counts = useMemo(() => weekCounts(days), [days]);
   const streak = useMemo(() => streaks(days, today), [days, today]);
-  const thisWeek = counts.get(weekRows(today, 1)[0].monday) ?? 0;
+  const monday = weekRows(today, 1)[0].monday;
   const thisYear = days.filter((d) => d.date.startsWith(today.slice(0, 4))).length;
 
   return (
@@ -106,12 +109,12 @@ function YearConsistency({ days, today }: { days: ProgressDay[]; today: string }
         <div className="flex items-center gap-1 text-sm text-stone-500">
           week streak
           <InfoTip title="Streak">
-            Weeks in a row with at least {WEEKLY_GOAL} workouts. This week doesn't break the streak while it's still going.
+            Weeks in a row that reached the goal: {GOAL.strength} strength days (Push, Legs, Pull) and {GOAL.cardio} cardio day (a ride or run). Before the week of Oct 26, 2026, it was {OLD_GOAL} workouts of any kind. This week doesn't break the streak while it's still going.
           </InfoTip>
         </div>
         <dl className="mt-5 space-y-3 text-sm">
           <div><dt className="text-stone-500">Longest</dt><dd className="font-semibold">{streak.longest} weeks</dd></div>
-          <div><dt className="text-stone-500">This week</dt><dd className="font-semibold">{thisWeek} of {WEEKLY_GOAL}</dd></div>
+          <div><dt className="text-stone-500">This week</dt><dd className="font-semibold">{goalText(monday, counts.get(monday))}</dd></div>
           <div><dt className="text-stone-500">In {today.slice(0, 4)}</dt><dd className="font-semibold">{thisYear} workouts</dd></div>
         </dl>
       </div>
@@ -121,7 +124,7 @@ function YearConsistency({ days, today }: { days: ProgressDay[]; today: string }
           <TypeLegend />
         </div>
         <div className="mt-4"><Heatmap days={days} today={today} onOpen={screens.openWorkout} /></div>
-        <p className="mt-2 text-xs text-stone-500">The blue marks under the weeks reached {WEEKLY_GOAL} workouts. Click a day to open it.</p>
+        <p className="mt-2 text-xs text-stone-500">The blue marks under the weeks reached the goal. Click a day to open it.</p>
       </div>
     </section>
   );
@@ -146,6 +149,34 @@ function ClimbingCard() {
       </div>
       <div className="mt-3"><GradePyramid sessions={sessions} color={TYPE_COLOR.Pull} /></div>
     </button>
+  );
+}
+
+/** Peloton rides (Sergio, 2026-11-17): each ride's total output, read from its screenshot. The
+ * ride's page has every session; this card links there. */
+function PelotonCard() {
+  const history = useExerciseHistory("peloton-ride");
+  const screens = useScreens();
+  const series = topSeries(history.data?.sessions ?? [], { load: "none", measure: "run", barLb: 0 });
+  if (!series) return null;
+  const values = series.points.map((p) => p.value);
+  const last = series.points.at(-1)!;
+  return (
+    <section className="rounded-2xl border border-stone-200 bg-white p-4">
+      <button type="button" onClick={() => screens.openExercise("peloton-ride")} className="flex w-full items-center gap-2 text-left">
+        <span className="min-w-0 flex-1 font-semibold">Peloton rides</span>
+        <CaretRight size={14} className="shrink-0 text-stone-400" aria-hidden />
+      </button>
+      <div className="mt-0.5 text-sm text-stone-600">
+        {series.points.length} {series.points.length === 1 ? "ride" : "rides"} · last {series.format(last.value)} · best {series.format(Math.max(...values))}
+      </div>
+      {series.points.length >= 2 && (
+        <div className="mt-2">
+          <LineChart points={series.points} format={series.format} color={TYPE_COLOR.Cardio} label={series.title} noun="rides"
+            onOpen={screens.openWorkout} />
+        </div>
+      )}
+    </section>
   );
 }
 
@@ -216,8 +247,8 @@ function Consistency({ days, today }: { days: ProgressDay[]; today: string }) {
           <div className="text-sm text-stone-500">Longest {streak.longest} weeks</div>
         </div>
         <InfoTip title="Streak">
-          Weeks in a row with at least {WEEKLY_GOAL} workouts. This week doesn't break the streak while it's still going; it
-          adds one as soon as it reaches {WEEKLY_GOAL}. Tap a day to open that workout.
+          Weeks in a row that reached the goal: {GOAL.strength} strength days (Push, Legs, Pull) and {GOAL.cardio} cardio day (a ride or run). Before the week of Oct 26, 2026, it was {OLD_GOAL} workouts of any kind. This week doesn't break the streak while it's still going; it adds one as soon as it reaches the
+          goal. Tap a day to open that workout.
         </InfoTip>
       </div>
       <div className="mt-3"><TypeLegend /></div>
@@ -227,7 +258,9 @@ function Consistency({ days, today }: { days: ProgressDay[]; today: string }) {
         {WEEKDAYS.map((d, i) => <span key={i} className="text-center text-stone-400">{d}</span>)}
         <span />
         {rows.map((row, r) => {
-          const n = counts.get(row.monday) ?? 0;
+          const week = counts.get(row.monday);
+          const n = week?.workouts ?? 0;
+          const met = weekMet(row.monday, week);
           // Newest first: the month shows on its newest week (weeks go by their Monday).
           const month = r === 0 || row.monday.slice(0, 7) !== rows[r - 1].monday.slice(0, 7);
           return [
@@ -244,9 +277,9 @@ function Consistency({ days, today }: { days: ProgressDay[]; today: string }) {
               }
               return <span key={day} className={`h-6 rounded-md ${day > today || day < first ? "" : "bg-stone-100"} ${ring}`} />;
             }),
-            <span key={`${row.monday}-n`} className={`flex items-center justify-end gap-0.5 tabular-nums ${n >= WEEKLY_GOAL ? "font-semibold text-stone-800" : "text-stone-400"}`}>
+            <span key={`${row.monday}-n`} title={goalText(row.monday, week)} className={`flex items-center justify-end gap-0.5 tabular-nums ${met ? "font-semibold text-stone-800" : "text-stone-400"}`}>
               {n > 0 && n}
-              {n >= WEEKLY_GOAL && <Check size={12} weight="bold" aria-label="goal reached" />}
+              {met && <Check size={12} weight="bold" aria-label="goal reached" />}
             </span>,
           ];
         })}

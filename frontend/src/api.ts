@@ -52,6 +52,23 @@ export interface Target {
 export interface Photo {
   key: string;
   caption?: string;
+  /** "screenshot": a record of the workout itself (a Peloton summary), not a setup photo. */
+  kind?: "screenshot";
+}
+
+/** A Peloton class as read from its summary screenshot (all optional: whatever the screen showed). */
+export interface Peloton {
+  discipline?: string;
+  title?: string;
+  instructor?: string;
+  minutes?: number;
+  outputKj?: number;
+  distanceMi?: number;
+  calories?: number;
+  avgWatts?: number;
+  avgCadence?: number;
+  avgResistance?: number;
+  avgSpeedMph?: number;
 }
 
 export interface Entry {
@@ -64,6 +81,8 @@ export interface Entry {
   segments?: Segment[];
   distanceMi?: number;
   minutes?: number;
+  /** A Peloton class read from the screenshot in photos. */
+  peloton?: Peloton;
   /** Marked done during the workout (it folds away); dropped when it's saved. */
   done?: boolean;
 }
@@ -186,6 +205,8 @@ export interface ProgressDay {
   workoutId: string;
   label: string;
   type: string;
+  /** A ride, run or walk that day (the weekly goal counts it). */
+  cardio?: boolean;
 }
 
 /** One rung of an exercise's progression ladder: a target and the sessions spent on it ("new" is
@@ -239,7 +260,7 @@ export interface Feedback {
 
 /** The welcome page's live stats, public: training days and current targets only. */
 export interface PublicSummary {
-  days: { date: string; type: string }[];
+  days: { date: string; type: string; cardio?: boolean }[];
   lifts: { exerciseId: string; name: string; group: Group; load: Load; scheme: Scheme; times: number }[];
 }
 
@@ -335,6 +356,7 @@ export const api = {
   finishWorkout: (endedAt: string) => request<Workout>("/active/finish", json("POST", { endedAt })),
   discardWorkout: () => request<void>("/active", { method: "DELETE" }),
 
+  readPeloton: (key: string) => request<Peloton>("/peloton/read", json("POST", { key })),
   uploadPhoto: (photo: Blob, thumb: Blob) => {
     const form = new FormData();
     form.append("photo", photo, "photo.jpg");

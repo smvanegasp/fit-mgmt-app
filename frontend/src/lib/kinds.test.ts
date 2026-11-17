@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import type { Entry, ExerciseSession } from "../api";
-import { climbing, dropLadders } from "./kinds";
+import { climbing, dropLadders, pelotonStats, pelotonText } from "./kinds";
 
 const session = (date: string, entry: Partial<Entry>): ExerciseSession => ({
   workoutId: date, date, label: "Push", entry: { exerciseId: "x", ...entry },
@@ -30,5 +30,16 @@ describe("climbing", () => {
       { grade: "V3", sent: 3, attempted: 0 },
     ]);
     expect(got.hardest).toEqual({ grade: "V4", date: "2026-10-01" });
+  });
+});
+
+describe("Peloton", () => {
+  const ride = { title: "60 min Reggaeton Ride", instructor: "Camila Ramón", outputKj: 526, distanceMi: 18.51, avgCadence: 78 };
+  it("lists what the screenshot showed", () => {
+    expect(pelotonText(ride)).toBe("60 min Reggaeton Ride · Camila Ramón · 526 kJ");
+    expect(pelotonStats(ride)).toEqual([
+      { label: "Output", value: "526 kJ" }, { label: "Distance", value: "18.51 mi" }, { label: "Cadence", value: "78 rpm" },
+    ]);
+    expect(pelotonText({})).toBe("");
   });
 });

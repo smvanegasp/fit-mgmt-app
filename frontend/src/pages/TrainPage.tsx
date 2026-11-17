@@ -22,8 +22,8 @@ import {
 } from "../hooks";
 import { formatDuration } from "../lib/duration";
 import { abandonedAt, currentLap, lapRows } from "../lib/laps";
-import { isLogged, startingEntries } from "../lib/plan";
-import { WEEKLY_GOAL, streaks, weekCounts } from "../lib/progress";
+import { cardioOptions, isLogged, lastCardio, startingEntries } from "../lib/plan";
+import { goalText, streaks, weekCounts } from "../lib/progress";
 import { dayType, heavyNext, nextUp, setCount } from "../lib/sets";
 import { clockTime, friendlyDate, localIso, secondsBetween } from "../lib/time";
 import { weekStart } from "../lib/weeks";
@@ -91,11 +91,16 @@ function useAutoFinish(body: WorkoutBody | null | undefined): [Workout | null, (
 
 // ------------------------------------------------------------------ before starting
 
-/** Day types offered at the start: the ones trained at least 3 times. */
+/** Day types offered at the start: the ones trained at least 3 times, and always Cardio (it's part
+ * of the weekly goal, Sergio 2026-11-17). */
 function useDayTypes() {
   const types = useSessionTypes();
-  return (types.data ?? []).filter((t) => t.sessions >= 3).map((t) => t.label);
+  const labels = (types.data ?? []).filter((t) => t.sessions >= 3).map((t) => t.label);
+  return types.data && !labels.includes("Cardio") ? [...labels, "Cardio"] : labels;
 }
+
+/** Cardio choices when there's no Cardio history yet. */
+const CARDIO_FALLBACK = ["peloton-ride", "peloton-run", "walk", "treadmill"];
 
 function Idle({ onOpen }: { onOpen: (w: Workout) => void }) {
   const start = useStartWorkout();
@@ -108,6 +113,13 @@ function Idle({ onOpen }: { onOpen: (w: Workout) => void }) {
   const [picked, setPicked] = useState<string | null>(null);
   const plan = picked ?? suggestion?.label ?? null;
   const heavy = workouts.data ? heavyNext(workouts.data) : null;
+  // A Cardio day is one activity (Sergio, 2026-11-17): pick it, last time's preselected.
+  const byId = new Map((exercises.data ?? []).map((e) => [e.id, e]));
+  const cardioIds = new Set((exercises.data ?? []).filter((e) => e.group === "cardio" && e.id !== "warm-up").map((e) => e.id));
+  const usualCardio = cardioOptions(types.data ?? [], cardioIds);
+  const cardioChoices = usualCardio.length > 0 ? usualCardio : CARDIO_FALLBACK.filter((id) => cardioIds.has(id));
+  const [cardioPicked, setCardioPicked] = useState<string | null>(null);
+  const cardio = cardioPicked ?? lastCardio(workouts.data ?? [], cardioChoices);
   // The last two of the chosen day type (Sergio, 2026-11-03), else the last two of any.
   const all = workouts.data ?? [];
   const ofType = plan ? all.filter((w) => dayType(w.label) === plan) : [];
@@ -151,12 +163,22 @@ function Idle({ onOpen }: { onOpen: (w: Workout) => void }) {
             </InfoTip>
           </p>
         )}
+        {plan === "Cardio" && cardioChoices.length > 0 && (
+          <div className="mt-3 flex flex-wrap gap-2" role="radiogroup" aria-label="Cardio">
+            {cardioChoices.map((id) => (
+              <button key={id} type="button" role="radio" aria-checked={cardio === id} onClick={() => setCardioPicked(id)}
+                className={`rounded-full px-3.5 py-1.5 text-sm font-medium ${cardio === id ? "bg-stone-900 text-white" : "bg-white text-stone-700 ring-1 ring-stone-200"}`}>
+                {byId.get(id)?.name ?? id}
+              </button>
+            ))}
+          </div>
+        )}
         <button
           type="button"
           onClick={() => start.mutate({
             startedAt: localIso(),
             plan: plan ?? undefined,
-            entries: startingEntries(plan ?? undefined, types.data ?? [], workouts.data ?? [], new Set((exercises.data ?? []).map((e) => e.id))),
+            entries: startingEntries(plan ?? undefined, types.data ?? [], workouts.data ?? [], new Set(byId.keys()), cardio),
           })}
           disabled={start.isPending}
           className="mt-5 inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-blue-600 py-5 text-xl font-semibold text-white shadow-sm active:bg-blue-700"
@@ -184,13 +206,14 @@ function WeekLink({ today }: { today: string }) {
   const goTo = useGoTo();
   const days = progress.data?.days;
   if (!days) return null;
-  const thisWeek = weekCounts(days).get(weekStart(today)) ?? 0;
+  const monday = weekStart(today);
+  const thisWeek = goalText(monday, weekCounts(days).get(monday));
   const streak = streaks(days, today).current;
   return (
     <button type="button" onClick={() => goTo("progress")}
       className="flex w-full items-center gap-3 rounded-2xl border border-stone-200 bg-white px-4 py-3 text-left">
       <span className="min-w-0 flex-1">
-        <span className="block font-semibold">This week: {thisWeek} of {WEEKLY_GOAL}</span>
+        <span className="block font-semibold">This week: {thisWeek}</span>
         <span className="text-sm text-stone-500">{streak}-week streak</span>
       </span>
       <CaretRight size={16} className="shrink-0 text-stone-400" aria-hidden />
