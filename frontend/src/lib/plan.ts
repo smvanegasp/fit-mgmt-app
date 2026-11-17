@@ -30,7 +30,7 @@ export function startingEntries(plan: string | undefined, types: SessionType[], 
 export function isLogged(entry: Entry): boolean {
   return Boolean(
     entry.sets?.length || entry.problems?.length || entry.segments?.length || entry.notes?.length
-    || entry.photos?.length || entry.minutes || entry.distanceMi,
+    || entry.photos?.length || entry.minutes || entry.distanceMi || entry.peloton,
   );
 }
 

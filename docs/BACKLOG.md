@@ -36,6 +36,15 @@ Stage 9: the first round of in-app feedback (19 notes from Sergio, 2026-11-02 to
 | 9c | `stage-9c-history` | **History and progress.** Consistent workout names: day type plus the first exercise ("Legs · Squat"); a top-weight-over-time chart on each exercise page; log body weight (and add 159.4 lb on 2026-11-03). |
 | 9d | `stage-9d-peloton` | **Peloton** (cardio): a quick form (class, time, distance, output) with the screenshot attached as a photo. Reading the screenshot automatically was offered (a second AI feature) and not chosen. |
 
+## Stage 9d: what's in it (2026-11-17)
+
+- **Peloton classes** (Cardio): a Peloton entry keeps distance and time like any run and adds the
+  class name, output (kJ), calories and average heart rate, all optional, plus "Add the Peloton
+  screenshot" (the summary screen, stored as the entry's photo). Stored as `entry.peloton`; it
+  counts as logged. The workout page shows "30 min Endurance Run · 245 kJ · 310 kcal · 152 bpm
+  avg"; cards show "Peloton run 3.1 mi · 245 kJ".
+- Not done (as agreed): reading the screenshot automatically (a second AI feature).
+
 ## Stage 9c: what's in it (2026-11-17)
 
 - **Data first (Sergio's OK):** the 11-14 Pull workout's end on AWS corrected to its last set (15:25,

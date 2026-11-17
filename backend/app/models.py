@@ -45,6 +45,16 @@ class Segment(BaseModel):
     minutes: float = Field(ge=0, le=600)
 
 
+class Peloton(BaseModel):
+    """A Peloton class, typed from its summary screen (Sergio, 2026-11-02 and 11-17; the screenshot
+    goes in the entry's photos). Every field is optional."""
+
+    title: str | None = Field(None, max_length=120)
+    outputKj: float | None = Field(None, ge=0, le=5000)
+    calories: int | None = Field(None, ge=0, le=5000)
+    avgHeartRate: int | None = Field(None, ge=30, le=230)
+
+
 class Target(BaseModel):
     text: str = Field(max_length=200)
     times: int | None = None
@@ -66,13 +76,14 @@ class Entry(BaseModel):
     segments: list[Segment] = Field(default_factory=list, max_length=60)
     distanceMi: float | None = Field(None, ge=0, le=200)
     minutes: float | None = Field(None, ge=0, le=1000)
+    peloton: Peloton | None = None
     # Marked done during the workout (it folds away); dropped when the workout is saved.
     done: bool | None = None
 
     def logged(self) -> bool:
         """Anything recorded (a workout starts with its usual exercises filled in, not all get done)."""
         return bool(self.sets or self.problems or self.segments or self.notes or self.photos
-                    or self.minutes or self.distanceMi)
+                    or self.minutes or self.distanceMi or self.peloton)
 
     @field_validator("notes")
     @classmethod

@@ -1,4 +1,4 @@
-import type { ExerciseSession, Problem, SetData } from "../api";
+import type { ExerciseSession, Peloton, Problem, SetData } from "../api";
 
 /** Every drop-set ladder of an exercise, newest first, with its total reps (the best is marked). */
 export function dropLadders(sessions: ExerciseSession[]): { date: string; workoutId: string; sets: SetData[]; total: number; best: boolean }[] {
@@ -34,4 +34,10 @@ export function climbing(sessions: ExerciseSession[]): {
   }
   const grades = [...byGrade.values()].sort((a, b) => gradeNumber(b.grade) - gradeNumber(a.grade));
   return { grades, hardest };
+}
+
+/** A Peloton class in one line: "30 min Endurance Run · 245 kJ · 310 kcal · 152 bpm avg". */
+export function pelotonText(p: Peloton): string {
+  return [p.title, p.outputKj !== undefined && `${p.outputKj} kJ`, p.calories !== undefined && `${p.calories} kcal`,
+    p.avgHeartRate !== undefined && `${p.avgHeartRate} bpm avg`].filter(Boolean).join(" · ");
 }

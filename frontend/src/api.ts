@@ -54,6 +54,13 @@ export interface Photo {
   caption?: string;
 }
 
+export interface Peloton {
+  title?: string;
+  outputKj?: number;
+  calories?: number;
+  avgHeartRate?: number;
+}
+
 export interface Entry {
   exerciseId: string;
   sets?: SetData[];
@@ -64,6 +71,8 @@ export interface Entry {
   segments?: Segment[];
   distanceMi?: number;
   minutes?: number;
+  /** A Peloton class's stats, typed from its summary (the screenshot goes in photos). */
+  peloton?: Peloton;
   /** Marked done during the workout (it folds away); dropped when it's saved. */
   done?: boolean;
 }

@@ -2,7 +2,7 @@ import { ArrowsDownUp, CaretDown, CaretRight, Check, Images, Lightbulb, NotePenc
 import { useQuery } from "@tanstack/react-query";
 import { useEffect, useRef, useState } from "react";
 
-import { api, type CueSection, type Entry, type Exercise, type Note, type Photo, type Problem, type Role, type Scheme, type SetData, type Streak } from "../api";
+import { api, type CueSection, type Entry, type Exercise, type Note, type Peloton, type Photo, type Problem, type Role, type Scheme, type SetData, type Streak } from "../api";
 import { useAddNote, useExerciseSummary, useUpdateNote } from "../hooks";
 import { ladderWeights, nextSet, reachesTarget, schemeText, summarizeSets, weightText } from "../lib/sets";
 import { clearDraft, loadDraft, saveDraft } from "../lib/drafts";
@@ -83,7 +83,7 @@ export function EntryCard({ entry, exercise, excludeWorkoutId, role, draftKey, o
       {exercise.measure === "climb" ? (
         <ClimbLog entry={entry} onChange={onChange} />
       ) : exercise.measure === "run" ? (
-        <RunLog entry={entry} onChange={onChange} />
+        <RunLog entry={entry} exercise={exercise} onChange={onChange} />
       ) : (
         <SetLog entry={entry} exercise={exercise} draftKey={draftKey} lastSets={last?.entry.sets} bestDrop={summary.data?.bestDrop} target={streak?.scheme}
           onChange={onChange} onSetLogged={onSetLogged} onReached={focus ? () => setCelebrate(true) : undefined} />
@@ -489,7 +489,7 @@ function ClimbLog({ entry, onChange }: { entry: Entry; onChange: (e: Entry) => v
   );
 }
 
-function RunLog({ entry, onChange }: { entry: Entry; onChange: (e: Entry) => void }) {
+function RunLog({ entry, exercise, onChange }: { entry: Entry; exercise: Exercise; onChange: (e: Entry) => void }) {
   const segments = entry.segments ?? [];
   const minutes = entry.minutes ?? segments.reduce((sum, s) => sum + s.minutes, 0);
   return (
@@ -498,10 +498,51 @@ function RunLog({ entry, onChange }: { entry: Entry; onChange: (e: Entry) => voi
         onChange={(distanceMi) => onChange({ ...entry, distanceMi })} />
       <Stepper layout="row" label="Time" unit="minutes" value={Math.round(minutes)} step={1}
         onChange={(m) => onChange({ ...entry, minutes: m })} />
+      {exercise.id.startsWith("peloton") && <PelotonStats entry={entry} onChange={onChange} />}
     </div>
   );
 }
 
+/**
+ * A Peloton class (Sergio, 2026-11-02 and 11-17): its summary typed in (all optional) and the
+ * screenshot attached as the entry's photo. Reading the screenshot automatically was offered and
+ * not chosen.
+ */
+function PelotonStats({ entry, onChange }: { entry: Entry; onChange: (e: Entry) => void }) {
+  const stats = entry.peloton ?? {};
+  const set = (patch: Partial<Peloton>) => {
+    const next = { ...stats, ...patch };
+    const empty = Object.values(next).every((v) => v === undefined || v === "");
+    onChange({ ...entry, peloton: empty ? undefined : next });
+  };
+  const number = (value: string) => (value.trim() === "" || Number.isNaN(Number(value)) ? undefined : Number(value));
+  const fields: { key: "outputKj" | "calories" | "avgHeartRate"; label: string; unit: string }[] = [
+    { key: "outputKj", label: "Output", unit: "kJ" },
+    { key: "calories", label: "Calories", unit: "kcal" },
+    { key: "avgHeartRate", label: "Avg HR", unit: "bpm" },
+  ];
+  return (
+    <div className="space-y-2 border-t border-stone-200 pt-3">
+      <input value={stats.title ?? ""} onChange={(e) => set({ title: e.target.value || undefined })}
+        placeholder="Class (e.g. 30 min Endurance Run)" aria-label="Peloton class"
+        className="w-full rounded-lg border border-stone-300 bg-white px-3 py-2.5" />
+      <div className="grid grid-cols-3 gap-2">
+        {fields.map((f) => (
+          <label key={f.key} className="rounded-lg border border-stone-300 px-2 py-1.5">
+            <span className="block text-[11px] font-medium tracking-wide text-stone-500 uppercase">{f.label}</span>
+            <span className="flex items-baseline gap-1">
+              <input inputMode="numeric" value={stats[f.key] ?? ""} aria-label={`${f.label} (${f.unit})`}
+                onChange={(e) => set({ [f.key]: number(e.target.value) })}
+                className="w-full min-w-0 bg-transparent font-display text-2xl font-semibold tabular-nums outline-none" />
+              <span className="text-xs text-stone-500">{f.unit}</span>
+            </span>
+          </label>
+        ))}
+      </div>
+      <PhotoButton label="Add the Peloton screenshot" onAdded={(photo) => onChange({ ...entry, photos: [...(entry.photos ?? []), photo] })} />
+    </div>
+  );
+}
 // ------------------------------------------------------------------ notes and photos for this exercise today
 
 /** A quiet row of tools under the sets: a note or photo for today, and the setup photos taken

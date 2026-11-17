@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import type { Entry, ExerciseSession } from "../api";
-import { climbing, dropLadders } from "./kinds";
+import { climbing, dropLadders, pelotonText } from "./kinds";
 
 const session = (date: string, entry: Partial<Entry>): ExerciseSession => ({
   workoutId: date, date, label: "Push", entry: { exerciseId: "x", ...entry },
@@ -30,5 +30,14 @@ describe("climbing", () => {
       { grade: "V3", sent: 3, attempted: 0 },
     ]);
     expect(got.hardest).toEqual({ grade: "V4", date: "2026-10-01" });
+  });
+});
+
+describe("pelotonText", () => {
+  it("lists what was typed, in order", () => {
+    expect(pelotonText({ title: "30 min Endurance Run", outputKj: 245, calories: 310, avgHeartRate: 152 }))
+      .toBe("30 min Endurance Run · 245 kJ · 310 kcal · 152 bpm avg");
+    expect(pelotonText({ outputKj: 0 })).toBe("0 kJ");
+    expect(pelotonText({})).toBe("");
   });
 });
