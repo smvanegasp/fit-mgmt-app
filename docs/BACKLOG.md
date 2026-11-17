@@ -34,16 +34,16 @@ Stage 9: the first round of in-app feedback (19 notes from Sergio, 2026-11-02 to
 | 9a | `stage-9a-fixes` | **Bugs.** (1) The pull-up target showed the old scheme after Sergio went up in weight; find the cause by replaying the history and fix the target game. (2) Legs: squat and deadlift use different weights as the main lift and as the second lift, so the target breaks; keep one target per role (main = first lift of the day, second). (3) A workout left open ran 46 hours: auto-finish 2 hours after the start, ending at the last logged set; correct that workout on AWS (Sergio's OK, 2026-11-17). (4) Reps typed in the logger are lost when switching screens: keep the draft in the autosaved workout. (5) The phone in landscape looks broken. |
 | 9b | `stage-9b-train` | **Train flow.** Bigger numbers in the steppers; "Done" on an exercise folds it so the current one gets the room; the start screen shows the last two workouts and their day types; the exercise picker opens filtered to today's day type; today's usual exercises pre-filled in order, always starting with a timed warm-up; a short congrats when a target is reached (mainly the first, heavy lift). |
 | 9c | `stage-9c-history` | **History and progress.** Consistent workout names: day type plus the first exercise ("Legs · Squat"); a top-weight-over-time chart on each exercise page; log body weight (and add 159.4 lb on 2026-11-03). |
-| 9d | `stage-9d-peloton` | **Peloton** (cardio): a quick form (class, time, distance, output) with the screenshot attached as a photo. Reading the screenshot automatically was offered (a second AI feature) and not chosen. |
+| 9d | `stage-9d-peloton` | **Peloton** (cardio): the class summary screenshot from the Peloton app, attached to the entry. Sergio, 2026-11-17, after trying a typed form: no typing, just the photo, from the photo library. Reading the screenshot automatically was offered (a second AI feature) and not chosen. |
 
 ## Stage 9d: what's in it (2026-11-17)
 
-- **Peloton classes** (Cardio): a Peloton entry keeps distance and time like any run and adds the
-  class name, output (kJ), calories and average heart rate, all optional, plus "Add the Peloton
-  screenshot" (the summary screen, stored as the entry's photo). Stored as `entry.peloton`; it
-  counts as logged. The workout page shows "30 min Endurance Run · 245 kJ · 310 kcal · 152 bpm
-  avg"; cards show "Peloton run 3.1 mi · 245 kJ".
-- Not done (as agreed): reading the screenshot automatically (a second AI feature).
+- **Photos from the library:** the photo input had `capture="environment"`, which makes an iPhone
+  open the camera only. Without it the phone offers the photo library, the camera or files, for
+  every photo in the app (setup photos, notes, Peloton).
+- **Peloton:** a Peloton entry (distance and time, as before) gets "Add the Peloton screenshot";
+  the summary is stored as the entry's photo. A typed form (class, output, calories, heart rate) was
+  built first and dropped at Sergio's request: no typing, just the screenshot.
 
 ## Stage 9c: what's in it (2026-11-17)
 

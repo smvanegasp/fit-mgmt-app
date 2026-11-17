@@ -60,21 +60,6 @@ def test_finishing_drops_the_filled_in_exercises_never_done(client: TestClient) 
     assert client.post("/api/active/finish", json={"endedAt": "2026-11-19T18:30:00"}).status_code == 400
 
 
-def test_a_peloton_class_is_saved_with_its_stats(client: TestClient) -> None:
-    client.post("/api/active", json={"startedAt": "2026-11-20T07:00:00", "plan": "Cardio"})
-    peloton = {"title": "30 min Endurance Run", "outputKj": 245, "calories": 310, "avgHeartRate": 152}
-    client.put("/api/active", json={"startedAt": "2026-11-20T07:00:00", "plan": "Cardio", "entries": [
-        {"exerciseId": "peloton-run", "distanceMi": 3.1, "minutes": 30, "peloton": peloton},
-        {"exerciseId": "walk"},
-    ]})
-    workout = client.post("/api/active/finish", json={"endedAt": "2026-11-20T07:35:00"}).json()
-    assert [e["exerciseId"] for e in workout["entries"]] == ["peloton-run"]
-    assert workout["entries"][0]["peloton"] == peloton and workout["label"] == "Cardio"
-    # Just the class stats count as logged too; silly numbers are refused.
-    assert client.put("/api/active", json={"startedAt": "2026-11-20T08:00:00", "entries": [
-        {"exerciseId": "peloton-run", "peloton": {"avgHeartRate": 400}}]}).status_code in (404, 422)
-
-
 def test_times_must_be_local_iso(client: TestClient) -> None:
     assert client.post("/api/active", json={"startedAt": "yesterday"}).status_code == 422
 

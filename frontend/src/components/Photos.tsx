@@ -74,8 +74,9 @@ export function PhotoButton({ onAdded, label = "Photo" }: { onAdded: (photo: Pho
       <input
         ref={input}
         type="file"
+        // No `capture`: it forces the camera on iPhone. Without it the phone offers the photo
+        // library, the camera or files (Sergio, 2026-11-17: screenshots from the Peloton app).
         accept="image/*"
-        capture="environment"
         className="hidden"
         onChange={(e) => {
           const file = e.target.files?.[0];

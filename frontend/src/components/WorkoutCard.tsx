@@ -12,11 +12,7 @@ export function highlight(entry: Entry, exercise: Exercise | undefined): string 
     const sent = entry.problems.filter((p) => p.result === "sent").map((p) => Number(p.grade.slice(1)));
     return sent.length ? `${exercise.name} up to V${Math.max(...sent)}` : exercise.name;
   }
-  if (entry.distanceMi || entry.peloton?.outputKj !== undefined) {
-    // "Peloton run 3.1 mi · 245 kJ"
-    const parts = [entry.distanceMi && `${entry.distanceMi} mi`, entry.peloton?.outputKj !== undefined && `${entry.peloton.outputKj} kJ`];
-    return `${exercise.name} ${parts.filter(Boolean).join(" · ")}`;
-  }
+  if (entry.distanceMi) return `${exercise.name} ${entry.distanceMi} mi`;
   const sets = (entry.sets ?? []).filter((s) => !s.drop);
   if (!sets.length) return exercise.name;
   const top = Math.max(...sets.map((s) => s.weightLb ?? 0));
