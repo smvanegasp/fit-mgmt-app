@@ -123,19 +123,26 @@ A mobile-first web app where Sergio logs their gym workouts and sees their progr
 | 5b | Welcome page (Sergio's photo and note, three tutorial clips recorded in a sample demo, Continue / I'm Sergio; two columns on computers), app icon and manifest (Add to Home Screen) | #13 |
 | 6a | AWS with Terraform (profile `gym`, all `fit-*`): DynamoDB, photo and web buckets, Lambda + HTTP API, CloudFront, SSM secrets, email alarms; terraform CI job, Dependabot | #14 |
 | 6b | Merges deploy: IAM role `fit-github-deploy` (GitHub OIDC, main only; reads the account's existing OIDC provider), repo variables `DEPLOY_ENABLED`, `DISTRIBUTION_ID`, `SITE_URL`; tested with a manual run | #15 |
-| 6c | gym.sergiovanegas.com: ACM certificate (DNS-validated, auto-renewing) and CloudFront alias; two CNAMEs at Hostinger | open |
+| 6c | gym.sergiovanegas.com: ACM certificate (DNS-validated, auto-renewing) and CloudFront alias; two CNAMEs at Hostinger | #16 |
 | 7 | Production import (2026-10-31): 177 workouts, 1,780 sets, 50 cues, 4 routines, 15 photos into AWS `fit` (space main); identical to the local log row by row (only `hidden: false` spelled out and an old group name differ locally) | done (no code) |
 | 8a | In-app feedback: Settings and the guest banner, owner inbox in Settings, email on guest feedback, `scripts/feedback.py` for each session | #17 |
 | 8b | Own identity: set-glyph logo and icons, Barlow Condensed for numbers and headings, dark by default, stats-led welcome page (public summary endpoint, shared Heatmap), re-recorded clips | #18 |
 | 9a | Feedback fixes: more reps than the target is the new target; a much lighter session (a lift done second) plays its own target, shown by role; a workout left 2 hours without a set finishes itself at its last set; the set being dialed in survives switching screens; landscape phones get a side rail | #26 |
 | 9b | Train flow: a workout starts with a timed warm-up and the day's usual exercises filled in (never-done ones dropped on save); only the current exercise is open (Done folds it, the rest wait as Up next); last two workouts of the day type; bigger steppers; a congrats when a set reaches the target; the picker opens on the day's usual exercises; a narrower landscape rail | #27 |
 | 9c | Workout names are the day type and first exercise ("Legs · Deadlift", computed in the app; stored labels unchanged); a top-weight (or most reps, longest hold) chart on each exercise page; body weight on Progress (log, latest, change, line; `/api/body`); shared `LineChart` | #28 |
-| 9d | Peloton: the summary screenshot (from the photo library: no more forced camera, for every photo) is read into the class stats (`entry.peloton`); Peloton ride in the catalog; output chart on the ride's page and a Peloton card on Progress; weekly goal 3 strength + 1 cardio; Sergio's three November rides added; screenshots kept apart from setup photos; a Cardio day starts with the one activity picked | open |
+| 9d | Peloton: the summary screenshot (from the photo library: no more forced camera, for every photo) is read into the class stats (`entry.peloton`); Peloton ride in the catalog; output chart on the ride's page and a Peloton card on Progress; weekly goal 3 strength + 1 cardio; Sergio's three November rides added; screenshots kept apart from setup photos; a Cardio day starts with the one activity picked; both AI features on in demos (capped) | #29 |
 
-**Where things stand (2026-11-17):** stages 0-8b are merged and live (PRs up to #20). Stage 9 works
-through the first round of in-app feedback (19 notes) in four PRs (9a fixes, 9b Train flow, 9c
-history and progress, 9d Peloton; [docs/BACKLOG.md](docs/BACKLOG.md)); 9a-9c are merged (#26-#28), 9d is open (the last of stage 9). New requests come
-from Sergio or from the in-app feedback (`scripts/feedback.py`, section 2).
+**Where things stand (2026-11-17):** all stages (0-9d) are merged and live (PRs up to #29), and the
+weekly Dependabot updates (#23-#25) are merged too: no open PRs. Stage 9 handled the first round of
+in-app feedback (19 notes, all marked done) and Sergio's same-day follow-ups. Production checks after
+the last merges: `/api/health` ok, the welcome page shows 186 workouts and a 10-week streak, and
+`terraform plan` shows no changes. Data changed on AWS with Sergio's OK this round: two workouts left
+running got their end set to the last set (11-07, 11-14), a 159.4 lb weigh-in (11-03), and three Peloton
+rides as Cardio workouts with their screenshots (11-01, 11-08, 11-15). No open work: new requests come
+from Sergio or from the in-app feedback (`scripts/feedback.py`, section 2; 0 new at handoff).
+**Loose ends at handoff:** the ngrok tunnel may still be running from the last phone test (stop it:
+it has no password); Sergio's three Peloton screenshots sit untracked in the repo root
+(`peloton_workout_*.jpeg`, already stored with the rides; never commit them, delete when Sergio says).
 **Production holds Sergio's real log** at https://gym.sergiovanegas.com (loaded
 in stage 7), so Sergio logs there from now on and visitors get a copy of it. The local stack has the
 same history and is now only for development: anything logged locally stays local. **Never change
