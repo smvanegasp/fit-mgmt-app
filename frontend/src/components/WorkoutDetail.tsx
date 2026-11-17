@@ -5,7 +5,7 @@ import type { Entry, Exercise, Workout } from "../api";
 import { useExercises, useWorkout } from "../hooks";
 import { formatDuration } from "../lib/duration";
 import { lapRows } from "../lib/laps";
-import { summarizeSets } from "../lib/sets";
+import { summarizeSets, workoutTitle } from "../lib/sets";
 import { clockTime, localIso, minutesText, workoutMinutes } from "../lib/time";
 import { longDate } from "../lib/weeks";
 import { EditWorkout } from "./EditWorkout";
@@ -24,7 +24,7 @@ export function WorkoutDetail({ workoutId, onClose }: { workoutId: string; onClo
 
   return (
     <Screen
-      title={w?.label ?? "Workout"}
+      title={w ? workoutTitle(w, new Map([...byId].map(([id, e]) => [id, e.name]))) : "Workout"}
       subtitle={w ? <WorkoutWhen workout={w} /> : undefined}
       onBack={onClose}
       actions={

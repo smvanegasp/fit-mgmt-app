@@ -3,7 +3,8 @@ import { useState } from "react";
 
 import type { Exercise, Group } from "../api";
 import { useExerciseHistory, useExerciseProgress, useExerciseSummary, useExercises, useMergeExercise, useUpdateExercise } from "../hooks";
-import { summarizeSets, weightText } from "../lib/sets";
+import { topSeries } from "../lib/series";
+import { dayType, summarizeSets, weightText } from "../lib/sets";
 import { friendlyDate, localIso } from "../lib/time";
 import { BottomSheet } from "./BottomSheet";
 import { CueManager } from "./Cues";
@@ -12,6 +13,7 @@ import { ExercisePicker, GROUP_NAMES } from "./ExercisePicker";
 import { PhotoStrip } from "./Photos";
 import { Climbing, DropSets, ProgressionLadder, groupColor } from "./Progression";
 import { Screen } from "./Screen";
+import { LineChart } from "./LineChart";
 import { useScreens } from "./Screens";
 
 /** The home for one exercise: its progression (targets, the current one on top), technique cues,
@@ -28,6 +30,7 @@ export function ExercisePage({ exerciseId, onClose }: { exerciseId: string; onCl
   const sessions = history.data?.sessions ?? [];
   const best = history.data?.best;
   const today = localIso().slice(0, 10);
+  const series = exercise ? topSeries(sessions, exercise) : null;
 
   return (
     <Screen
@@ -66,6 +69,14 @@ export function ExercisePage({ exerciseId, onClose }: { exerciseId: string; onCl
           ) : (
             summary.data?.streak && <TargetGame streak={summary.data.streak} load={exercise.load} today={[]} />
           )}
+          {series && series.points.length >= 2 && (
+            <section className="rounded-2xl border border-stone-200 bg-white p-4">
+              <h2 className="font-semibold">{series.title}</h2>
+              <p className="mb-2 text-xs text-stone-500">Every session since {monthYear(series.points[0].date)} · tap a point to open it</p>
+              <LineChart points={series.points} format={series.format} color={groupColor(exercise.group)} label={series.title}
+                onOpen={screens.openWorkout} />
+            </section>
+          )}
           <DropSets sessions={sessions} color={groupColor(exercise.group)} today={today} onOpenWorkout={screens.openWorkout} />
           {exercise.measure === "climb" && <Climbing sessions={sessions} color={groupColor(exercise.group)} today={today} />}
 
@@ -94,7 +105,7 @@ export function ExercisePage({ exerciseId, onClose }: { exerciseId: string; onCl
                     <button type="button" onClick={() => screens.openWorkout(s.workoutId)} className="flex w-full items-center gap-3 py-2.5 text-left">
                       <div className="min-w-0 flex-1">
                         <div className="text-sm font-medium">
-                          {friendlyDate(s.date)} <span className="font-normal text-stone-500">· {s.label}</span>
+                          {friendlyDate(s.date)} <span className="font-normal text-stone-500">· {dayType(s.label)}</span>
                         </div>
                         <div className="text-sm text-stone-600">
                           {work.length > 0 && summarizeSets(work, exercise.load)}

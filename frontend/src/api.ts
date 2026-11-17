@@ -141,6 +141,12 @@ export interface Streak {
   goal: number;
 }
 
+/** One weigh-in (one per day). */
+export interface BodyWeight {
+  date: string;
+  weightLb: number;
+}
+
 export interface SessionType {
   label: string;
   /** Usual exercises, in the usual order. */
@@ -313,6 +319,9 @@ export const api = {
   sessionTypes: () => request<SessionType[]>("/session-types"),
 
   progress: () => request<Progress>("/progress"),
+  bodyWeights: () => request<BodyWeight[]>("/body"),
+  logBodyWeight: (date: string, weightLb: number) => request<BodyWeight>(`/body/${date}`, json("PUT", { weightLb })),
+  deleteBodyWeight: (date: string) => request<void>(`/body/${date}`, { method: "DELETE" }),
   exerciseProgress: (id: string) => request<Lift>(`/exercises/${id}/progress`),
 
   listWorkouts: (limit = 20) => request<Workout[]>(`/workouts?limit=${limit}`),

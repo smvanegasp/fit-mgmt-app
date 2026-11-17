@@ -9,6 +9,7 @@ import { PhotoStrip } from "../components/Photos";
 import { GradePyramid, LiftCard, TYPE_COLOR, TypeLegend, groupColor, typeColor } from "../components/Progression";
 import { useGoTo } from "../components/Nav";
 import { useScreens } from "../components/Screens";
+import { BodyWeightCard } from "../components/BodyWeightCard";
 import { WorkoutCard } from "../components/WorkoutCard";
 import { useDesktop, useExerciseHistory, useExercises, useProgress, useWorkouts } from "../hooks";
 import { climbing } from "../lib/kinds";
@@ -56,9 +57,16 @@ export function ProgressPage() {
         </div>
       </section>
 
+      {/* Phones: body weight after the lifts. Computers: under the last workouts, next to the routine. */}
+      {!desktop && <BodyWeightCard />}
       <div className="lg:grid lg:grid-cols-2 lg:items-start lg:gap-6">
         {(progress.data?.routines ?? []).length > 0 && <Routines routines={progress.data!.routines} today={today} />}
-        {desktop && <LastWorkouts />}
+        {desktop && (
+          <div className="space-y-6">
+            <LastWorkouts />
+            <BodyWeightCard />
+          </div>
+        )}
       </div>
     </div>
   );

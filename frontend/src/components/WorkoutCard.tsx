@@ -1,6 +1,6 @@
 import type { Entry, Exercise, Workout } from "../api";
 import { useExercises } from "../hooks";
-import { summarizeSets } from "../lib/sets";
+import { summarizeSets, workoutTitle } from "../lib/sets";
 import { friendlyDate, minutesText, workoutMinutes } from "../lib/time";
 
 const WEEKDAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
@@ -23,6 +23,7 @@ export function highlight(entry: Entry, exercise: Exercise | undefined): string 
 export function WorkoutCard({ workout, onClick }: { workout: Workout; onClick: () => void }) {
   const exercises = useExercises();
   const byId = new Map((exercises.data ?? []).map((e) => [e.id, e]));
+  const names = new Map((exercises.data ?? []).map((e) => [e.id, e.name]));
   const minutes = workoutMinutes(workout);
   const day = new Date(`${workout.date}T12:00:00`);
   // The warm-up isn't a highlight (its time shows on the workout page).
@@ -37,12 +38,11 @@ export function WorkoutCard({ workout, onClick }: { workout: Workout; onClick: (
         <span className="mt-0.5 font-display text-2xl leading-none font-bold">{day.getDate()}</span>
       </div>
       <div className="min-w-0 flex-1 py-0.5">
-        <div className="flex items-baseline justify-between gap-2">
-          <span className="font-semibold">{workout.label}</span>
-          <span className="shrink-0 text-xs text-stone-500">
-            {friendlyDate(workout.date)}
-            {minutes ? ` · ${workout.durationEstimated ? "~" : ""}${minutesText(minutes)}` : ""}
-          </span>
+        {/* The name gets the whole line ("Push · Weighted dips"); when and how long under it. */}
+        <div className="font-semibold">{workoutTitle(workout, names)}</div>
+        <div className="text-xs text-stone-500">
+          {friendlyDate(workout.date)}
+          {minutes ? ` · ${workout.durationEstimated ? "~" : ""}${minutesText(minutes)}` : ""}
         </div>
         {exercises.data && (
           <ul className="mt-1 space-y-0.5 text-sm text-stone-600">
