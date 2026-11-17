@@ -45,12 +45,20 @@ def test_owner_reads_an_uploaded_screenshot(client: TestClient, monkeypatch: pyt
     assert client.post("/api/peloton/read", json={"key": "main/missing"}).status_code == 404
 
 
-def test_reading_is_off_in_demos_and_without_a_key(client: TestClient, guest: TestClient, monkeypatch: pytest.MonkeyPatch) -> None:
+def test_reading_is_off_without_a_key(client: TestClient, monkeypatch: pytest.MonkeyPatch) -> None:
     storage.put("main/shot1.img", b"\xff\xd8 fake jpeg", "image/jpeg")
     monkeypatch.delenv("GROQ_API_KEY", raising=False)
     assert client.post("/api/peloton/read", json={"key": "main/shot1"}).status_code == 503
+
+
+def test_guests_read_screenshots_up_to_a_daily_cap(guest: TestClient, monkeypatch: pytest.MonkeyPatch) -> None:
+    # Visitors get the same experience (Sergio, 2026-11-17); a cap keeps the bill small.
+    from app import ai_limits
+    storage.put("main/shot1.img", b"\xff\xd8 fake jpeg", "image/jpeg")
     fake_groq(monkeypatch, SCREEN)
-    assert guest.post("/api/peloton/read", json={"key": "main/shot1"}).status_code == 503
+    for _ in range(ai_limits.PER_DEMO_PER_DAY):
+        assert guest.post("/api/peloton/read", json={"key": "main/shot1"}).json()["outputKj"] == 526
+    assert guest.post("/api/peloton/read", json={"key": "main/shot1"}).status_code == 429
 
 
 def test_days_with_a_ride_or_run_count_as_cardio(client: TestClient) -> None:

@@ -3,7 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { useEffect, useRef, useState } from "react";
 
 import { api, type CueSection, type Entry, type Exercise, type Note, type Photo, type Problem, type Role, type Scheme, type SetData, type Streak } from "../api";
-import { useAddNote, useExerciseSummary, useSession, useUpdateNote } from "../hooks";
+import { useAddNote, useExerciseSummary, useUpdateNote } from "../hooks";
 import { ladderWeights, nextSet, reachesTarget, schemeText, summarizeSets, weightText } from "../lib/sets";
 import { clearDraft, loadDraft, saveDraft } from "../lib/drafts";
 import { pelotonStats } from "../lib/kinds";
@@ -506,12 +506,10 @@ function RunLog({ entry, exercise, onChange }: { entry: Entry; exercise: Exercis
 
 /**
  * A Peloton class is its summary screenshot (Sergio, 2026-11-17: no typing). The photo is attached
- * right away; then the stats are read from it (owner only, like the cue check) and fill in the
+ * right away; then the stats are read from it (in demos too: visitors get the same app) and fill in the
  * distance and time when those are still empty.
  */
 function PelotonScreenshot({ entry, onChange }: { entry: Entry; onChange: (e: Entry) => void }) {
-  const session = useSession();
-  const owner = session.data?.role === "owner";
   const [reading, setReading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   // The card may re-render while the screenshot is read: build on its latest version.
@@ -523,7 +521,6 @@ function PelotonScreenshot({ entry, onChange }: { entry: Entry; onChange: (e: En
     // A record of the ride, kept apart from the setup photos (Sergio, 2026-11-17).
     const withPhoto = { ...latest.current.entry, photos: [...(latest.current.entry.photos ?? []), { ...photo, kind: "screenshot" as const }] };
     latest.current.onChange(withPhoto);
-    if (!owner) return;
     setReading(true);
     setError(null);
     try {
@@ -567,7 +564,6 @@ function PelotonScreenshot({ entry, onChange }: { entry: Entry; onChange: (e: En
         <PhotoButton label={stats ? "Add another screenshot" : "Add the Peloton screenshot"} onAdded={(p) => void added(p)} />
       )}
       {error && <p className="text-sm text-red-600">{error}</p>}
-      {!owner && !stats && <p className="text-xs text-stone-500">In the demo the screenshot is saved as a photo; Sergio's app also reads the stats from it.</p>}
     </div>
   );
 }

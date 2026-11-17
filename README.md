@@ -76,7 +76,8 @@ cd frontend && npm test && npm run build
   owner, and never copied into the repo.
 - On AWS, secrets live in SSM Parameter Store (SecureString) and the API only accepts requests
   that come through CloudFront.
-- Two optional AI features on Groq, owner-only, off without `GROQ_API_KEY`: when a note is
+- Two optional AI features on Groq, off without `GROQ_API_KEY`; guest demos get them too, capped
+  per demo and per day: when a note is
   written on an exercise, the API sends that note and the exercise's current cues to gpt-oss-120b,
   which suggests adding or rewording a cue (the owner accepts or ignores it; nothing changes on its
   own); and a Peloton class summary screenshot is sent to qwen/qwen3.8-27b, which returns the class

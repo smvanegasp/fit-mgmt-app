@@ -4,10 +4,9 @@ import httpx
 from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel, Field
 
-from app import peloton, storage
+from app import ai_limits, peloton, storage
 from app.models import Peloton
 from app.routers.photos import can_read, object_keys
-from app.sandbox import OWNER_SPACE
 from app.space import current_space
 
 log = logging.getLogger(__name__)
@@ -22,15 +21,13 @@ class ReadBody(BaseModel):
 
 @router.post("/read")
 def read_screenshot(body: ReadBody, space: str = Depends(current_space)) -> Peloton:
-    """A Peloton summary screenshot -> the class stats. Off in guest demos (each read is a paid
-    call): the photo is still attached."""
-    if space != OWNER_SPACE:
-        raise HTTPException(status.HTTP_503_SERVICE_UNAVAILABLE, "Reading screenshots is off in demos")
+    """A Peloton summary screenshot -> the class stats. On in demos too (capped, app/ai_limits.py)."""
     if not can_read(space, body.key):
         raise HTTPException(status.HTTP_404_NOT_FOUND, "Photo not found")
     found = storage.get(object_keys(body.key)[0])
     if found is None:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "Photo not found")
+    ai_limits.check("peloton", space)
     try:
         return peloton.read(found[0])
     except peloton.PelotonOff:

@@ -43,7 +43,8 @@ A mobile-first web app where Sergio logs their gym workouts and sees their progr
   (one line per cue, newest wording only).
 - **Everything in English** (Sergio insists): imported notes go through `private/note_translations.json`
   and cues through `cueTranslations`; never show Spanish in the UI (originals are stored, not shown).
-- **Units:** pounds (lb). **Two AI features**, both on Groq, owner-only and off without
+- **Units:** pounds (lb). **Two AI features**, both on Groq, on for the owner and in demos (Sergio, 2026-11-17: visitors get the
+  same experience; demos are capped in `app/ai_limits.py`), off without
   `GROQ_API_KEY`: the **cue check** (Sergio, 2026-10-30): when a note is written on an exercise,
   gpt-oss-120b (`app/cue_check.py`) suggests adding a cue or rewording one, using only Sergio's words;
   nothing changes until they accept. **Peloton screenshots** (Sergio, 2026-11-17: "I just want to add a
@@ -318,8 +319,8 @@ frontend/
 | Health | `GET /health` (no session needed) |
 | Public | `GET /public/summary` (no session; the welcome page): training days `{date, type}` and the main lifts' current targets only |
 | Feedback | `POST /feedback {text, page}` (owner or guest; 10/hour per IP, 200/day) · `GET /feedback` · `PATCH /feedback/{id} {status}` (owner only). Stored in `SPACE#feedback`, outside every sandbox, no TTL |
-| Session | `GET /session` · `POST /session/guest` · `POST /session/guest/reset[?sample=true]` · `POST /session/owner {passcode}` · `DELETE /session`. Everything else needs a session (401). Demos: 20/hour per IP (1000 locally), 500/hour total; 3 wrong passcodes pause owner login on that network for an hour (10/hour globally); guests upload at most 40 photos a day; the cue check is owner-only |
-| Peloton | `POST /peloton/read {key}` (an uploaded photo -> `{discipline?, title?, instructor?, minutes?, outputKj?, distanceMi?, calories?, avgWatts?, avgCadence?, avgResistance?, avgSpeedMph?}`; owner only, 503 in demos or without `GROQ_API_KEY`, 502 + "Peloton read failed" log line when Groq fails) |
+| Session | `GET /session` · `POST /session/guest` · `POST /session/guest/reset[?sample=true]` · `POST /session/owner {passcode}` · `DELETE /session`. Everything else needs a session (401). Demos: 20/hour per IP (1000 locally), 500/hour total; 3 wrong passcodes pause owner login on that network for an hour (10/hour globally); guests upload at most 40 photos a day; the cue check and Peloton reads: 20 a day per demo each, 300 a day across all demos (429 past that) |
+| Peloton | `POST /peloton/read {key}` (an uploaded photo -> `{discipline?, title?, instructor?, minutes?, outputKj?, distanceMi?, calories?, avgWatts?, avgCadence?, avgResistance?, avgSpeedMph?}`; capped in demos, 503 without `GROQ_API_KEY`, 502 + "Peloton read failed" log line when Groq fails) |
 | Progress | `GET /progress` (days with day type and `cardio`; the main lifts' progression ladders; routine eras newest first with their workouts) · `GET /exercises/{id}/progress` (one exercise's ladder: `steps` of `{scheme, sessions, times}`, oldest first) |
 | Day types | `GET /session-types` (label, usual exercises in order, last date, sessions) |
 | Exercise page | `GET /exercises/{id}/history` (sessions newest first, all photos, best set) · `PATCH /exercises/{id} {name?, group?}` (old name stays an alias) · `POST /exercises/{id}/merge {into}` (sessions and cues move; the duplicate is hidden) |

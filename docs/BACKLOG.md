@@ -69,6 +69,11 @@ Stage 9: the first round of in-app feedback (19 notes from Sergio, 2026-11-02 to
     treadmill; last time's preselected) and the workout starts with the warm-up and that one, not all
     of them. Other day types keep their full usual list (Sergio likes it there). Cardio is always
     offered as a day type now (part of the weekly goal).
+- **Feedback round 3 on 9d (Sergio, same day):** a screenshot didn't get read because their phone had
+  logged out and was in a visitor demo, where reading was off. Sergio: visitors should get the same
+  experience. Both AI features (screenshot reading and the cue check) are now on in demos, capped at
+  20 calls a day per demo and 300 a day across all demos (`app/ai_limits.py`); the owner has no cap.
+  Tested end to end in a demo: upload, read, stats shown, distance and time filled in.
 
 ## Stage 9c: what's in it (2026-11-17)
 
