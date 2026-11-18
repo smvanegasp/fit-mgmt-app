@@ -60,6 +60,12 @@ components; the rest of the look is a token remap in its `styles.css`.
   page, a workout in progress). Not tested: the milestone congrats in a real browser (unit-tested
   only), Sergio's phone.
 
+### Feedback round 1 on 10a (Sergio, 2026-11-17)
+
+| Item | Done |
+|---|---|
+| On the iPhone (Chrome, so WebKit), an exercise opened from Progress, or from a workout opened in History, didn't cover the screen: the page under it still showed. Not reproduced in Chromium or WebKit emulation. | The two iOS-sensitive pieces of the redesign are gone: the grain no longer uses `mix-blend-mode: overlay` (plain gray noise at lower opacity, same look in screenshots) and the body gradient no longer uses `background-attachment: fixed`. Waiting for Sergio's phone check. |
+
 ### Stage 9 (done): the first round of in-app feedback
 
 19 notes from Sergio, 2026-11-02 to 11-17, agreed 2026-11-17, in four PRs.

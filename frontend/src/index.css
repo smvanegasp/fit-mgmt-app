@@ -67,10 +67,13 @@ body {
   background-image:
     radial-gradient(120% 60% at 50% -10%, var(--ember-haze), transparent 60%),
     radial-gradient(80% 50% at 100% 110%, var(--steel-haze), transparent 60%);
-  background-attachment: fixed;
+  /* No background-attachment: fixed, and no blend mode on the grain below: on iPhones (Safari and
+     Chrome, both WebKit) they made full-screen pages (an exercise, a workout) show the page under
+     them (Sergio, 2026-11-17). */
 }
 
-/* Film grain over everything; pointer-events none so it never blocks a tap. */
+/* Film grain over everything: gray noise, plainly translucent; pointer-events none so it never
+   blocks a tap. */
 body::after {
   content: "";
   position: fixed;
@@ -78,8 +81,7 @@ body::after {
   z-index: 60;
   pointer-events: none;
   opacity: var(--grain);
-  mix-blend-mode: overlay;
-  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='160' height='160'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='3' stitchTiles='stitch'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>");
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='160' height='160'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='3' stitchTiles='stitch'/><feColorMatrix type='saturate' values='0'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>");
 }
 
 /* Headings in the display face read like a tour poster: all caps, a little tracked. Anton has one
@@ -117,7 +119,7 @@ body::after {
   --chart-cardio: #8a847e;
   /* Past targets in the progression ladders, behind the current one. */
   --glyph-faded: 0.6;
-  --grain: 0.06;
+  --grain: 0.045;
   --ember: oklch(0.55 0.2 27);
   --ember-glow: oklch(0.6 0.22 27 / 0.7);
   --ember-haze: oklch(0.55 0.2 27 / 0.08);
@@ -160,7 +162,7 @@ body::after {
   --chart-pull: #3a7fe6;
   --chart-cardio: #8a8a8a;
   --glyph-faded: 0.4;
-  --grain: 0.08;
+  --grain: 0.035;
   --ember: oklch(0.62 0.22 27);
   --ember-haze: transparent;
   --steel-haze: oklch(0.55 0.06 230 / 0.08);
