@@ -26,8 +26,8 @@ Sergio merges.
 
 ## Now
 
-**Stage 10a** is merged and live (#32). The iPhone Home Screen fix is merged (#33). So are the landscape rail and
-weekday letters (#34). Open: #35 (`welcome-no-goal-line`).
+Nothing open (2026-11-18): stage 10a and its follow-ups are merged and live (#32-#36). New requests
+come from Sergio or the in-app feedback (`scripts/feedback.py`, 0 new at handoff).
 
 ## Stage 10a: the Lovable redesign (2026-11-17)
 
@@ -68,6 +68,7 @@ components; the rest of the look is a token remap in its `styles.css`.
 | In the Home Screen app on the iPhone, an exercise opened from Progress, or from a workout opened in History, left the strip behind the clock showing the page under it (fine in a browser tab, so not reproducible in emulation). | iOS paints that strip from the topmost fixed layer at the top edge; the grain (fixed, see-through, over everything) was that layer. The grain now sits under full-screen pages, the tabs bar, sheets and celebrations (z-25), so an open page is topmost again. Also dropped: the grain's blend mode and the fixed background (both iOS-sensitive). Sergio confirmed it on the phone; #33. |
 | Phone turned sideways: the rail's tab labels were cut off (the redesign's tracked uppercase labels are wider than the 60 px rail). | The rail is 72 px; in landscape the labels are 0.6rem with lighter tracking (still uppercase), and the current tab has the desktop sidebar's left marker. |
 | Welcome page, training days: only every other weekday was labeled, and the red line under weeks wasn't explained. | All seven weekday letters (also on the desktop Progress heatmap, same component). The goal line is gone from the welcome chart (Sergio, after trying a caption: confusing there); Progress keeps it with its caption. |
+| Welcome page: use Sergio's own pick for the header photo. | `frontend/src/assets/hardcore-gym.jpg` (their PNG as a 1600 px grayscale JPEG, 294 KB) replaces the Lovable photo; crop and fade unchanged; #36. |
 
 ### Stage 9 (done): the first round of in-app feedback
 
