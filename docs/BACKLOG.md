@@ -26,7 +26,7 @@ Sergio merges.
 
 ## Now
 
-Nothing open (2026-11-18): stage 10a and its follow-ups are merged and live (#32-#36). New requests
+Nothing open (2026-11-18): stage 10a and its follow-ups are merged and live (#32-#38). New requests
 come from Sergio or the in-app feedback (`scripts/feedback.py`, 0 new at handoff).
 
 ## Stage 10a: the Lovable redesign (2026-11-17)
