@@ -48,7 +48,7 @@ export function WelcomePage() {
   const data = summary.data && summary.data.days.length > 0 ? summary.data : null;
 
   const header = (
-    <header className="relative -mx-6 overflow-hidden px-6 pt-[max(1.5rem,env(safe-area-inset-top))] pb-3 lg:mx-0 lg:px-6 lg:pt-6">
+    <header className="relative -mx-6 overflow-hidden px-6 pt-[calc(env(safe-area-inset-top)+1.5rem)] pb-3 lg:mx-0 lg:px-6 lg:pt-6">
       <img src={gymPhoto} alt="" width={1600} height={1067} className="absolute inset-0 h-full w-full object-cover object-[42%_50%] contrast-110 brightness-125 grayscale" />
       <div aria-hidden className="absolute inset-0 bg-gradient-to-t from-stone-50 via-transparent to-stone-50/40" />
       {/* A deeper pool along the bottom: the mark always has dark ground under it. */}

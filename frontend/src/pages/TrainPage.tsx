@@ -316,7 +316,7 @@ function ActiveWorkout({ initial }: { initial: WorkoutBody }) {
 
   return (
     <div className="pb-28">
-      <header className="sticky top-0 z-10 -mx-4 mb-3 border-b border-stone-200 bg-stone-50/95 px-4 pt-[max(0.75rem,env(safe-area-inset-top))] pb-3 backdrop-blur land:pt-2 land:pb-2">
+      <header className="sticky top-0 z-10 -mx-4 mb-3 border-b border-stone-200 bg-stone-50/95 px-4 pt-[calc(env(safe-area-inset-top)+0.75rem)] pb-3 backdrop-blur land:pt-2 land:pb-2">
         <div className="flex items-center gap-2">
           <Stopwatch body={body} onLap={() => lap()} lapsOpen={lapsOpen} onToggleLaps={() => setLapsOpen(!lapsOpen)} />
           <button

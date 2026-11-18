@@ -10,6 +10,9 @@
     <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
     <link rel="manifest" href="/manifest.json" />
     <meta name="apple-mobile-web-app-title" content="Gym" />
+    <!-- Home Screen app: the page runs up under the clock (the welcome photo reaches the top edge).
+         Every top edge pads with env(safe-area-inset-top), so nothing sits under the clock. -->
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
     <script>
       // Apply dark mode before the first paint (no white flash). Same logic as src/lib/theme.ts.
       try {
