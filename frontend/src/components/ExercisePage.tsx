@@ -3,7 +3,7 @@ import { useState } from "react";
 
 import type { Exercise, Group } from "../api";
 import { useExerciseHistory, useExerciseProgress, useExerciseSummary, useExercises, useMergeExercise, useUpdateExercise } from "../hooks";
-import { topSeries } from "../lib/series";
+import { mainSessions, topSeries } from "../lib/series";
 import { dayType, summarizeSets, weightText } from "../lib/sets";
 import { friendlyDate, localIso } from "../lib/time";
 import { BottomSheet } from "./BottomSheet";
@@ -31,6 +31,8 @@ export function ExercisePage({ exerciseId, onClose }: { exerciseId: string; onCl
   const best = history.data?.best;
   const today = localIso().slice(0, 10);
   const series = exercise ? topSeries(sessions, exercise) : null;
+  // Sessions done second (lighter) are left out of a main lift's line.
+  const onlyFirst = mainSessions(sessions).length < sessions.length;
 
   return (
     <Screen
@@ -72,7 +74,7 @@ export function ExercisePage({ exerciseId, onClose }: { exerciseId: string; onCl
           {series && series.points.length >= 2 && (
             <section className="rounded-2xl border border-stone-200 bg-white p-4">
               <h2 className="font-semibold">{series.title}</h2>
-              <p className="mb-2 text-xs text-stone-500">Every session since {monthYear(series.points[0].date)} · tap a point to open it</p>
+              <p className="mb-2 text-xs text-stone-500">{onlyFirst ? "Every session as the day's first lift" : "Every session"} since {monthYear(series.points[0].date)} · tap a point to open it</p>
               <LineChart points={series.points} format={series.format} color={groupColor(exercise.group)} label={series.title}
                 onOpen={screens.openWorkout} />
             </section>

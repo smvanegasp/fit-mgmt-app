@@ -1,5 +1,7 @@
 import { useState } from "react";
 
+import dreamGym from "../assets/bw-dream-gym.jpg";
+
 import type { PublicSummary } from "../api";
 import { Heatmap } from "../components/Heatmap";
 import { Logo } from "../components/Logo";
@@ -46,17 +48,20 @@ export function WelcomePage() {
   const data = summary.data && summary.data.days.length > 0 ? summary.data : null;
 
   const header = (
-    <header>
-      <div className="flex items-center gap-3">
-        <Logo size={48} />
-        <h1 className="font-display text-5xl leading-none font-bold">Gym</h1>
+    <header className="relative -mx-6 overflow-hidden px-6 pt-[max(1.5rem,env(safe-area-inset-top))] pb-3 lg:mx-0 lg:px-6 lg:pt-6">
+      <img src={dreamGym} alt="" width={1600} height={1104} className="absolute inset-0 h-full w-full object-cover object-[42%_50%] contrast-110 brightness-125 grayscale" />
+      <div aria-hidden className="absolute inset-0 bg-gradient-to-t from-stone-50 via-transparent to-stone-50/40" />
+      {/* A deeper pool along the bottom: the mark always has dark ground under it. */}
+      <div aria-hidden className="absolute inset-x-0 bottom-0 h-2/3 bg-gradient-to-t from-stone-50 via-stone-50/45 to-transparent" />
+      <div className="rise-in relative flex h-36 items-end justify-start gap-3 lg:h-44">
+        <Logo size={36} className="mark-lift h-9 w-9 lg:h-12 lg:w-12" />
+        <h1 className="mark-lift font-display text-4xl uppercase leading-none tracking-[0.14em] text-stone-950 lg:text-5xl">Gym</h1>
       </div>
-      <p className="mt-2 text-stone-600">Sergio's training log, every workout since September 2025.</p>
     </header>
   );
   const note = (
     <div className="flex items-start gap-3 rounded-2xl border border-stone-200 bg-white p-3">
-      <img src="/sergio.jpg" alt="Sergio" width={48} height={48} className="h-12 w-12 shrink-0 rounded-full object-cover" />
+      <img src="/sergio.jpg" alt="Sergio" width={48} height={48} className="h-12 w-12 shrink-0 rounded-full object-cover ring-1 ring-stone-400 grayscale contrast-125" />
       <p className="text-sm text-stone-700">
         <b>Hi, I'm Sergio!</b> For 12 years, calisthenics and weightlifting have been one of the big rocks in my life.
         I use this app to log every workout and see my progress. Take a look!
@@ -90,7 +95,7 @@ export function WelcomePage() {
           </div>
         </div>
       ) : (
-        <div className="mx-auto max-w-lg space-y-6 px-6 pt-[max(1.5rem,env(safe-area-inset-top))]">
+        <div className="mx-auto max-w-lg space-y-6 px-6">
           {header}
           {data && <Stats data={data} today={today} />}
           {data && <TrainingDays data={data} today={today} />}

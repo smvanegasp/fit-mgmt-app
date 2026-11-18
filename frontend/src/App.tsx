@@ -76,16 +76,18 @@ function MainApp({ session }: { session: SessionInfo }) {
           </main>
 
           {/* Bottom tabs on phones and tablets; a rail on a phone turned sideways; a sidebar on computers. */}
-          <nav className="fixed inset-x-0 bottom-0 z-30 border-t border-stone-200 bg-white pb-[env(safe-area-inset-bottom)] land:inset-y-0 land:right-auto land:w-[calc(3.75rem+env(safe-area-inset-left)*0.75)] land:border-t-0 land:border-r land:pb-0 land:pl-[calc(env(safe-area-inset-left)*0.75)] lg:inset-y-0 lg:right-auto lg:w-56 lg:border-t-0 lg:border-r lg:pb-0">
-            <div className="hidden items-center gap-2.5 px-5 pt-8 pb-6 font-display text-2xl font-bold lg:flex"><Logo size={32} /> Gym</div>
+          <nav className="fixed inset-x-0 bottom-0 z-30 border-t border-stone-200 bg-stone-50/90 backdrop-blur pb-[env(safe-area-inset-bottom)] land:inset-y-0 land:right-auto land:w-[calc(3.75rem+env(safe-area-inset-left)*0.75)] land:border-t-0 land:border-r land:pb-0 land:pl-[calc(env(safe-area-inset-left)*0.75)] lg:inset-y-0 lg:right-auto lg:w-56 lg:border-t-0 lg:border-r lg:pb-0">
+            <div className="hidden px-5 pt-8 pb-6 lg:block">
+              <div className="flex items-center gap-3"><Logo size={36} /><span className="font-display text-3xl leading-none text-stone-950">Gym</span></div>
+            </div>
             <div className="mx-auto grid max-w-lg grid-cols-4 land:flex land:h-full land:flex-col land:justify-center land:gap-1 lg:mx-0 lg:flex lg:h-auto lg:max-w-none lg:flex-col lg:justify-start lg:gap-1 lg:px-3">
               {TABS.map((t) => (
                 <button
                   key={t.id}
                   onClick={() => setTab(t.id)}
                   aria-current={tab === t.id ? "page" : undefined}
-                  className={`flex flex-col items-center py-2 text-xs font-medium lg:flex-row lg:gap-3 lg:rounded-xl lg:px-3 lg:py-2.5 lg:text-sm ${
-                    tab === t.id ? "text-blue-700 lg:bg-blue-50" : "text-stone-500 lg:hover:bg-stone-100"
+                  className={`relative flex flex-col items-center py-2 text-[0.7rem] font-semibold tracking-[0.15em] uppercase transition-colors lg:flex-row lg:gap-3 lg:border-l-2 lg:px-3 lg:py-2.5 lg:text-xs ${
+                    tab === t.id ? "text-stone-950 lg:border-stone-950 lg:bg-stone-100" : "text-stone-500 lg:border-transparent lg:hover:bg-stone-100 lg:hover:text-stone-800"
                   }`}
                 >
                   <t.icon size={24} weight="fill" aria-hidden className="lg:size-5" />

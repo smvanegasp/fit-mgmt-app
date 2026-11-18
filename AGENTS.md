@@ -77,20 +77,32 @@ A mobile-first web app where Sergio logs their gym workouts and sees their progr
   status (say what wasn't tested). They want to be asked what to have ready before a step that
   needs them (credentials, exports, DNS).
 - **UI style:** no emojis anywhere. Phosphor icons (`@phosphor-icons/react`, `weight="fill"`).
-  Add an `InfoTip` (copy from the pantry) wherever a feature isn't obvious. Black/charcoal dark
-  mode. Blue accent (Tailwind blue, mirrored in `index.css` for dark mode; Sergio, 2026-10-30, after
-  trying red), so it looks different from the pantry. Red is only for errors and delete.
-- **The gym's own identity** (stage 8b, Sergio 2026-10-31: "not a pantry copycat", same UX):
-  - **Logo:** the set glyph as a ladder (three columns of squares growing 2-3-4, past ones faded) on
-    blue: `public/favicon.svg`, `components/Logo.tsx`; app icons from `scripts/make-icons.mjs`.
-  - **Display font:** Barlow Condensed (self-hosted, `@fontsource/barlow-condensed`, Latin 600/700),
-    class `font-display`, only for big numbers and headings (stopwatch, steppers, targets, streak,
-    stats, page titles). Body text stays system sans.
+  Add an `InfoTip` (copy from the pantry) wherever a feature isn't obvious.
+- **The look: "Iron & Ember"** (stage 10a, Sergio 2026-11-17: designed in Lovable to give the app its
+  soul; it replaces the stage 8b blue identity). Ink-black dark mode with film grain, bone-and-ink light
+  mode, sharp corners (radii 1-4 px), one blood-red accent with cold steel and brass as secondaries.
+  - **Done by remapping Tailwind tokens** in `index.css`: the `blue-*` classes *are* the red accent,
+    `stone-*` are ink/bone, `white` is the card surface. Restyle through tokens before touching
+    component classes, and keep writing `blue-*` for the accent. Red marks progress (targets,
+    streaks, charts) as well as errors and delete.
+  - **Action buttons** (`bg-blue-600 text-white`) are overridden in `index.css` to bone on black
+    (light) and ink on bone (dark); don't "fix" `text-white`.
+  - **Logo:** a loaded barbell, side view, ink on a bone square: `public/favicon.svg` (`<g id="mark">`),
+    `components/Logo.tsx`; app icons from `scripts/make-icons.mjs`.
+  - **Fonts** (self-hosted, `@fontsource`): Anton for `font-display` (big numbers and headings: all
+    caps, one weight, so bold classes are ignored) and Archivo for body text.
+  - **Motion:** the running stopwatch glows (`ember-text`); a reached target and a streak milestone
+    flash and shake once (`breakdown`), skipped with reduced motion.
   - **Dark by default** when nothing is stored (`lib/theme.ts` and the inline script in
-    `index.html`); Automatic and Light stay in Settings. Blue buttons in dark mode have dark text on
-    purpose (the calmer dark button style); don't "fix" `text-white`.
-  - **Welcome page** leads with the live log: stats, the training-days heatmap, current targets,
-    then the note and clips; Continue / I'm Sergio stay in a bottom bar on phones.
+    `index.html`); Automatic and Light stay in Settings.
+  - **Welcome page** opens on a grayscale gym photo (`src/assets/bw-dream-gym.jpg`, AI-generated)
+    under the mark, then the live log: stats, the training-days heatmap, current targets, the note
+    and clips; Continue / I'm Sergio stay in a bottom bar on phones.
+- **The streak, up front on Train** (stage 10a): the week streak, longest, a ladder of squares to the
+  next milestone (4, 8, 12, 16, 24, 36, 52 weeks, then every 52) and what this week still needs; it
+  opens Progress. Crossing a milestone while the app is open (finishing the workout that meets the
+  week's goal) shows its own congrats. All in the frontend (`lib/streak.ts`, `components/Streak.tsx`)
+  from `/api/progress` days; nothing is stored.
 - **Python** with **uv** (`uv sync`, `uv run pytest`, `uv add`). **Node 22+** (Vite 8).
 - **Testing against the local stack:** it holds Sergio's real history, and they may be using it from their
   phone. Browser checks that write (start/finish/discard a workout, rename, merge) can collide with
@@ -131,6 +143,13 @@ A mobile-first web app where Sergio logs their gym workouts and sees their progr
 | 9b | Train flow: a workout starts with a timed warm-up and the day's usual exercises filled in (never-done ones dropped on save); only the current exercise is open (Done folds it, the rest wait as Up next); last two workouts of the day type; bigger steppers; a congrats when a set reaches the target; the picker opens on the day's usual exercises; a narrower landscape rail | #27 |
 | 9c | Workout names are the day type and first exercise ("Legs · Deadlift", computed in the app; stored labels unchanged); a top-weight (or most reps, longest hold) chart on each exercise page; body weight on Progress (log, latest, change, line; `/api/body`); shared `LineChart` | #28 |
 | 9d | Peloton: the summary screenshot (from the photo library: no more forced camera, for every photo) is read into the class stats (`entry.peloton`); Peloton ride in the catalog; output chart on the ride's page and a Peloton card on Progress; weekly goal 3 strength + 1 cardio; Sergio's three November rides added; screenshots kept apart from setup photos; a Cardio day starts with the one activity picked; both AI features on in demos (capped) | #29 |
+| 10a | The Lovable redesign ("Iron & Ember"): ink and blood-red theme through Tailwind token remaps, Anton and Archivo, sharp corners, film grain, barbell logo and icons, gym photo on the welcome page; the streak card on Train with milestones and their congrats; main lifts chart only their first-lift sessions (`role` on exercise history); a weekly ride in the sample log; re-recorded clips | (open) |
+
+**Stage 10a (open, 2026-11-17):** the Lovable redesign, on `stage-10a-redesign` waiting for Sergio's
+phone test and merge. The Lovable project (exported as a zip) mirrors `frontend/src/` in its
+`src/gym/`, with `api.ts` swapped for a localStorage mock and the theme in `src/styles.css`: to bring
+later design changes over, unzip it outside the repo and `diff -r` its `src/gym/` against
+`frontend/src/` (never copy its mock, shadcn `components/ui/` or TanStack Start files).
 
 **Where things stand (2026-11-17):** all stages (0-9d) are merged and live (PRs up to #29), and the
 weekly Dependabot updates (#23-#25) are merged too: no open PRs. Stage 9 handled the first round of
@@ -156,7 +175,7 @@ checked with the dataviz palette validator in both modes.
 **One home per thing (Sergio, 2026-10-30: "don't repeat yourself").** Each piece of information
 lives in one place and the others link to it: an exercise's progression, cues, photos and sessions
 live on its **exercise page** (the workout card and Progress link there); consistency lives on
-**Progress** (Train shows "This week: 2 of 3 · streak" linking there via `useGoTo()`); workouts
+**Progress** (Train's streak card shows the run and what this week still needs, linking there via `useGoTo()`); workouts
 live in **History** (Train shows only the last one). Prefer a link or a fold-out over a second copy.
 
 ## 4. Architecture
@@ -233,7 +252,7 @@ frontend/
                             EntryCard (set logger, drop sets, climbing, run, warm-up, notes, Done), Celebration,
                             Cues (checklist + manage sheet), ExercisePicker, Stepper,
                             Photos, BottomSheet, InfoTip (both from the pantry), ComingSoon,
-                            Progression (SetGlyph, GameDots, ProgressionLadder, LiftCard, day-type
+                            Streak (StreakCard, StreakCelebration), Progression (SetGlyph, GameDots, ProgressionLadder, LiftCard, day-type
                             colors), Nav (useGoTo: switch tabs from a page), DemoBanner, PasscodeSheet,
                             TutorialStrip (from the pantry), FeedbackSheet
   src/lib/                  pure logic + tests: sets (summaries, next set, ladder, volume, next up),
@@ -241,7 +260,7 @@ frontend/
                             workout was left running), drafts (the set being dialed in, kept on the phone), plan (what a
                             workout starts with, usual order, logged entries), series (each session's top weight / reps / hold), duration, search (fuzzy), images, theme,
                             progress (week rows and counts, streaks, step dates), cues (sections and order),
-                            kinds (drop ladders, climbing grades)
+                            kinds (drop ladders, climbing grades), streak (milestones, what the week still needs)
 ```
 
 ### Data model (DynamoDB, one table `fit`, `pk`/`sk`)
@@ -330,7 +349,7 @@ frontend/
 | Peloton | `POST /peloton/read {key}` (an uploaded photo -> `{discipline?, title?, instructor?, minutes?, outputKj?, distanceMi?, calories?, avgWatts?, avgCadence?, avgResistance?, avgSpeedMph?}`; capped in demos, 503 without `GROQ_API_KEY`, 502 + "Peloton read failed" log line when Groq fails) |
 | Progress | `GET /progress` (days with day type and `cardio`; the main lifts' progression ladders; routine eras newest first with their workouts) · `GET /exercises/{id}/progress` (one exercise's ladder: `steps` of `{scheme, sessions, times}`, oldest first) |
 | Day types | `GET /session-types` (label, usual exercises in order, last date, sessions) |
-| Exercise page | `GET /exercises/{id}/history` (sessions newest first, all photos, best set) · `PATCH /exercises/{id} {name?, group?}` (old name stays an alias) · `POST /exercises/{id}/merge {into}` (sessions and cues move; the duplicate is hidden) |
+| Exercise page | `GET /exercises/{id}/history` (sessions newest first with `role`: first lift of the day or later, all photos, best set) · `PATCH /exercises/{id} {name?, group?}` (old name stays an alias) · `POST /exercises/{id}/merge {into}` (sessions and cues move; the duplicate is hidden) |
 | Exercises | `GET /exercises` (catalog + custom, with `lastDone`, `timesDone`) · `POST /exercises` · `GET /exercises/{id}/summary[?exclude=workoutId&role=first|later]` (cues, last, streak = target game, photos, bestDrop; `role` = today's first lift or a later one) |
 | Cues | `POST /exercises/{id}/notes {text, date, section?}` · `PATCH /exercises/{id}/notes/{noteId} {text?, hidden?, section?, rank?}` · `DELETE` (same path) · `POST /exercises/{id}/cue-check {note}` (suggestion `{action: add|update|none, noteId?, text?, section?}`; 503 without `GROQ_API_KEY`) |
 | Workouts | `GET /workouts?limit=` (newest first) · `GET/PUT/DELETE /workouts/{id}` (PUT keeps id, date, source; label recomputed) |

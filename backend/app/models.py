@@ -297,6 +297,8 @@ class ExerciseSession(BaseModel):
     date: str
     label: str
     entry: Entry
+    # The day's first lift, or done later (lighter): a main lift's chart plots only its first-lift sessions.
+    role: Literal["first", "later"] | None = None
 
 
 class BestSet(BaseModel):

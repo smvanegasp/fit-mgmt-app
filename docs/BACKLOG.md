@@ -26,8 +26,39 @@ Sergio merges.
 
 ## Now
 
-Nothing open (2026-11-17): stage 9 is merged and live (#26-#29), with the Dependabot updates
-(#23-#25). New requests come from Sergio or the in-app feedback (`scripts/feedback.py`).
+**Stage 10a (`stage-10a-redesign`, open):** Sergio's Lovable redesign, integrated 2026-11-17. Waiting
+for their phone test.
+
+## Stage 10a: the Lovable redesign (2026-11-17)
+
+Sergio designed a new frontend in Lovable ("the soul of the app") on a copy of `frontend/src` with mock
+data, and asked for it to be integrated, frontend first. The Lovable code changed only a handful of
+components; the rest of the look is a token remap in its `styles.css`.
+
+- **Theme ("Iron & Ember")** in `index.css`: Tailwind's stone, blue, sky, amber, red, emerald and
+  white tokens remapped (blue is now the blood-red accent, so component classes stay), sharp radii,
+  film grain, ember glow on the running stopwatch, a flash-and-shake celebration. Lovable's shadcn
+  tokens, `tw-animate-css` and the unused blackletter font were left out.
+- **Fonts:** Anton (display) and Archivo (body), self-hosted with `@fontsource` like Barlow Condensed
+  was (Lovable loaded them from Google Fonts); Barlow is removed.
+- **Logo:** the barbell on a bone square; favicon, app icons (`make-icons.mjs` updated), theme color
+  `#0b0909`. Welcome page header on a grayscale gym photo (`src/assets/bw-dream-gym.jpg`).
+- **Streak card on Train** (replaces the "This week" link): streak, longest, a ladder to the next
+  milestone (4/8/12/16/24/36/52 weeks, then yearly), what the week still needs and the days left,
+  amber when 2 or fewer days are left and the goal isn't met. A milestone crossed while the app is
+  open gets its own congrats. Frontend only, from `/api/progress` days: no backend needed.
+- **Main lifts chart only their first-lift sessions** (a Lovable-side change: squat done second made
+  dips in the line). Needed one backend field: `role` on each `/exercises/{id}/history` session.
+- **Chart colors re-stepped:** Lovable's Pull (steel teal) was too close to Cardio gray (dE ~10) and
+  its light Legs had 2:1 contrast; now Push #c4202f / #cc2536, Legs #b07d1e / #bf8a2e, Pull #2a6fc9 /
+  #3a7fe6 (light / dark), passing the dataviz validator except the deliberate gray.
+- **Sample log** gets a Saturday Peloton ride, so sample demos meet the 3 + 1 goal and show a streak
+  (Lovable's roadmap noted the samples looked off). **Clips re-recorded** in the new look (tap marker
+  red; the History poster now uses the clip's first frame instead of a loading screen).
+- Checked: backend 104 and frontend 81 tests, build; screenshots in a sample demo at 390x844,
+  820x1180 and 1440x900 in dark and light (welcome, Train, History, Progress, Settings, an exercise
+  page, a workout in progress). Not tested: the milestone congrats in a real browser (unit-tested
+  only), Sergio's phone.
 
 ### Stage 9 (done): the first round of in-app feedback
 

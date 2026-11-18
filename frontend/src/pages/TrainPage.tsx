@@ -1,10 +1,10 @@
-import { CaretDown, CaretRight, CheckCircle, Flag, Play, Timer, X } from "@phosphor-icons/react";
+import { CaretDown, CheckCircle, Flag, Play, Timer, X } from "@phosphor-icons/react";
 import { useEffect, useRef, useState } from "react";
 
 import { api, type Workout, type WorkoutBody } from "../api";
 import { BottomSheet } from "../components/BottomSheet";
 import { InfoTip } from "../components/InfoTip";
-import { useGoTo } from "../components/Nav";
+import { StreakCard, StreakCelebration } from "../components/Streak";
 import { WorkoutCard } from "../components/WorkoutCard";
 import { useScreens } from "../components/Screens";
 import { WorkoutEditor } from "../components/WorkoutEditor";
@@ -23,19 +23,41 @@ import {
 import { formatDuration } from "../lib/duration";
 import { abandonedAt, currentLap, lapRows } from "../lib/laps";
 import { cardioOptions, isLogged, lastCardio, startingEntries } from "../lib/plan";
-import { goalText, streaks, weekCounts } from "../lib/progress";
+import { streaks } from "../lib/progress";
 import { dayType, heavyNext, nextUp, setCount } from "../lib/sets";
+import { milestoneCrossed } from "../lib/streak";
 import { clockTime, friendlyDate, localIso, secondsBetween } from "../lib/time";
-import { weekStart } from "../lib/weeks";
 
 export function TrainPage() {
   const active = useActive();
   const screens = useScreens();
   const [ended, dismiss] = useAutoFinish(active.data);
+  const progress = useProgress();
+  // The congrats for crossing a streak milestone: fired once, when the run goes past one.
+  const [milestone, setMilestone] = useState<number | null>(null);
+  const seen = useRef<number | null>(null);
+
+  useEffect(() => {
+    const days = progress.data?.days;
+    if (!days) return;
+    const now = streaks(days, localIso().slice(0, 10)).current;
+    const hit = seen.current === null ? null : milestoneCrossed(seen.current, now);
+    seen.current = now;
+    if (hit) setMilestone(hit);
+  }, [progress.data]);
+
+  const congrats = milestone ? <StreakCelebration weeks={milestone} onClose={() => setMilestone(null)} /> : null;
 
   if (active.isLoading) return null;
   if (active.error) return <p className="mt-16 text-center text-red-600">Couldn't load: {active.error.message}</p>;
-  if (active.data) return <ActiveWorkout initial={active.data} />;
+  if (active.data) {
+    return (
+      <>
+        <ActiveWorkout initial={active.data} />
+        {congrats}
+      </>
+    );
+  }
   return (
     <>
       {ended && (
@@ -52,6 +74,7 @@ export function TrainPage() {
         </div>
       )}
       <Idle onOpen={(w) => screens.openWorkout(w.id)} />
+      {congrats}
     </>
   );
 }
@@ -107,6 +130,7 @@ function Idle({ onOpen }: { onOpen: (w: Workout) => void }) {
   const workouts = useWorkouts(30);
   const types = useSessionTypes();
   const exercises = useExercises();
+  const progress = useProgress();
   const dayTypes = useDayTypes();
   const today = localIso().slice(0, 10);
   const suggestion = workouts.data ? nextUp(workouts.data, today) : null;
@@ -127,6 +151,11 @@ function Idle({ onOpen }: { onOpen: (w: Workout) => void }) {
 
   return (
     <div className="pb-28">
+      {progress.data && (
+        <div className="mt-6">
+          <StreakCard days={progress.data.days} today={today} />
+        </div>
+      )}
       <section className="mt-6">
         <h2 className="font-display text-3xl font-bold">Ready to train</h2>
         <p className="mt-1 flex items-center gap-1 text-stone-600">
@@ -191,33 +220,11 @@ function Idle({ onOpen }: { onOpen: (w: Workout) => void }) {
 
       {last.length > 0 && (
         <section className="mt-10 space-y-2">
-          <WeekLink today={today} />
           <h2 className="pt-2 text-sm font-semibold tracking-wide text-stone-500 uppercase">{ofType.length > 0 ? `Last ${plan} workouts` : "Last workouts"}</h2>
           {last.map((w) => <WorkoutCard key={w.id} workout={w} onClick={() => onOpen(w)} />)}
         </section>
       )}
     </div>
-  );
-}
-
-/** This week against the goal and the streak, linking to Progress (where the detail lives). */
-function WeekLink({ today }: { today: string }) {
-  const progress = useProgress();
-  const goTo = useGoTo();
-  const days = progress.data?.days;
-  if (!days) return null;
-  const monday = weekStart(today);
-  const thisWeek = goalText(monday, weekCounts(days).get(monday));
-  const streak = streaks(days, today).current;
-  return (
-    <button type="button" onClick={() => goTo("progress")}
-      className="flex w-full items-center gap-3 rounded-2xl border border-stone-200 bg-white px-4 py-3 text-left">
-      <span className="min-w-0 flex-1">
-        <span className="block font-semibold">This week: {thisWeek}</span>
-        <span className="text-sm text-stone-500">{streak}-week streak</span>
-      </span>
-      <CaretRight size={16} className="shrink-0 text-stone-400" aria-hidden />
-    </button>
   );
 }
 
@@ -240,7 +247,7 @@ function Stopwatch({ body, onLap, lapsOpen, onToggleLaps }: {
   return (
     <>
       <div className="min-w-0 flex-1">
-        <div className="font-display text-4xl font-semibold tabular-nums" aria-label="Elapsed time">
+        <div className="ember-text font-display text-5xl tabular-nums" aria-label="Elapsed time">
           {formatDuration(secondsBetween(body.startedAt))}
         </div>
         <button

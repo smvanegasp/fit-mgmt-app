@@ -29,7 +29,7 @@ const TAP_OVERLAY = () => {
     style.textContent = `
       [data-demo-banner] { display: none !important; }
       .tap-dot { position: fixed; z-index: 9999; width: 44px; height: 44px; margin: -22px 0 0 -22px;
-        border-radius: 50%; background: rgba(37, 99, 235, .35); border: 2px solid rgba(37, 99, 235, .8);
+        border-radius: 50%; background: rgba(196, 32, 47, .35); border: 2px solid rgba(196, 32, 47, .85);
         pointer-events: none; animation: tap .6s ease-out forwards; }
       @keyframes tap { from { transform: scale(.4); opacity: 1 } to { transform: scale(1.2); opacity: 0 } }`;
     document.head.append(style);
@@ -97,6 +97,8 @@ const CLIPS = [
   },
   {
     id: "history",
+    // A quick clip: by 0.8 s the workout is already loading, so the poster is the list.
+    poster: 0.1,
     async run(page) {
       await open(page, tab(page, "History"));
       await tap(page, tab(page, "History"), 1100);
@@ -137,14 +139,14 @@ async function record(browser, clip, workDir) {
   return { raw, trimStart };
 }
 
-function encode(id, raw, trimStart) {
+function encode(id, raw, trimStart, posterAt = 0.8) {
   const mp4 = join(OUT, `${id}.mp4`);
   const poster = join(OUT, `${id}.jpg`);
   const ffmpeg = (...args) => execFileSync("ffmpeg", ["-y", "-loglevel", "error", ...args]);
   ffmpeg("-ss", String(trimStart), "-i", raw, "-vf", `setpts=PTS/${SPEED},fps=30`, "-c:v", "libx264",
     // Short keyframe interval keeps looping and starting playback smooth on phones.
     "-preset", "slow", "-crf", "26", "-g", "30", "-pix_fmt", "yuv420p", "-movflags", "+faststart", "-an", mp4);
-  ffmpeg("-ss", "0.8", "-i", mp4, "-frames:v", "1", "-q:v", "4", poster);
+  ffmpeg("-ss", String(posterAt), "-i", mp4, "-frames:v", "1", "-q:v", "4", poster);
   return mp4;
 }
 
@@ -155,7 +157,7 @@ try {
   for (const clip of CLIPS) {
     process.stdout.write(`Recording ${clip.id}… `);
     const { raw, trimStart } = await record(browser, clip, workDir);
-    console.log(`-> ${encode(clip.id, raw, trimStart)}`);
+    console.log(`-> ${encode(clip.id, raw, trimStart, clip.poster)}`);
   }
 } finally {
   await browser.close();

@@ -1,20 +1,50 @@
 @import "tailwindcss";
-/* The display face for big numbers and headings (Sergio, 2026-10-31: the gym's own look; body text
-   stays system sans). Self-hosted from npm, so no third-party request. */
-@import "@fontsource/barlow-condensed/latin-600.css";
-@import "@fontsource/barlow-condensed/latin-700.css";
+/* Iron & Ember (stage 10a, Sergio 2026-11-17: designed in Lovable to give the app its soul). The look
+   is a remap of Tailwind's palette tokens (stone, blue, sky, amber, red, white), so every screen's
+   classes keep working: restyle through tokens before editing component classes.
+   Fonts: Anton (display: big numbers and headings, all caps) and Archivo (body). Self-hosted from
+   npm, so no third-party request. */
+@import "@fontsource/anton/latin-400.css";
+@import "@fontsource/archivo/latin-400.css";
+@import "@fontsource/archivo/latin-500.css";
+@import "@fontsource/archivo/latin-600.css";
+@import "@fontsource/archivo/latin-700.css";
 
 /* A phone turned sideways (Sergio, 2026-11-14): little height, so the tabs become a slim rail on the
    left and the stopwatch bar gets compact. Tablets and computers are taller than this. */
 @custom-variant land (@media (orientation: landscape) and (max-height: 500px));
 
-/* The congrats on reaching a target (components/Celebration.tsx). */
+/* The congrats on reaching a target or a streak milestone (Celebration.tsx, Streak.tsx). */
 @keyframes fade-in { from { opacity: 0; } }
-@keyframes pop-in { from { opacity: 0; transform: scale(0.8); } }
-@keyframes square-in { from { opacity: 0; transform: translateY(8px) scale(0.4); } }
+@keyframes pop-in { from { opacity: 0; transform: scale(1.25); filter: blur(6px); } }
+@keyframes square-in { from { opacity: 0; transform: translateY(-14px) scale(1.6); } }
+/* The breakdown: the screen hits once, hard. */
+@keyframes breakdown {
+  0%, 100% { transform: translate(0, 0); }
+  10% { transform: translate(-6px, 3px) rotate(-0.6deg); }
+  20% { transform: translate(5px, -4px) rotate(0.5deg); }
+  30% { transform: translate(-4px, 2px); }
+  40% { transform: translate(3px, -1px); }
+  55% { transform: translate(-1px, 1px); }
+}
+@keyframes flash { 0% { opacity: 0.85; } 100% { opacity: 0; } }
+/* The running stopwatch glows slowly. */
+@keyframes ember-pulse {
+  0%, 100% { text-shadow: 0 0 0 transparent; }
+  50% { text-shadow: 0 0 18px var(--ember-glow); }
+}
+@keyframes rise { from { opacity: 0; transform: translateY(10px); } }
 
 @theme {
-  --font-display: "Barlow Condensed", system-ui, sans-serif;
+  --font-display: "Anton", Impact, "Arial Narrow", sans-serif;
+  --font-sans: "Archivo", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  /* Hard edges: cards, buttons and sheets are cut, not molded. */
+  --radius-sm: 1px;
+  --radius-md: 2px;
+  --radius-lg: 2px;
+  --radius-xl: 3px;
+  --radius-2xl: 3px;
+  --radius-3xl: 4px;
 }
 
 html {
@@ -33,104 +63,192 @@ html {
 
 body {
   @apply bg-stone-50 text-stone-900 antialiased;
-  font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  font-family: var(--font-sans);
+  background-image:
+    radial-gradient(120% 60% at 50% -10%, var(--ember-haze), transparent 60%),
+    radial-gradient(80% 50% at 100% 110%, var(--steel-haze), transparent 60%);
+  background-attachment: fixed;
 }
 
-/* Chart colors, one per day type (Push, Legs, Pull; Cardio is a neutral gray). Checked for color
-   blindness against the card surface in both modes with the dataviz palette validator. */
+/* Film grain over everything; pointer-events none so it never blocks a tap. */
+body::after {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  pointer-events: none;
+  opacity: var(--grain);
+  mix-blend-mode: overlay;
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='160' height='160'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='3' stitchTiles='stitch'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>");
+}
+
+/* Headings in the display face read like a tour poster: all caps, a little tracked. Anton has one
+   weight, so font-bold/semibold classes on it are ignored. */
+.font-display {
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+  font-weight: 400 !important;
+}
+
+@utility ember-text {
+  color: var(--ember);
+  animation: ember-pulse 2.4s ease-in-out infinite;
+}
+@utility rise-in {
+  animation: rise 420ms cubic-bezier(.2,.8,.2,1) both;
+}
+/* The welcome mark sits on a photo: one soft shadow lifts it off the image, no box needed. */
+@utility mark-lift {
+  filter: drop-shadow(0 10px 22px var(--mark-shadow)) drop-shadow(0 2px 5px var(--mark-shadow));
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ember-text { animation: none; }
+  .rise-in { animation: none; }
+}
+
+/* Chart colors per day type: blood (Push), bone/amber (Legs), cold steel (Pull), ash (Cardio).
+   Checked with the dataviz palette validator against the card surface in both modes (all pass but the
+   chroma floor on the deliberately gray Cardio); Lovable's first picks put Pull too close to Cardio. */
 :root {
-  --chart-push: #2a78d6;
-  --chart-legs: #eb6834;
-  --chart-pull: #1baf7a;
+  --chart-push: #c4202f;
+  --chart-legs: #b07d1e;
+  --chart-pull: #2a6fc9;
   --chart-cardio: #8a847e;
   /* Past targets in the progression ladders, behind the current one. */
-  --glyph-faded: 0.65;
+  --glyph-faded: 0.6;
+  --grain: 0.06;
+  --ember: oklch(0.55 0.2 27);
+  --ember-glow: oklch(0.6 0.22 27 / 0.7);
+  --ember-haze: oklch(0.55 0.2 27 / 0.08);
+  --steel-haze: oklch(0.6 0.05 230 / 0.06);
+  --mark-shadow: rgb(0 0 0 / 0.6);
+
+  /* Light mode: bone paper and ink. */
+  --color-stone-50: oklch(95.5% 0.012 80);
+  --color-stone-100: oklch(91% 0.012 75);
+  --color-stone-200: oklch(83% 0.012 70);
+  --color-stone-300: oklch(66% 0.01 60);
+  --color-stone-400: oklch(52% 0.01 55);
+  --color-stone-500: oklch(42% 0.01 55);
+  --color-stone-600: oklch(34% 0.01 55);
+  --color-stone-700: oklch(28% 0.01 55);
+  --color-stone-800: oklch(22% 0.01 50);
+  --color-stone-900: oklch(16% 0.01 40);
+  --color-stone-950: oklch(11% 0.01 30);
+  --color-white: oklch(98% 0.008 85);
+  /* The accent: blood red in the original blue slots, so blue-* classes keep working. */
+  --color-blue-50: oklch(94% 0.03 25);
+  --color-blue-100: oklch(88% 0.06 25);
+  --color-blue-200: oklch(80% 0.1 25);
+  --color-blue-300: oklch(70% 0.15 26);
+  --color-blue-400: oklch(60% 0.19 27);
+  --color-blue-500: oklch(53% 0.2 27);
+  --color-blue-600: oklch(48% 0.19 27);
+  --color-blue-700: oklch(42% 0.17 27);
+  --color-blue-800: oklch(35% 0.13 27);
+  --color-blue-900: oklch(28% 0.09 27);
+  --color-blue-950: oklch(20% 0.06 27);
 }
 
-/* Light mode, higher contrast (Sergio, 2026-10-30: too light to read): every gray a step darker
-   than Tailwind's, so muted labels and icons (400) reach 4.8:1 on white, secondary text (500)
-   about 7:1, and borders (200) and empty cells (100) show. Dark mode redefines these below. */
-:root {
-  --color-stone-100: oklch(93.5% 0.002 106.424);
-  --color-stone-200: oklch(86% 0.004 48.717);
-  --color-stone-300: oklch(66% 0.008 56.366);
-  --color-stone-400: oklch(55% 0.012 56.259);
-  --color-stone-500: oklch(45% 0.012 58.071);
-  --color-stone-600: oklch(38% 0.011 73.639);
-  --color-stone-700: oklch(32% 0.01 67.558);
-}
-
-:root.dark {
-  --chart-push: #3987e5;
-  --chart-legs: #d95926;
-  --chart-pull: #199e70;
-  --chart-cardio: #8a8a8a;
-  --glyph-faded: 0.45;
-}
-
-/* Dark mode: colors are mirrored (50 <-> 950, 100 <-> 900, ...), so every screen flips
-   automatically. Grays come from Tailwind's neutral palette (true black and charcoal), with a few
-   adjusted steps noted below. Generated from tailwindcss/theme.css; the "dark" class is set from
-   Settings > Appearance. */
+/* Dark (the default): black ink, ash greys and blood red. Shades mirror (50 <-> 950) so every
+   screen flips without touching its classes. The "dark" class is set from Settings > Appearance. */
 :root.dark {
   color-scheme: dark;
-  --color-stone-50: oklch(14.5% 0 none);
-  --color-stone-100: oklch(20.5% 0 none);
-  /* Borders: lighter than the surfaces so cards and buttons keep their edges. */
-  --color-stone-200: oklch(37.1% 0 none);
-  --color-stone-300: oklch(37.1% 0 none);
-  --color-stone-400: oklch(43.9% 0 none);
-  --color-stone-500: oklch(55.6% 0 none);
-  --color-stone-600: oklch(70.8% 0 none);
-  --color-stone-700: oklch(87% 0 none);
-  --color-stone-800: oklch(92.2% 0 none);
-  --color-stone-900: oklch(97% 0 none);
-  --color-stone-950: oklch(98.5% 0 none);
-  /* Accent (blue). Buttons a step calmer than a straight mirror, still high contrast. */
-  --color-blue-50: oklch(28.2% 0.091 267.935);
-  --color-blue-100: oklch(37.9% 0.146 265.522);
-  --color-blue-200: oklch(42.4% 0.199 265.638);
-  --color-blue-300: oklch(48.8% 0.243 264.376);
-  --color-blue-400: oklch(54.6% 0.245 262.881);
-  --color-blue-500: oklch(62.3% 0.214 259.815);
-  --color-blue-600: oklch(62.3% 0.214 259.815);
-  --color-blue-700: oklch(70.7% 0.165 254.624);
-  --color-blue-800: oklch(88.2% 0.059 254.128);
-  --color-blue-900: oklch(93.2% 0.032 255.585);
-  --color-blue-950: oklch(97% 0.014 254.604);
-  --color-amber-50: oklch(27.9% 0.077 45.635);
-  --color-amber-100: oklch(41.4% 0.112 45.904);
-  --color-amber-200: oklch(47.3% 0.137 46.201);
-  --color-amber-300: oklch(55.5% 0.163 48.998);
-  --color-amber-400: oklch(66.6% 0.179 58.318);
-  --color-amber-500: oklch(76.9% 0.188 70.08);
-  --color-amber-600: oklch(82.8% 0.189 84.429);
-  --color-amber-700: oklch(87.9% 0.169 91.605);
-  --color-amber-800: oklch(92.4% 0.12 95.746);
-  --color-amber-900: oklch(96.2% 0.059 95.617);
-  --color-amber-950: oklch(98.7% 0.022 95.277);
-  --color-sky-50: oklch(29.3% 0.066 243.157);
-  --color-sky-100: oklch(39.1% 0.09 240.876);
-  --color-sky-200: oklch(44.3% 0.11 240.79);
-  --color-sky-300: oklch(50% 0.134 242.749);
-  --color-sky-400: oklch(58.8% 0.158 241.966);
-  --color-sky-500: oklch(68.5% 0.169 237.323);
-  --color-sky-600: oklch(74.6% 0.16 232.661);
-  --color-sky-700: oklch(82.8% 0.111 230.318);
-  --color-sky-800: oklch(90.1% 0.058 230.902);
-  --color-sky-900: oklch(95.1% 0.026 236.824);
-  --color-sky-950: oklch(97.7% 0.013 236.62);
-  --color-red-50: oklch(25.8% 0.092 26.042);
-  --color-red-100: oklch(39.6% 0.141 25.723);
-  --color-red-200: oklch(44.4% 0.177 26.899);
-  --color-red-300: oklch(50.5% 0.213 27.518);
-  --color-red-400: oklch(57.7% 0.245 27.325);
-  --color-red-500: oklch(63.7% 0.237 25.331);
-  --color-red-600: oklch(70.4% 0.191 22.216);
-  --color-red-700: oklch(80.8% 0.114 19.571);
-  --color-red-800: oklch(88.5% 0.062 18.334);
-  --color-red-900: oklch(93.6% 0.032 17.717);
-  --color-red-950: oklch(97.1% 0.013 17.38);
-  /* Cards and selected toggles: a step above the mirrored stone-100 track. */
-  --color-white: oklch(26.9% 0 none);
+  --chart-push: #cc2536;
+  --chart-legs: #bf8a2e;
+  --chart-pull: #3a7fe6;
+  --chart-cardio: #8a8a8a;
+  --glyph-faded: 0.4;
+  --grain: 0.08;
+  --ember: oklch(0.62 0.22 27);
+  --ember-haze: transparent;
+  --steel-haze: oklch(0.55 0.06 230 / 0.08);
+
+  --color-stone-50: oklch(11% 0.004 20);
+  --color-stone-100: oklch(17% 0.005 20);
+  --color-stone-200: oklch(27% 0.006 20);
+  --color-stone-300: oklch(33% 0.006 20);
+  --color-stone-400: oklch(50% 0.006 30);
+  --color-stone-500: oklch(62% 0.006 40);
+  --color-stone-600: oklch(74% 0.006 50);
+  --color-stone-700: oklch(85% 0.006 60);
+  --color-stone-800: oklch(91% 0.006 70);
+  --color-stone-900: oklch(95% 0.008 80);
+  --color-stone-950: oklch(98% 0.008 80);
+  /* Cards: a step above the page. */
+  --color-white: oklch(15% 0.006 20);
+
+  --color-blue-50: oklch(22% 0.07 25);
+  --color-blue-100: oklch(30% 0.11 25);
+  --color-blue-200: oklch(38% 0.15 26);
+  --color-blue-300: oklch(45% 0.18 26);
+  --color-blue-400: oklch(52% 0.21 27);
+  --color-blue-500: oklch(56% 0.22 27);
+  --color-blue-600: oklch(54% 0.21 27);
+  --color-blue-700: oklch(68% 0.19 27);
+  --color-blue-800: oklch(82% 0.1 25);
+  --color-blue-900: oklch(90% 0.05 25);
+  --color-blue-950: oklch(96% 0.02 25);
+  /* Warnings: tarnished brass. */
+  --color-amber-50: oklch(22% 0.05 70);
+  --color-amber-100: oklch(32% 0.08 70);
+  --color-amber-200: oklch(40% 0.1 70);
+  --color-amber-300: oklch(52% 0.12 72);
+  --color-amber-400: oklch(64% 0.14 75);
+  --color-amber-500: oklch(74% 0.15 78);
+  --color-amber-600: oklch(80% 0.14 82);
+  --color-amber-700: oklch(86% 0.12 85);
+  --color-amber-800: oklch(91% 0.08 88);
+  --color-amber-900: oklch(95% 0.04 90);
+  --color-amber-950: oklch(98% 0.02 90);
+  /* Info: cold steel. */
+  --color-sky-50: oklch(20% 0.02 230);
+  --color-sky-100: oklch(26% 0.035 230);
+  --color-sky-200: oklch(34% 0.05 230);
+  --color-sky-300: oklch(44% 0.06 230);
+  --color-sky-400: oklch(56% 0.07 230);
+  --color-sky-500: oklch(66% 0.07 230);
+  --color-sky-600: oklch(74% 0.06 230);
+  --color-sky-700: oklch(82% 0.05 230);
+  --color-sky-800: oklch(89% 0.035 230);
+  --color-sky-900: oklch(94% 0.02 230);
+  --color-sky-950: oklch(97% 0.01 230);
+  --color-red-50: oklch(22% 0.08 22);
+  --color-red-100: oklch(32% 0.12 22);
+  --color-red-200: oklch(40% 0.16 24);
+  --color-red-300: oklch(48% 0.2 25);
+  --color-red-400: oklch(56% 0.23 26);
+  --color-red-500: oklch(63% 0.23 25);
+  --color-red-600: oklch(70% 0.19 22);
+  --color-red-700: oklch(80% 0.11 20);
+  --color-red-800: oklch(88% 0.06 18);
+  --color-red-900: oklch(93% 0.03 18);
+  --color-red-950: oklch(97% 0.01 18);
+  --color-emerald-50: oklch(22% 0.04 165);
+  --color-emerald-100: oklch(30% 0.06 165);
+  --color-emerald-600: oklch(72% 0.13 165);
+  --color-emerald-700: oklch(80% 0.11 165);
+  --color-green-50: oklch(22% 0.04 150);
+  --color-green-100: oklch(30% 0.06 150);
+  --color-green-600: oklch(72% 0.14 150);
+  --color-green-700: oklch(80% 0.12 150);
+}
+
+/* Red is kept for progress (targets, streaks, charts). Action buttons ("bg-blue-600 text-white")
+   are bone on black in light mode and ink on bone in dark: "text-white" means the label there, not
+   the card surface the white token became. */
+.bg-blue-600.text-white {
+  background-color: var(--color-stone-950);
+  color: var(--color-stone-50);
+}
+.bg-blue-600.text-white:hover { background-color: var(--color-stone-800); }
+.bg-blue-600 .text-white,
+.bg-stone-900.text-white {
+  color: oklch(98% 0.008 80);
+}
+.dark .bg-stone-900.text-white { color: var(--color-stone-50); }
+
+@layer base {
+  * { border-color: var(--color-stone-200); }
 }

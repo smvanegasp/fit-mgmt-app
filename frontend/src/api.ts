@@ -190,6 +190,8 @@ export interface ExerciseSession {
   date: string;
   label: string;
   entry: Entry;
+  /** The day's first lift, or done later (and lighter: squat after deadlift). */
+  role?: Role;
 }
 
 /** Everything for an exercise page: every session (newest first), all photos, the best set. */

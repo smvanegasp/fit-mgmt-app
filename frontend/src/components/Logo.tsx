@@ -1,14 +1,15 @@
-/** The gym's mark (same as public/favicon.svg): the set glyph as a ladder, three columns of squares
- * growing 2, 3, 4, the past ones faded and the current one solid, on a blue tile. */
+/** The gym's mark (same as public/favicon.svg): a loaded barbell, side view, cut out of a
+ * bone-white square. Reads on photos and at favicon size. */
 export function Logo({ size = 48, className = "" }: { size?: number; className?: string }) {
-  const square = (x: number, y: number) => <rect key={`${x}-${y}`} x={x} y={y} width={36} height={36} rx={7} />;
   return (
-    <svg viewBox="0 0 256 256" width={size} height={size} className={`shrink-0 ${className}`} aria-hidden>
-      <rect width={256} height={256} rx={56} fill="#2563eb" />
-      <g fill="#ffffff">
-        <g opacity={0.55}>{[176, 132].map((y) => square(62, y))}</g>
-        <g opacity={0.78}>{[176, 132, 88].map((y) => square(110, y))}</g>
-        {[176, 132, 88, 44].map((y) => square(158, y))}
+    <svg viewBox="0 0 64 64" width={size} height={size} className={`shrink-0 ${className}`} aria-hidden>
+      <rect width={64} height={64} fill="#efe9df" />
+      <g fill="#0b0909">
+        <rect x={6} y={30} width={52} height={4} />
+        <rect x={12} y={16} width={7} height={32} />
+        <rect x={20} y={21} width={5} height={22} />
+        <rect x={45} y={16} width={7} height={32} />
+        <rect x={39} y={21} width={5} height={22} />
       </g>
     </svg>
   );

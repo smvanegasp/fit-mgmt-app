@@ -1,6 +1,7 @@
 """A small sample training log for demos when the owner has none yet (and for browser tests):
-eight weeks of Push / Legs / Pull ending this week, each lift going up 5 lb after three
-sessions at a target, a few cues, weekly weigh-ins and one routine."""
+eight weeks of Push / Legs / Pull and a Saturday ride ending this week (so the weekly goal of 3
+strength + 1 cardio is met and the streak shows), each lift going up 5 lb after three sessions at a
+target, a few cues, weekly weigh-ins and one routine."""
 
 from datetime import date, timedelta
 from typing import Any
@@ -14,7 +15,10 @@ PLAN = [
     (0, "Push", [("dips", 4, 4, 70), ("bench-press", 5, 3, 95)]),
     (2, "Legs", [("squat", 5, 5, 135), ("deadlift", 3, 3, 135), ("rdl", 3, 8, 95)]),
     (4, "Pull", [("chin-ups", 4, 3, 25), ("pull-ups", 3, 8, None)]),
+    (5, "Cardio", []),
 ]
+# The Saturday ride: minutes and miles, a little farther each week.
+RIDE_MIN = 30
 CUES = {
     "squat": [("setup", "Bar on the traps, not the neck"), ("brace", "Big breath, brace, then unrack"), ("lift", "Slow on the way down")],
     "dips": [("setup", "Plates tight between the knees"), ("lift", "Stay focused on every rep")],
@@ -31,13 +35,16 @@ def sample_rows(today: date) -> dict[str, dict[str, Any]]:
             if day > today:
                 continue
             iso = day.isoformat()
-            entries = []
+            entries: list[dict[str, Any]] = []
+            if label == "Cardio":
+                entries.append({"exerciseId": "peloton-ride", "minutes": RIDE_MIN, "distanceMi": round(8.5 + 0.2 * week, 1)})
             for exercise_id, sets, reps, weight in lifts:
                 # Three sessions at a target, then 5 lb more.
                 lb = None if weight is None else weight + 5 * (week // 3)
                 entries.append({"exerciseId": exercise_id, "sets": [{"reps": reps, **({} if lb is None else {"weightLb": lb})}] * sets})
+            end = f"{iso}T18:{RIDE_MIN}:00" if label == "Cardio" else f"{iso}T19:10:00"
             rows[f"WORKOUT#{iso}#{iso}-1"] = {
-                "id": f"{iso}-1", "date": iso, "startedAt": f"{iso}T18:00:00", "endedAt": f"{iso}T19:10:00",
+                "id": f"{iso}-1", "date": iso, "startedAt": f"{iso}T18:00:00", "endedAt": end,
                 "label": label, "plan": label, "source": "app", "entries": entries,
             }
     first = start.isoformat()
@@ -55,7 +62,7 @@ def sample_rows(today: date) -> dict[str, dict[str, Any]]:
             rows[f"BODY#{day.isoformat()}"] = {"date": day.isoformat(), "weightLb": weight, "source": "app"}
     rows[f"ROUTINE#{first}#sample"] = {
         "id": "sample", "name": "3-day split", "from": first, "to": None,
-        "days": ["Push: weighted dips, bench press", "Legs: squat, deadlift, Romanian deadlift", "Pull: weighted chin-ups, pull-ups"],
+        "days": ["Push: weighted dips, bench press", "Legs: squat, deadlift, Romanian deadlift", "Pull: weighted chin-ups, pull-ups", "Cardio: Peloton ride"],
         "notes": "Up 5 lb after reaching a target three sessions in a row.", "source": "app",
     }
     return rows
