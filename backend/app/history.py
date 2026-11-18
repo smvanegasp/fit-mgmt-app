@@ -286,7 +286,8 @@ def best_set(sessions: list[tuple[str, Entry]]) -> BestSet | None:
 def exercise_history(space: str, exercise_id: str) -> ExerciseHistory:
     done = [(w, e) for w in workouts(space) if (e := merged_entry(w, exercise_id)) is not None]
     sessions = [
-        ExerciseSession(workoutId=w["id"], date=w["date"], label=w.get("label") or "Workout", entry=e)
+        ExerciseSession(workoutId=w["id"], date=w["date"], label=w.get("label") or "Workout", entry=e,
+                        role=role(w, exercise_id))
         for w, e in reversed(done)
     ]
     photos = [DatedPhoto(**p.model_dump(), date=w["date"]) for w, e in reversed(done) for p in e.photos]
