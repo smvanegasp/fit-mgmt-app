@@ -7,7 +7,8 @@ import { typeColor } from "./Progression";
 const WEEKDAYS = ["M", "T", "W", "T", "F", "S", "S"];
 
 /** Training days as a heatmap: weeks as columns (as many recent ones as fit, up to a year), Monday on
- * top, each day in its day type's color, and a blue mark under weeks that reached the goal. Shared by
+ * top (every weekday labeled), each day in its day type's color, and a red mark under weeks that
+ * reached the goal (the welcome page explains it under the chart; Progress in its caption). Shared by
  * the desktop Progress dashboard and the welcome page. Days with a workoutId open it when tapped. */
 export function Heatmap({ days, today, onOpen }: {
   days: { date: string; type: string; cardio?: boolean; workoutId?: string; label?: string }[];
@@ -33,7 +34,7 @@ export function Heatmap({ days, today, onOpen }: {
   return (
     <div ref={grid} className="flex gap-[3px]">
       <div className="mr-1 flex flex-col gap-[3px] pt-5 text-[10px] text-stone-500">
-        {WEEKDAYS.map((d, i) => <span key={i} className="h-3.5 leading-[14px]">{i % 2 === 0 ? d : ""}</span>)}
+        {WEEKDAYS.map((d, i) => <span key={i} className="h-3.5 leading-[14px]">{d}</span>)}
       </div>
       {weeks.map((week, w) => {
         const month = w === 0 || week.monday.slice(0, 7) !== weeks[w - 1].monday.slice(0, 7);
