@@ -64,7 +64,7 @@ components; the rest of the look is a token remap in its `styles.css`.
 
 | Item | Done |
 |---|---|
-| On the iPhone (Chrome, so WebKit), an exercise opened from Progress, or from a workout opened in History, didn't cover the screen: the page under it still showed. Not reproduced in Chromium or WebKit emulation. | The two iOS-sensitive pieces of the redesign are gone: the grain no longer uses `mix-blend-mode: overlay` (plain gray noise at lower opacity, same look in screenshots) and the body gradient no longer uses `background-attachment: fixed`. Waiting for Sergio's phone check. |
+| In the Home Screen app on the iPhone, an exercise opened from Progress, or from a workout opened in History, left the strip behind the clock showing the page under it (fine in a browser tab, so not reproducible in emulation). | iOS paints that strip from the topmost fixed layer at the top edge; the grain (fixed, see-through, over everything) was that layer. The grain now sits under full-screen pages, the tabs bar, sheets and celebrations (z-25), so an open page is topmost again. Also dropped: the grain's blend mode and the fixed background (both iOS-sensitive). Waiting for Sergio's phone check. |
 
 ### Stage 9 (done): the first round of in-app feedback
 
