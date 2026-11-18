@@ -8,12 +8,15 @@ const WEEKDAYS = ["M", "T", "W", "T", "F", "S", "S"];
 
 /** Training days as a heatmap: weeks as columns (as many recent ones as fit, up to a year), Monday on
  * top (every weekday labeled), each day in its day type's color, and a red mark under weeks that
- * reached the goal (the welcome page explains it under the chart; Progress in its caption). Shared by
+ * reached the goal (explained in Progress's caption; `goalMarks={false}` hides it, as on the welcome
+ * page, Sergio 2026-11-17: confusing there). Shared by
  * the desktop Progress dashboard and the welcome page. Days with a workoutId open it when tapped. */
-export function Heatmap({ days, today, onOpen }: {
+export function Heatmap({ days, today, onOpen, goalMarks = true }: {
   days: { date: string; type: string; cardio?: boolean; workoutId?: string; label?: string }[];
   today: string;
   onOpen?: (workoutId: string) => void;
+  /** The mark under weeks that reached the goal. */
+  goalMarks?: boolean;
 }) {
   const byDate = useMemo(() => new Map(days.map((d) => [d.date, d])), [days]);
   const counts = useMemo(() => weekCounts(days), [days]);
@@ -59,7 +62,7 @@ export function Heatmap({ days, today, onOpen }: {
               return <span key={day} className={`h-3.5 rounded-[3px] ${day > today || day < first ? "" : "bg-stone-100"}`} />;
             })}
             {/* The week reached the goal. */}
-            <span className={`mt-1 h-1 rounded-full ${weekMet(week.monday, count) ? "bg-blue-600" : ""}`} title={goalText(week.monday, count)} />
+            {goalMarks && <span className={`mt-1 h-1 rounded-full ${weekMet(week.monday, count) ? "bg-blue-600" : ""}`} title={goalText(week.monday, count)} />}
           </div>
         );
       })}
