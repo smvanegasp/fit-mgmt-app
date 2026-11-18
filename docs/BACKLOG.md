@@ -75,6 +75,15 @@ Stage 9: the first round of in-app feedback (19 notes from Sergio, 2026-11-02 to
   20 calls a day per demo and 300 a day across all demos (`app/ai_limits.py`); the owner has no cap.
   Tested end to end in a demo: upload, read, stats shown, distance and time filled in.
 
+## Fix after stage 9 (Sergio, 2026-11-17)
+
+- **Top-weight charts showed low points** for squat: sessions where it was done second (after
+  deadlift, lighter) were plotted. Now a main lift (the day's first lift in at least a quarter of its
+  sessions) plots only its first-lift sessions; accessories keep every session. On the real log this
+  drops squat's two second-lift days and bench's and pull-ups' lighter later sessions; RDL, overhead
+  press and other accessories are unchanged. The history API gives each session its `role`. A first-lift
+  comeback session after a break (squat 140 on 2026-03-30) still shows: it's real.
+
 ## Stage 9c: what's in it (2026-11-17)
 
 - **Data first (Sergio's OK):** the 11-14 Pull workout's end on AWS corrected to its last set (15:25,

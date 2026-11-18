@@ -1,4 +1,4 @@
-import type { Entry, Exercise } from "../api";
+import type { Entry, Exercise, Role } from "../api";
 
 export interface Point {
   /** yyyy-mm-dd */
@@ -16,6 +16,19 @@ export interface Series {
 }
 
 const WEIGHTED = new Set<Exercise["load"]>(["barbell", "dumbbell", "machine", "added"]);
+
+/** A lift that's the day's first in at least this share of its sessions is a main lift. */
+const MAIN_LIFT_SHARE = 0.25;
+
+/**
+ * For a main lift, only the sessions where it was the day's first lift (Sergio, 2026-11-17: squat
+ * done second after deadlift is lighter and made dips in the line). An exercise that's rarely first
+ * (an accessory, first once by chance) keeps all its sessions.
+ */
+export function mainSessions<T extends { role?: Role }>(sessions: T[]): T[] {
+  const first = sessions.filter((s) => s.role === "first");
+  return sessions.length > 0 && first.length / sessions.length >= MAIN_LIFT_SHARE ? first : sessions;
+}
 
 /**
  * Rides and runs (Sergio, 2026-11-17: Peloton progress): each class's total output when the
@@ -35,13 +48,13 @@ function cardioSeries(sessions: { date: string; workoutId: string; entry: Entry 
  * body-weight work the most reps in a set, or the longest hold. Sessions without that (a weighted
  * lift done at body weight, drop sets only) are left out.
  */
-export function topSeries(sessions: { date: string; workoutId: string; entry: Entry }[], exercise: Pick<Exercise, "load" | "measure" | "barLb">): Series | null {
+export function topSeries(sessions: { date: string; workoutId: string; entry: Entry; role?: Role }[], exercise: Pick<Exercise, "load" | "measure" | "barLb">): Series | null {
   if (exercise.measure === "run") return cardioSeries(sessions);
   if (exercise.measure !== "reps" && exercise.measure !== "seconds") return null;
   const weighted = WEIGHTED.has(exercise.load);
   const seconds = exercise.measure === "seconds";
   const points: Point[] = [];
-  for (const s of [...sessions].sort((a, b) => a.date.localeCompare(b.date))) {
+  for (const s of [...mainSessions(sessions)].sort((a, b) => a.date.localeCompare(b.date))) {
     const work = (s.entry.sets ?? []).filter((x) => !x.drop && !x.detail);
     const value = Math.max(0, ...work.map((x) => (weighted ? x.weightLb : seconds ? x.seconds : x.reps) ?? 0));
     if (value > 0) points.push({ date: s.date, value, workoutId: s.workoutId });
