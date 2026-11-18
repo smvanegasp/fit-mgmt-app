@@ -26,8 +26,8 @@ Sergio merges.
 
 ## Now
 
-**Stage 10a** is merged and live (#32). Open: #33 (`fix-ios-full-screen`), full-screen pages on the
-iPhone, waiting for Sergio's phone check.
+**Stage 10a** is merged and live (#32). The iPhone Home Screen fix is merged (#33). Open: #34
+(`fix-landscape-rail`), the landscape rail's labels.
 
 ## Stage 10a: the Lovable redesign (2026-11-17)
 
