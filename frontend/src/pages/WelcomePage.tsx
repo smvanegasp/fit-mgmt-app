@@ -143,8 +143,7 @@ function TrainingDays({ data, today }: { data: PublicSummary; today: string }) {
         <h2 className="font-display text-2xl font-bold">Training days</h2>
         <TypeLegend />
       </div>
-      <Heatmap days={data.days} today={today} />
-      <p className="mt-2 text-xs text-stone-500">A red line under a week: that week's goal was met.</p>
+      <Heatmap days={data.days} today={today} goalMarks={false} />
     </section>
   );
 }
