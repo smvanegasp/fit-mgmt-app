@@ -26,8 +26,8 @@ Sergio merges.
 
 ## Now
 
-**Stage 10a** is merged and live (#32). The iPhone Home Screen fix is merged (#33). Open: #34
-(`fix-landscape-rail`), the landscape rail's labels.
+**Stage 10a** is merged and live (#32). The iPhone Home Screen fix is merged (#33). So are the landscape rail and
+weekday letters (#34). Open: #35 (`welcome-no-goal-line`).
 
 ## Stage 10a: the Lovable redesign (2026-11-17)
 

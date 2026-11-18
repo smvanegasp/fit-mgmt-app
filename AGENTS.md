@@ -143,10 +143,11 @@ A mobile-first web app where Sergio logs their gym workouts and sees their progr
 | 9b | Train flow: a workout starts with a timed warm-up and the day's usual exercises filled in (never-done ones dropped on save); only the current exercise is open (Done folds it, the rest wait as Up next); last two workouts of the day type; bigger steppers; a congrats when a set reaches the target; the picker opens on the day's usual exercises; a narrower landscape rail | #27 |
 | 9c | Workout names are the day type and first exercise ("Legs · Deadlift", computed in the app; stored labels unchanged); a top-weight (or most reps, longest hold) chart on each exercise page; body weight on Progress (log, latest, change, line; `/api/body`); shared `LineChart` | #28 |
 | 9d | Peloton: the summary screenshot (from the photo library: no more forced camera, for every photo) is read into the class stats (`entry.peloton`); Peloton ride in the catalog; output chart on the ride's page and a Peloton card on Progress; weekly goal 3 strength + 1 cardio; Sergio's three November rides added; screenshots kept apart from setup photos; a Cardio day starts with the one activity picked; both AI features on in demos (capped) | #29 |
-| 10a | The Lovable redesign ("Iron & Ember"): ink and blood-red theme through Tailwind token remaps, Anton and Archivo, sharp corners, film grain, barbell logo and icons, gym photo on the welcome page; the streak card on Train with milestones and their congrats; a weekly ride in the sample log; re-recorded clips | #32, #33, #34 |
+| 10a | The Lovable redesign ("Iron & Ember"): ink and blood-red theme through Tailwind token remaps, Anton and Archivo, sharp corners, film grain, barbell logo and icons, gym photo on the welcome page; the streak card on Train with milestones and their congrats; a weekly ride in the sample log; re-recorded clips | #32-#35 |
 
 **Stage 10a (merged and live, 2026-11-17, #32):** the Lovable redesign, then the iPhone Home Screen fix
-(#33). Open: #34, the landscape rail's labels. The Lovable project (exported as a zip) mirrors `frontend/src/` in its
+(#33) and the landscape rail and weekday letters (#34).
+Open: #35, no goal line on the welcome chart. The Lovable project (exported as a zip) mirrors `frontend/src/` in its
 `src/gym/`, with `api.ts` swapped for a localStorage mock and the theme in `src/styles.css`: to bring
 later design changes over, unzip it outside the repo and `diff -r` its `src/gym/` against
 `frontend/src/` (never copy its mock, shadcn `components/ui/` or TanStack Start files).
