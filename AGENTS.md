@@ -146,14 +146,15 @@ A mobile-first web app where Sergio logs their gym workouts and sees their progr
 | 9b | Train flow: a workout starts with a timed warm-up and the day's usual exercises filled in (never-done ones dropped on save); only the current exercise is open (Done folds it, the rest wait as Up next); last two workouts of the day type; bigger steppers; a congrats when a set reaches the target; the picker opens on the day's usual exercises; a narrower landscape rail | #27 |
 | 9c | Workout names are the day type and first exercise ("Legs · Deadlift", computed in the app; stored labels unchanged); a top-weight (or most reps, longest hold) chart on each exercise page; body weight on Progress (log, latest, change, line; `/api/body`); shared `LineChart` | #28 |
 | 9d | Peloton: the summary screenshot (from the photo library: no more forced camera, for every photo) is read into the class stats (`entry.peloton`); Peloton ride in the catalog; output chart on the ride's page and a Peloton card on Progress; weekly goal 3 strength + 1 cardio; Sergio's three November rides added; screenshots kept apart from setup photos; a Cardio day starts with the one activity picked; both AI features on in demos (capped) | #29 |
-| 10a | The Lovable redesign ("Iron & Ember"): ink and blood-red theme through Tailwind token remaps, Anton and Archivo, sharp corners, film grain, barbell logo and icons, gym photo on the welcome page; the streak card on Train with milestones and their congrats; a weekly ride in the sample log; re-recorded clips; follow-ups: iPhone Home Screen fix (grain under full-screen pages), landscape rail labels, all weekday letters, no goal line on the welcome chart, Sergio's gym photo | #32-#36 |
+| 10a | The Lovable redesign ("Iron & Ember"): ink and blood-red theme through Tailwind token remaps, Anton and Archivo, sharp corners, film grain, barbell logo and icons, gym photo on the welcome page; the streak card on Train with milestones and their congrats; a weekly ride in the sample log; re-recorded clips; follow-ups: iPhone Home Screen fix (grain under full-screen pages), landscape rail labels, all weekday letters, no goal line on the welcome chart, Sergio's gym photo, page under the clock in the Home Screen app | #32-#38 |
 
-**Where things stand (2026-11-18):** everything is merged and live (PRs up to #36): no open PRs.
+**Where things stand (2026-11-18):** everything is merged and live (PRs up to #38): no open PRs.
 Stage 10a brought Sergio's Lovable redesign ("Iron & Ember", #32) and the streak card on Train, then
 same-day follow-ups from their phone: the iPhone Home Screen fix (#33: the film grain sat over
 full-screen pages, so iOS showed the page under them in the status-bar strip), the landscape rail's
 labels and all seven weekday letters on the heatmaps (#34), no goal line on the welcome chart (#35),
-and Sergio's gym photo in the welcome header (#36). Production checks: `/api/health` ok, deploys green,
+Sergio's gym photo in the welcome header (#36), and the Home Screen app running under the clock so
+that photo reaches the top edge (#38; Sergio had to delete the old icon and add it again). Production checks: `/api/health` ok, deploys green,
 in-app feedback 0 new (`scripts/feedback.py`, section 2). No data changed on AWS this round. No open
 work: new requests come from Sergio or the in-app feedback.
 **Loose ends at handoff:** two untracked files in the repo root, never to be committed: the Lovable
