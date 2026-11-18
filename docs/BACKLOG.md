@@ -26,8 +26,8 @@ Sergio merges.
 
 ## Now
 
-**Stage 10a (`stage-10a-redesign`, open):** Sergio's Lovable redesign, integrated 2026-11-17. Waiting
-for their phone test.
+**Stage 10a** is merged and live (#32). Open: #33 (`fix-ios-full-screen`), full-screen pages on the
+iPhone, waiting for Sergio's phone check.
 
 ## Stage 10a: the Lovable redesign (2026-11-17)
 
