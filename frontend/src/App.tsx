@@ -66,7 +66,7 @@ function MainApp({ session }: { session: SessionInfo }) {
     <NavContext.Provider value={setTab}>
       <ScreensProvider>
         <div className="min-h-dvh land:pl-[calc(4.5rem+env(safe-area-inset-left)*0.75)] lg:pl-56">
-          <main className={`mx-auto max-w-lg px-4 pt-[max(1rem,env(safe-area-inset-top))] land:pr-[max(1rem,env(safe-area-inset-right))] lg:px-10 lg:pt-8 ${WIDE[tab]}`}>
+          <main className={`mx-auto max-w-lg px-4 pt-[calc(env(safe-area-inset-top)+1rem)] land:pr-[max(1rem,env(safe-area-inset-right))] lg:px-10 lg:pt-8 ${WIDE[tab]}`}>
             {/* The tab bar shows where you are; the heading is for screen readers. */}
             <h1 className="sr-only">{current.label}</h1>
             {session.role === "guest" && session.expiresAt && (

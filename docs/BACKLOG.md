@@ -69,6 +69,7 @@ components; the rest of the look is a token remap in its `styles.css`.
 | Phone turned sideways: the rail's tab labels were cut off (the redesign's tracked uppercase labels are wider than the 60 px rail). | The rail is 72 px; in landscape the labels are 0.6rem with lighter tracking (still uppercase), and the current tab has the desktop sidebar's left marker. |
 | Welcome page, training days: only every other weekday was labeled, and the red line under weeks wasn't explained. | All seven weekday letters (also on the desktop Progress heatmap, same component). The goal line is gone from the welcome chart (Sergio, after trying a caption: confusing there); Progress keeps it with its caption. |
 | Welcome page: use Sergio's own pick for the header photo. | `frontend/src/assets/hardcore-gym.jpg` (their PNG as a 1600 px grayscale JPEG, 294 KB) replaces the Lovable photo; crop and fade unchanged; #36. |
+| Home Screen app: the welcome photo stopped below the clock (a black band on top). | Status bar `black-translucent`: the page runs under the clock and the photo reaches the top edge; top edges now pad with the clock's height plus their usual gap (`calc(env(safe-area-inset-top) + ...)`), same spacing as before. Needs the icon re-added; the clock is white in light mode too. |
 
 ### Stage 9 (done): the first round of in-app feedback
 

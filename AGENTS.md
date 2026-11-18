@@ -436,8 +436,11 @@ cd backend && uv run python ../scripts/import_whatsapp.py load --local # stack m
 - **Shell gotchas in the agent's Bash tool:** heredocs or `node -e` scripts containing apostrophes or
   backticks often fail to parse ("unexpected EOF"). Write multi-line scripts to the scratchpad with the
   file tool, then run them. `sed` patterns with backslashes (regexes) get mangled the same way.
-- **Sergio uses the app from the iPhone Home Screen** (added from Chrome; WebKit, standalone, the page
-  runs under the status bar). A bug that doesn't reproduce in a browser tab or Playwright WebKit may be
+- **Sergio uses the app from the iPhone Home Screen** (added from Chrome; WebKit, standalone). Since #38 the
+  status bar is `black-translucent` (`index.html`): the page runs up under the clock, so every top edge
+  pads with `calc(env(safe-area-inset-top) + gap)`; keep that on any new top bar. The clock is white in
+  that mode, also in light mode. iOS reads the setting when the app is added, so re-add the icon to see
+  a change. A bug that doesn't reproduce in a browser tab or Playwright WebKit may be
   specific to that mode: ask for a screenshot, and have Sergio add the ngrok URL to the Home Screen to
   test a fix. In that mode iOS paints the status-bar strip from the topmost fixed layer at the top edge,
   so keep see-through fixed layers (like the grain, z-25) under the full-screen pages (z-30).

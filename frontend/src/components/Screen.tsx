@@ -36,7 +36,7 @@ export function Screen({ title, subtitle, onBack, actions, children }: Props) {
       onClick={(e) => e.target === e.currentTarget && window.matchMedia(DESKTOP).matches && onBack()}
     >
       <div className="mx-auto max-w-lg px-4 pb-16 lg:mx-0 lg:h-full lg:w-[36rem] lg:max-w-none lg:overflow-y-auto lg:bg-stone-50 lg:px-6 lg:shadow-2xl">
-        <header className="sticky top-0 z-10 -mx-4 mb-3 flex items-center gap-2 border-b border-stone-200 bg-stone-50/95 px-4 lg:-mx-6 lg:px-6 pt-[max(0.75rem,env(safe-area-inset-top))] pb-3 backdrop-blur">
+        <header className="sticky top-0 z-10 -mx-4 mb-3 flex items-center gap-2 border-b border-stone-200 bg-stone-50/95 px-4 lg:-mx-6 lg:px-6 pt-[calc(env(safe-area-inset-top)+0.75rem)] pb-3 backdrop-blur">
           <button type="button" onClick={onBack} className="rounded-full p-2 text-stone-700" aria-label="Back">
             <ArrowLeft size={22} weight="bold" aria-hidden />
           </button>
