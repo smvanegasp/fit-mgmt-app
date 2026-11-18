@@ -45,7 +45,7 @@ export function PasscodeSheet({ onClose }: { onClose: () => void }) {
             <span
               key={i}
               className={`h-4 w-4 rounded-full border-2 ${
-                i < digits.length ? "border-blue-600 bg-blue-600" : "border-stone-300"
+                i < digits.length ? "border-stone-950 bg-stone-950" : "border-stone-300"
               }`}
             />
           ))}

@@ -20,6 +20,7 @@ def test_history_lists_sessions_photos_and_best_set(client: TestClient) -> None:
 
     page = client.get("/api/exercises/bench-press/history").json()
     assert [s["date"] for s in page["sessions"]] == ["2026-10-15", "2026-10-08", "2026-10-01"]
+    assert {s["role"] for s in page["sessions"]} == {"first"}  # for the first-lift-only chart
     assert page["photos"] == [{"key": "main/a", "caption": "Rack", "date": "2026-10-01"}]
     # Heaviest weight, most reps at it; the first time it happened.
     assert page["best"] == {"date": "2026-10-08", "set": {"reps": 3, "weightLb": 140}}

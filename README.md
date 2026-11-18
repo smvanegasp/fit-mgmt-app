@@ -8,13 +8,14 @@ dates.
 
 Designed phone first (that's where workouts get logged), and laid out as a dashboard on
 computers, where visitors can open it as a guest and explore a private, temporary copy of the
-real training log.
+real training log. The look ("Iron & Ember": ink black, bone and blood red, condensed poster type,
+film grain) was designed in Lovable and lives in Tailwind token remaps in `frontend/src/index.css`.
 
 Built in stages alongside its sibling project, the
 [pantry app](https://github.com/smvanegasp/pantry-mgmt-app), and shares its architecture.
-**Status:** live at **https://gym.sergiovanegas.com** with the full imported history (stages 0-8:
+**Status:** live at **https://gym.sergiovanegas.com** with the full imported history (stages 0-9:
 logging, history, progress, a desktop dashboard, guest demos, a stats-led welcome page, AWS,
-in-app feedback and its own visual identity). The full plan is in [docs/BACKLOG.md](docs/BACKLOG.md).
+in-app feedback, Peloton screenshots; stage 10a brings the redesign and the streak on Train). The full plan is in [docs/BACKLOG.md](docs/BACKLOG.md).
 
 ## Stack
 

@@ -124,7 +124,7 @@ function YearConsistency({ days, today }: { days: ProgressDay[]; today: string }
           <TypeLegend />
         </div>
         <div className="mt-4"><Heatmap days={days} today={today} onOpen={screens.openWorkout} /></div>
-        <p className="mt-2 text-xs text-stone-500">The blue marks under the weeks reached the goal. Click a day to open it.</p>
+        <p className="mt-2 text-xs text-stone-500">The red marks under the weeks reached the goal. Click a day to open it.</p>
       </div>
     </section>
   );

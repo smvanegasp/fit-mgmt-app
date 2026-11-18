@@ -94,7 +94,7 @@ export function TutorialStrip({ tutorials }: { tutorials: Tutorial[] }) {
             onClick={() => goTo(i)}
             aria-label={`Show ${t.title}`}
             aria-current={i === active}
-            className={`h-2 rounded-full transition-all ${i === active ? "w-6 bg-blue-600" : "w-2 bg-stone-300"}`}
+            className={`h-2 rounded-full transition-all ${i === active ? "w-6 bg-stone-950" : "w-2 bg-stone-300"}`}
           />
         ))}
       </div>

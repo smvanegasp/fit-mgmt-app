@@ -32,8 +32,9 @@ export function Celebration({ scheme, load, times, goal, onClose }: {
   // On the page itself, so it covers the tabs too.
   return createPortal(
     <div role="status" aria-live="polite" onClick={onClose}
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-6 motion-safe:animate-[fade-in_150ms_ease-out]">
-      <div className="w-full max-w-xs rounded-3xl bg-white px-6 py-7 text-center shadow-xl motion-safe:animate-[pop-in_380ms_cubic-bezier(.2,1.4,.4,1)]">
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-6 motion-safe:animate-[fade-in_120ms_ease-out]">
+      <div aria-hidden className="pointer-events-none absolute inset-0 bg-blue-600 opacity-0 motion-safe:animate-[flash_450ms_ease-out]" />
+      <div className="w-full max-w-xs relative border border-blue-600 bg-white px-6 py-7 text-center shadow-[0_0_60px_-10px_var(--ember-glow)] motion-safe:animate-[pop-in_260ms_cubic-bezier(.2,1.4,.4,1),breakdown_520ms_260ms_ease-out]">
         <div className="mx-auto flex h-24 items-end justify-center gap-2" aria-hidden>
           {columns.map((height, c) => (
             <div key={c} className="flex flex-col-reverse gap-1.5">
@@ -41,13 +42,13 @@ export function Celebration({ scheme, load, times, goal, onClose }: {
                 const delay = 120 + order++ * 55;
                 return (
                   <span key={delay} style={{ animationDelay: `${delay}ms` }}
-                    className="block size-4 rounded-[3px] bg-blue-600 motion-safe:animate-[square-in_260ms_ease-out_both]" />
+                    className="block size-4 bg-blue-600 motion-safe:animate-[square-in_260ms_ease-out_both]" />
                 );
               })}
             </div>
           ))}
         </div>
-        <p className="mt-5 font-display text-4xl font-bold">{done ? `${times} in a row` : "Target reached"}</p>
+        <p className="mt-5 font-display text-4xl font-bold">{done ? `${times} in a row` : "Target crushed"}</p>
         <p className="mt-1 text-stone-600">{schemeText(scheme, load)}</p>
         <div className="mt-3 flex items-center justify-center gap-2 text-sm text-stone-600">
           <GameDots times={times} goal={goal} />

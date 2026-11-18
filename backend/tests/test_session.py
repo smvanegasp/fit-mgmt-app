@@ -144,6 +144,8 @@ def test_demo_uses_the_sample_log_while_the_owner_has_none(client, anon):
     assert len(progress["days"]) >= 20
     assert {lift["exerciseId"] for lift in progress["lifts"] if lift["steps"]} >= {"squat", "dips", "chin-ups", "bench-press"}
     assert progress["routines"][0]["name"] == "3-day split"
+    # A ride every week, so the 3 strength + 1 cardio goal is met and the demo shows a streak.
+    assert any(d.get("cardio") or d.get("type") == "Cardio" for d in progress["days"])
     assert anon.get("/api/exercises/squat/summary").json()["cues"]
     # The owner's log stays empty.
     assert ids(client) == []
