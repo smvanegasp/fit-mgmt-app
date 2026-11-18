@@ -65,7 +65,7 @@ function MainApp({ session }: { session: SessionInfo }) {
   return (
     <NavContext.Provider value={setTab}>
       <ScreensProvider>
-        <div className="min-h-dvh land:pl-[calc(3.75rem+env(safe-area-inset-left)*0.75)] lg:pl-56">
+        <div className="min-h-dvh land:pl-[calc(4.5rem+env(safe-area-inset-left)*0.75)] lg:pl-56">
           <main className={`mx-auto max-w-lg px-4 pt-[max(1rem,env(safe-area-inset-top))] land:pr-[max(1rem,env(safe-area-inset-right))] lg:px-10 lg:pt-8 ${WIDE[tab]}`}>
             {/* The tab bar shows where you are; the heading is for screen readers. */}
             <h1 className="sr-only">{current.label}</h1>
@@ -76,7 +76,7 @@ function MainApp({ session }: { session: SessionInfo }) {
           </main>
 
           {/* Bottom tabs on phones and tablets; a rail on a phone turned sideways; a sidebar on computers. */}
-          <nav className="fixed inset-x-0 bottom-0 z-30 border-t border-stone-200 bg-stone-50/90 backdrop-blur pb-[env(safe-area-inset-bottom)] land:inset-y-0 land:right-auto land:w-[calc(3.75rem+env(safe-area-inset-left)*0.75)] land:border-t-0 land:border-r land:pb-0 land:pl-[calc(env(safe-area-inset-left)*0.75)] lg:inset-y-0 lg:right-auto lg:w-56 lg:border-t-0 lg:border-r lg:pb-0">
+          <nav className="fixed inset-x-0 bottom-0 z-30 border-t border-stone-200 bg-stone-50/90 backdrop-blur pb-[env(safe-area-inset-bottom)] land:inset-y-0 land:right-auto land:w-[calc(4.5rem+env(safe-area-inset-left)*0.75)] land:border-t-0 land:border-r land:pb-0 land:pl-[calc(env(safe-area-inset-left)*0.75)] lg:inset-y-0 lg:right-auto lg:w-56 lg:border-t-0 lg:border-r lg:pb-0">
             <div className="hidden px-5 pt-8 pb-6 lg:block">
               <div className="flex items-center gap-3"><Logo size={36} /><span className="font-display text-3xl leading-none text-stone-950">Gym</span></div>
             </div>
@@ -86,8 +86,8 @@ function MainApp({ session }: { session: SessionInfo }) {
                   key={t.id}
                   onClick={() => setTab(t.id)}
                   aria-current={tab === t.id ? "page" : undefined}
-                  className={`relative flex flex-col items-center py-2 text-[0.7rem] font-semibold tracking-[0.15em] uppercase transition-colors lg:flex-row lg:gap-3 lg:border-l-2 lg:px-3 lg:py-2.5 lg:text-xs ${
-                    tab === t.id ? "text-stone-950 lg:border-stone-950 lg:bg-stone-100" : "text-stone-500 lg:border-transparent lg:hover:bg-stone-100 lg:hover:text-stone-800"
+                  className={`relative flex flex-col items-center py-2 text-[0.7rem] font-semibold tracking-[0.15em] uppercase transition-colors land:border-l-2 land:text-[0.6rem] land:tracking-[0.06em] lg:flex-row lg:gap-3 lg:border-l-2 lg:px-3 lg:py-2.5 lg:text-xs ${
+                    tab === t.id ? "text-stone-950 land:border-stone-950 lg:border-stone-950 lg:bg-stone-100" : "text-stone-500 land:border-transparent lg:border-transparent lg:hover:bg-stone-100 lg:hover:text-stone-800"
                   }`}
                 >
                   <t.icon size={24} weight="fill" aria-hidden className="lg:size-5" />
