@@ -26,8 +26,8 @@ Sergio merges.
 
 ## Now
 
-**Stage 10a (`stage-10a-redesign`, open):** Sergio's Lovable redesign, integrated 2026-11-17. Waiting
-for their phone test.
+**Stage 10a** is merged and live (#32). Open: #33 (`fix-ios-full-screen`), full-screen pages on the
+iPhone, waiting for Sergio's phone check.
 
 ## Stage 10a: the Lovable redesign (2026-11-17)
 
@@ -59,6 +59,12 @@ components; the rest of the look is a token remap in its `styles.css`.
   820x1180 and 1440x900 in dark and light (welcome, Train, History, Progress, Settings, an exercise
   page, a workout in progress). Not tested: the milestone congrats in a real browser (unit-tested
   only), Sergio's phone.
+
+### Feedback round 1 on 10a (Sergio, 2026-11-17)
+
+| Item | Done |
+|---|---|
+| In the Home Screen app on the iPhone, an exercise opened from Progress, or from a workout opened in History, left the strip behind the clock showing the page under it (fine in a browser tab, so not reproducible in emulation). | iOS paints that strip from the topmost fixed layer at the top edge; the grain (fixed, see-through, over everything) was that layer. The grain now sits under full-screen pages, the tabs bar, sheets and celebrations (z-25), so an open page is topmost again. Also dropped: the grain's blend mode and the fixed background (both iOS-sensitive). Waiting for Sergio's phone check. |
 
 ### Stage 9 (done): the first round of in-app feedback
 
