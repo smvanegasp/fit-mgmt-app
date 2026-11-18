@@ -96,3 +96,11 @@ def test_routines_newest_first_with_their_sessions(client: TestClient) -> None:
         ("Old plan", "2026-09-01", "2026-09-30", 2),
     ]
     assert routines[0]["photos"] == [{"key": "main/wa-1"}] and routines[1]["notes"] == "Three days"
+
+
+def test_exercise_history_tells_first_lift_from_later(client: TestClient) -> None:
+    deadlift = {"exerciseId": "deadlift", "sets": [{"reps": 3, "weightLb": 190}] * 4}
+    day("2026-11-05", "Legs", [squat((5, 4, 180))])
+    day("2026-11-11", "Legs", [deadlift, squat((3, 6, 155))])
+    roles = {s["date"]: s["role"] for s in client.get("/api/exercises/squat/history").json()["sessions"]}
+    assert roles == {"2026-11-05": "first", "2026-11-11": "later"}

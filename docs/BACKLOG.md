@@ -47,8 +47,8 @@ components; the rest of the look is a token remap in its `styles.css`.
   milestone (4/8/12/16/24/36/52 weeks, then yearly), what the week still needs and the days left,
   amber when 2 or fewer days are left and the goal isn't met. A milestone crossed while the app is
   open gets its own congrats. Frontend only, from `/api/progress` days: no backend needed.
-- **Main lifts chart only their first-lift sessions** (a Lovable-side change: squat done second made
-  dips in the line). Needed one backend field: `role` on each `/exercises/{id}/history` session.
+- **Main lifts chart only their first-lift sessions:** Lovable had the same change; it shipped first in
+  #31, so this PR takes main's version.
 - **Chart colors re-stepped:** Lovable's Pull (steel teal) was too close to Cardio gray (dE ~10) and
   its light Legs had 2:1 contrast; now Push #c4202f / #cc2536, Legs #b07d1e / #bf8a2e, Pull #2a6fc9 /
   #3a7fe6 (light / dark), passing the dataviz validator except the deliberate gray.
@@ -109,6 +109,15 @@ components; the rest of the look is a token remap in its `styles.css`.
   experience. Both AI features (screenshot reading and the cue check) are now on in demos, capped at
   20 calls a day per demo and 300 a day across all demos (`app/ai_limits.py`); the owner has no cap.
   Tested end to end in a demo: upload, read, stats shown, distance and time filled in.
+
+## Fix after stage 9 (Sergio, 2026-11-17)
+
+- **Top-weight charts showed low points** for squat: sessions where it was done second (after
+  deadlift, lighter) were plotted. Now a main lift (the day's first lift in at least a quarter of its
+  sessions) plots only its first-lift sessions; accessories keep every session. On the real log this
+  drops squat's two second-lift days and bench's and pull-ups' lighter later sessions; RDL, overhead
+  press and other accessories are unchanged. The history API gives each session its `role`. A first-lift
+  comeback session after a break (squat 140 on 2026-03-30) still shows: it's real.
 
 ## Stage 9c: what's in it (2026-11-17)
 
