@@ -42,7 +42,8 @@ components; the rest of the look is a token remap in its `styles.css`.
 - **Fonts:** Anton (display) and Archivo (body), self-hosted with `@fontsource` like Barlow Condensed
   was (Lovable loaded them from Google Fonts); Barlow is removed.
 - **Logo:** the barbell on a bone square; favicon, app icons (`make-icons.mjs` updated), theme color
-  `#0b0909`. Welcome page header on a grayscale gym photo (`src/assets/bw-dream-gym.jpg`).
+  `#0b0909`. Welcome page header on a grayscale gym photo (`src/assets/bw-dream-gym.jpg`; later replaced by Sergio's
+  pick, `hardcore-gym.jpg`).
 - **Streak card on Train** (replaces the "This week" link): streak, longest, a ladder to the next
   milestone (4/8/12/16/24/36/52 weeks, then yearly), what the week still needs and the days left,
   amber when 2 or fewer days are left and the goal isn't met. A milestone crossed while the app is

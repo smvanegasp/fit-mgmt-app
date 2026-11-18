@@ -1,6 +1,6 @@
 import { useState } from "react";
 
-import dreamGym from "../assets/bw-dream-gym.jpg";
+import gymPhoto from "../assets/hardcore-gym.jpg";
 
 import type { PublicSummary } from "../api";
 import { Heatmap } from "../components/Heatmap";
@@ -49,7 +49,7 @@ export function WelcomePage() {
 
   const header = (
     <header className="relative -mx-6 overflow-hidden px-6 pt-[max(1.5rem,env(safe-area-inset-top))] pb-3 lg:mx-0 lg:px-6 lg:pt-6">
-      <img src={dreamGym} alt="" width={1600} height={1104} className="absolute inset-0 h-full w-full object-cover object-[42%_50%] contrast-110 brightness-125 grayscale" />
+      <img src={gymPhoto} alt="" width={1600} height={1067} className="absolute inset-0 h-full w-full object-cover object-[42%_50%] contrast-110 brightness-125 grayscale" />
       <div aria-hidden className="absolute inset-0 bg-gradient-to-t from-stone-50 via-transparent to-stone-50/40" />
       {/* A deeper pool along the bottom: the mark always has dark ground under it. */}
       <div aria-hidden className="absolute inset-x-0 bottom-0 h-2/3 bg-gradient-to-t from-stone-50 via-stone-50/45 to-transparent" />

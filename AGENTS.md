@@ -95,7 +95,7 @@ A mobile-first web app where Sergio logs their gym workouts and sees their progr
     flash and shake once (`breakdown`), skipped with reduced motion.
   - **Dark by default** when nothing is stored (`lib/theme.ts` and the inline script in
     `index.html`); Automatic and Light stay in Settings.
-  - **Welcome page** opens on a grayscale gym photo (`src/assets/bw-dream-gym.jpg`, AI-generated)
+  - **Welcome page** opens on a grayscale gym photo (`src/assets/hardcore-gym.jpg`, chosen by Sergio)
     under the mark, then the live log: stats, the training-days heatmap, current targets, the note
     and clips; Continue / I'm Sergio stay in a bottom bar on phones.
 - **The streak, up front on Train** (stage 10a): the week streak, longest, a ladder of squares to the
