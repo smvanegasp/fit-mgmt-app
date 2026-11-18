@@ -112,6 +112,9 @@ A mobile-first web app where Sergio logs their gym workouts and sees their progr
   (`fetch('/api/session/guest/reset?sample=true', {method: 'POST'})` in the test browser), which
   never holds or touches the real log. Never log in as the owner from the test browser.
   Use exact Playwright selectors: a loose `/Push/` once matched "Start Push workout".
+- **Sergio merges fast**, sometimes while a follow-up is being made. Before pushing to a PR branch,
+  check `gh pr view <n> --json state`; if it's merged, branch from `origin/main`, cherry-pick, and open
+  a new PR (pushes to a merged branch go nowhere).
 - **Feedback rounds:** Sergio reviews on their phone and sends lists of changes; small ones go on the
   open PR branch, logged in the backlog as "Feedback round N" tables.
 - **Start of every session: read the in-app feedback.** `cd backend && uv run python
@@ -143,26 +146,26 @@ A mobile-first web app where Sergio logs their gym workouts and sees their progr
 | 9b | Train flow: a workout starts with a timed warm-up and the day's usual exercises filled in (never-done ones dropped on save); only the current exercise is open (Done folds it, the rest wait as Up next); last two workouts of the day type; bigger steppers; a congrats when a set reaches the target; the picker opens on the day's usual exercises; a narrower landscape rail | #27 |
 | 9c | Workout names are the day type and first exercise ("Legs · Deadlift", computed in the app; stored labels unchanged); a top-weight (or most reps, longest hold) chart on each exercise page; body weight on Progress (log, latest, change, line; `/api/body`); shared `LineChart` | #28 |
 | 9d | Peloton: the summary screenshot (from the photo library: no more forced camera, for every photo) is read into the class stats (`entry.peloton`); Peloton ride in the catalog; output chart on the ride's page and a Peloton card on Progress; weekly goal 3 strength + 1 cardio; Sergio's three November rides added; screenshots kept apart from setup photos; a Cardio day starts with the one activity picked; both AI features on in demos (capped) | #29 |
-| 10a | The Lovable redesign ("Iron & Ember"): ink and blood-red theme through Tailwind token remaps, Anton and Archivo, sharp corners, film grain, barbell logo and icons, gym photo on the welcome page; the streak card on Train with milestones and their congrats; a weekly ride in the sample log; re-recorded clips | #32-#35 |
+| 10a | The Lovable redesign ("Iron & Ember"): ink and blood-red theme through Tailwind token remaps, Anton and Archivo, sharp corners, film grain, barbell logo and icons, gym photo on the welcome page; the streak card on Train with milestones and their congrats; a weekly ride in the sample log; re-recorded clips; follow-ups: iPhone Home Screen fix (grain under full-screen pages), landscape rail labels, all weekday letters, no goal line on the welcome chart, Sergio's gym photo | #32-#36 |
 
-**Stage 10a (merged and live, 2026-11-17, #32):** the Lovable redesign, then the iPhone Home Screen fix
-(#33) and the landscape rail and weekday letters (#34).
-Open: #35, no goal line on the welcome chart. The Lovable project (exported as a zip) mirrors `frontend/src/` in its
-`src/gym/`, with `api.ts` swapped for a localStorage mock and the theme in `src/styles.css`: to bring
-later design changes over, unzip it outside the repo and `diff -r` its `src/gym/` against
-`frontend/src/` (never copy its mock, shadcn `components/ui/` or TanStack Start files).
-
-**Where things stand (2026-11-17):** all stages (0-9d) are merged and live (PRs up to #29), and the
-weekly Dependabot updates (#23-#25) are merged too: no open PRs. Stage 9 handled the first round of
-in-app feedback (19 notes, all marked done) and Sergio's same-day follow-ups. Production checks after
-the last merges: `/api/health` ok, the welcome page shows 186 workouts and a 10-week streak, and
-`terraform plan` shows no changes. Data changed on AWS with Sergio's OK this round: two workouts left
-running got their end set to the last set (11-07, 11-14), a 159.4 lb weigh-in (11-03), and three Peloton
-rides as Cardio workouts with their screenshots (11-01, 11-08, 11-15). No open work: new requests come
-from Sergio or from the in-app feedback (`scripts/feedback.py`, section 2; 0 new at handoff).
-**Loose ends at handoff:** the ngrok tunnel may still be running from the last phone test (stop it:
-it has no password); Sergio's three Peloton screenshots sit untracked in the repo root
-(`peloton_workout_*.jpeg`, already stored with the rides; never commit them, delete when Sergio says).
+**Where things stand (2026-11-18):** everything is merged and live (PRs up to #36): no open PRs.
+Stage 10a brought Sergio's Lovable redesign ("Iron & Ember", #32) and the streak card on Train, then
+same-day follow-ups from their phone: the iPhone Home Screen fix (#33: the film grain sat over
+full-screen pages, so iOS showed the page under them in the status-bar strip), the landscape rail's
+labels and all seven weekday letters on the heatmaps (#34), no goal line on the welcome chart (#35),
+and Sergio's gym photo in the welcome header (#36). Production checks: `/api/health` ok, deploys green,
+in-app feedback 0 new (`scripts/feedback.py`, section 2). No data changed on AWS this round. No open
+work: new requests come from Sergio or the in-app feedback.
+**Loose ends at handoff:** two untracked files in the repo root, never to be committed: the Lovable
+export (`607c3f8b-...zip`, keep it for bringing over later Lovable changes, see below) and the photo's
+original (`hardcore-gym-black-and-white.png`, already in the app as `frontend/src/assets/hardcore-gym.jpg`);
+delete them when Sergio says. The ngrok tunnel is stopped.
+**The Lovable project** (exported as a zip) mirrors `frontend/src/` in its `src/gym/`, with `api.ts`
+swapped for a localStorage mock and the theme in `src/styles.css`. To bring later design changes
+over, unzip it outside the repo (scratchpad) and `diff -r` its `src/gym/` against `frontend/src/`:
+take the component changes and theme tokens, never its mock, shadcn `components/ui/`, TanStack Start
+files or Google Fonts links (fonts are self-hosted), and re-run the dataviz validator on any new
+chart colors (Lovable's first ones failed it).
 **Production holds Sergio's real log** at https://gym.sergiovanegas.com (loaded
 in stage 7), so Sergio logs there from now on and visitors get a copy of it. The local stack has the
 same history and is now only for development: anything logged locally stays local. **Never change
@@ -433,6 +436,11 @@ cd backend && uv run python ../scripts/import_whatsapp.py load --local # stack m
 - **Shell gotchas in the agent's Bash tool:** heredocs or `node -e` scripts containing apostrophes or
   backticks often fail to parse ("unexpected EOF"). Write multi-line scripts to the scratchpad with the
   file tool, then run them. `sed` patterns with backslashes (regexes) get mangled the same way.
+- **Sergio uses the app from the iPhone Home Screen** (added from Chrome; WebKit, standalone, the page
+  runs under the status bar). A bug that doesn't reproduce in a browser tab or Playwright WebKit may be
+  specific to that mode: ask for a screenshot, and have Sergio add the ngrok URL to the Home Screen to
+  test a fix. In that mode iOS paints the status-bar strip from the topmost fixed layer at the top edge,
+  so keep see-through fixed layers (like the grain, z-25) under the full-screen pages (z-30).
 - **Shell gotchas (Windows, Git Bash):** `sed` breaks when the replacement contains `#`; use the
   edit tool. With `MSYS_NO_PATHCONV=1` (needed for AWS CLI paths like `/fit/`), native Windows
   tools need `C:/...` paths.
