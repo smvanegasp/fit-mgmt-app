@@ -155,6 +155,24 @@ sandbox (five named slots, the goal of 4 strength days). Not tested: Restore in 
 Checked: backend 121 and frontend 92 tests, the welcome page logged out at 390x844 (dark and light) and
 1440x900 on the local log (older than production: its streak reads 0 there). Not tested: the live numbers.
 
+## Stage 15a: two progression ladders (`stage-15a-progression`, Sergio 2026-11-23)
+
+Sergio: heavy exercises climb 3x2, 4x2, 5x2, 3x3, 4x3, 5x3 ... 5x5; secondary ones 3x6, 3x7 ... 3x10. Infer
+each exercise's, let them pick it (also when creating one), and tailor the progression messages.
+
+| Item | Done |
+|---|---|
+| Two ladders | `goes_up` (server) / `goesUp` (app) take a style. Heavy: as before, topping out at 5x5. Reps: only more reps at 3 sets is a step (4x8 after 3x8 isn't); a target under 3 sets steps up when 3 sets are done. After 5x5 or 3x10, the next step is more weight. |
+| Inferred, or set | `progression` on the exercise (stored only when Sergio picks one); else the last 6 sessions' working sets: a typical set of 5 reps or fewer is heavy, more is reps. Holds, runs, climbs stay heavy. Sent as `style` with the target (`/summary`) and the ladder (`/progress`). |
+| On the real log (read-only) | Heavy: back squat, deadlift, weighted dips, bench press, weighted chin-ups, the skills. Reps: Romanian deadlift, dumbbell OHP, calf raises, weighted pull-ups (done at body weight lately, 3x9), bar dips, front lever raises, the pull-up variations, skull crushers, the rest. Only the Romanian deadlift's target changes: 4x8 @ 155 reached 5 times (it was 5x8 @ 155, 2), so it says go up to 3x9. |
+| Picking it | "Aiming for" on the exercise page (Heavy 3x2 → 5x5 / Reps 3x6 → 3x10, "automatic" or "set by you", Back to automatic: `PATCH {progression: heavy|reps|auto}`); the create form has the same choice (Heavy for barbell and weighted, Reps otherwise, until picked). |
+| Messages | The target line: "3 in a row: go up: try 3x9 @ 155 or more weight", "go up: more weight, back to 3x6" after 3x10, "go up: more weight" after 5x5; its InfoTip shows the ladder; "Went up" only fires for a real step on that ladder. |
+| The plan page's "Earlier versions" | Removed (saves are still kept on the server). |
+
+Checked: backend 126 and frontend 99 tests (both ladders, inference, the API set/reset), the real replay
+above, a sample demo (bench press: inferred Heavy, set to Reps, back to automatic; the create form's
+defaults). Not tested: a "Went up" on the reps ladder in a browser, Sergio's phone.
+
 ## Stage 14d: Progress lifts in order, climbing hidden (`stage-14d-progress-order`, Sergio 2026-11-23)
 
 | Feedback | Done |

@@ -75,7 +75,7 @@ def create_exercise(body: ExerciseCreate, space: str = Depends(current_space)) -
     slug = re.sub(r"[^a-z0-9]+", "-", name.lower()).strip("-")[:40] or "exercise"
     exercise_id = f"custom-{slug}-{uuid.uuid4().hex[:4]}"
     exercise = Exercise(id=exercise_id, name=name, group=body.group, load=body.load, measure=body.measure,
-                        barLb=45 if body.load == "barbell" else 0, source="app")
+                        barLb=45 if body.load == "barbell" else 0, source="app", progression=body.progression)
     db.put(space, f"EXERCISE#{exercise_id}", exercise.model_dump(exclude={"lastDone", "timesDone"}))
     return exercise
 
@@ -100,6 +100,8 @@ def update_exercise(exercise_id: str, body: ExerciseUpdate, space: str = Depends
             exercise.name = name
     if body.group is not None:
         exercise.group = body.group
+    if body.progression is not None:
+        exercise.progression = None if body.progression == "auto" else body.progression
     if body.stepLb is not None:
         exercise.stepLb = body.stepLb
     exercise.source = "app"
@@ -149,7 +151,7 @@ def exercise_summary(exercise_id: str, exclude: str | None = None, role: history
     """What the Train screen shows when an exercise is added: cues, last time, the streak. `role`:
     whether it's today's first lift or a later one (a lift done second is lighter)."""
     exercise = get_exercise(space, exercise_id)
-    last, streak, photos, best = history.summary(space, exercise_id, exclude=exclude, want=role)
+    last, streak, photos, best = history.summary(space, exercise_id, exclude=exclude, want=role, exercise=exercise)
     return ExerciseSummary(exercise=exercise, cues=cues(space, exercise_id), last=last, streak=streak, photos=photos,
                            bestDrop=best)
 

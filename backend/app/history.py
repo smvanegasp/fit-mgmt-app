@@ -16,7 +16,8 @@ from typing import Any, Literal
 
 from app import db
 from app.labels import day_type
-from app.models import BestSet, DatedPhoto, DatedSets, Entry, ExerciseHistory, ExerciseSession, LastTime, Scheme, SessionType, Streak
+from app.models import (BestSet, DatedPhoto, DatedSets, Entry, Exercise, ExerciseHistory, ExerciseSession, LastTime,
+                        Progression, Scheme, SessionType, Streak)
 
 GOAL = 3
 
@@ -120,10 +121,11 @@ def role(workout: dict[str, Any], exercise_id: str) -> Role:
     return "first" if first and first.get("exerciseId") == exercise_id else "later"
 
 
-def progression(sessions: list[tuple[str, Entry]], roles: list[Role] | None = None, want: Role | None = None) -> Streak | None:
+def progression(sessions: list[tuple[str, Entry]], roles: list[Role] | None = None, want: Role | None = None,
+                style: Progression = "heavy") -> Streak | None:
     """The target game after the last session (see replay). With `want`, the target of the track
     last played in that role: done second and lighter, the lift shows its lighter target."""
-    steps = list(replay(sessions))
+    steps = list(replay(sessions, style))
     if not steps:
         return None
     track: Track = steps[-1].track
@@ -131,7 +133,7 @@ def progression(sessions: list[tuple[str, Entry]], roles: list[Role] | None = No
         played = [s.track for s, r in zip(steps, _played_roles(sessions, roles)) if r == want]
         track = played[-1] if played else "main"
     last = next(s for s in reversed(steps) if s.track == track)
-    return Streak(scheme=last.target, times=last.times, goal=GOAL)
+    return Streak(scheme=last.target, times=last.times, goal=GOAL, style=style)
 
 
 def _played_roles(sessions: list[tuple[str, Entry]], roles: list[Role]) -> list[Role]:
@@ -150,12 +152,38 @@ def rung(reps: list[float], min_sets: int) -> tuple[float, int]:
     return best
 
 
-def goes_up(done: list[float], target: list[float]) -> bool:
-    """Whether sets at the target's weight are a higher rung than the target: more sets of its reps,
-    or more reps per set (5x4 -> 3x5). A rung needs as many sets as the ladder's first (3), or as the
-    target when it has fewer."""
+def goes_up(done: list[float], target: list[float], style: Progression = "heavy") -> bool:
+    """Whether sets at the target's weight are a higher rung than the target. Heavy: more sets of its
+    reps, or more reps per set (5x4 -> 3x5). Reps (accessories, 3x6 ... 3x10): only more reps per set
+    counts; an extra set at the same reps isn't a step. A rung needs as many sets as the ladder's
+    first (3), or as the target when it has fewer."""
+    if not target:
+        return False
     floor = min(3, len(target))
-    return bool(target) and rung(done, floor) > rung(target, floor)
+    if style == "reps":
+        # The reps ladder is 3 sets: below that, reaching 3 sets (or more reps per set) is the step.
+        done3, target3 = rung(done, 3)[0], rung(target, 3)[0]
+        if target3 == 0:
+            return done3 > 0 or rung(done, floor)[0] > rung(target, floor)[0]
+        return done3 > target3
+    return rung(done, floor) > rung(target, floor)
+
+
+HEAVY_MAX_REPS = 5  # the heavy ladder tops out at 5x5; above that, sets of 6+ are accessory work
+
+
+def infer_style(sessions: list[tuple[str, Entry]], exercise: Exercise | None = None) -> Progression:
+    """The exercise's ladder: Sergio's choice when set; else from its last 6 sessions' working
+    sets: a typical set of 5 reps or fewer is heavy, more is reps. Holds, runs and climbs (and
+    exercises never done) stay heavy, the ladder they always had."""
+    if exercise and exercise.progression:
+        return exercise.progression
+    if exercise and exercise.measure != "reps":
+        return "heavy"
+    reps = sorted(r for _, entry in sessions[-6:] if (s := scheme(entry)) and not s.seconds for r in s.sets)
+    if not reps:
+        return "heavy"
+    return "heavy" if reps[len(reps) // 2] <= HEAVY_MAX_REPS else "reps"
 
 
 @dataclass
@@ -167,13 +195,13 @@ class _Game:
     def sync(self, written: Scheme, times: int, day: str) -> None:
         self.target, self.times, self.since = written, times, day
 
-    def play(self, day: str, entry: Entry, main: Scheme) -> Literal["new", "reached", "missed"]:
+    def play(self, day: str, entry: Entry, main: Scheme, style: Progression = "heavy") -> Literal["new", "reached", "missed"]:
         """A session at or above the target's weight (or the first, or a deload)."""
         weight = main.weightLb or 0
         if self.target is None or weight != (self.target.weightLb or 0):
             self.target, self.times, self.since = main, 1, day  # first session, more weight, or a deload
             return "new"
-        if goes_up(main.sets, self.target.sets):
+        if goes_up(main.sets, self.target.sets, style):
             # A step up the ladder (Sergio 2026-11-20: 5x4 then 3x5 is up): the new target.
             self.target, self.times, self.since = main, 1, day
             return "new"
@@ -190,7 +218,7 @@ class _Game:
         return "reached"
 
 
-def replay(sessions: list[tuple[str, Entry]]) -> Iterator[GameStep]:
+def replay(sessions: list[tuple[str, Entry]], style: Progression = "heavy") -> Iterator[GameStep]:
     """Replay the target game over an exercise's (date, entry) sessions, oldest first, yielding
     each session's result. A session more than 10% lighter than the main target plays a second
     track (the lift done second and lighter that day, or a light day), unless the main target is
@@ -214,7 +242,7 @@ def replay(sessions: list[tuple[str, Entry]]) -> Iterator[GameStep]:
                 break
         if track == "second" and game.since and date.fromisoformat(day) - date.fromisoformat(game.since) > STALE:
             game.target = None  # the lighter work from months ago doesn't count
-        result = game.play(day, entry, main)
+        result = game.play(day, entry, main, style)
         yield GameStep(date=day, result=result, target=game.target, times=game.times, track=track)
 
 
@@ -230,7 +258,8 @@ def best_drop(sessions: list[tuple[str, Entry]]) -> DatedSets | None:
     return best
 
 
-def summary(space: str, exercise_id: str, exclude: str | None = None, want: Role | None = None) -> tuple[LastTime | None, Streak | None, list[DatedPhoto], DatedSets | None]:
+def summary(space: str, exercise_id: str, exclude: str | None = None, want: Role | None = None,
+            exercise: Exercise | None = None) -> tuple[LastTime | None, Streak | None, list[DatedPhoto], DatedSets | None]:
     """Last session, target game, photos and best drop set for an exercise, ignoring the workout
     being edited. With `want` (its role in today's workout), "last time" and the target come from
     the sessions where it had that role, when there are any."""
@@ -253,7 +282,7 @@ def summary(space: str, exercise_id: str, exclude: str | None = None, want: Role
     photos = [DatedPhoto(**p.model_dump(), date=w["date"]) for w, e in reversed(done) for p in e.photos
               if p.kind != "screenshot"][:12]
     sessions = [(w["date"], e) for w, e in done]
-    return last, progression(sessions, roles, want), photos, best_drop(sessions)
+    return last, progression(sessions, roles, want, infer_style(sessions, exercise)), photos, best_drop(sessions)
 
 
 def usage(space: str) -> dict[str, tuple[str, int]]:

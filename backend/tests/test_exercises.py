@@ -48,3 +48,20 @@ def test_merge_moves_sessions_and_cues_then_hides_the_duplicate(client: TestClie
     assert [c["text"] for c in summary["cues"]] == ["Setup at 7"] and summary["last"]["date"] == "2026-10-01"
     assert dupe["id"] not in {e["id"] for e in client.get("/api/exercises").json()}
     assert client.post("/api/exercises/dips/merge", json={"into": "dips"}).status_code == 400
+
+
+def test_the_progression_style_is_inferred_set_and_reset(client: TestClient) -> None:
+    for day in ("2026-11-02", "2026-11-04"):
+        workout(day, [{"exerciseId": "reverse-leg-curl", "sets": [{"reps": 10, "weightLb": 80}] * 3}], label="Legs")
+    assert client.get("/api/exercises/reverse-leg-curl/summary").json()["streak"]["style"] == "reps"
+
+    changed = client.patch("/api/exercises/reverse-leg-curl", json={"progression": "heavy"}).json()
+    assert changed["progression"] == "heavy"
+    assert client.get("/api/exercises/reverse-leg-curl/summary").json()["streak"]["style"] == "heavy"
+    assert client.get("/api/exercises/reverse-leg-curl/progress").json()["style"] == "heavy"
+
+    assert client.patch("/api/exercises/reverse-leg-curl", json={"progression": "auto"}).json().get("progression") is None
+    assert client.get("/api/exercises/reverse-leg-curl/summary").json()["streak"]["style"] == "reps"
+
+    created = client.post("/api/exercises", json={"name": "Hack squat", "group": "legs", "progression": "heavy"}).json()
+    assert created["progression"] == "heavy"

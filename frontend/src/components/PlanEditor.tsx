@@ -2,8 +2,7 @@ import { ArrowDown, ArrowUp, CaretRight, CopySimple, Plus, Trash, X } from "@pho
 import { useState } from "react";
 
 import type { DayKind, DayPlan, TrainingPlans } from "../api";
-import { useExercises, usePlanHistory, useSavePlans } from "../hooks";
-import { friendlyDate } from "../lib/time";
+import { useExercises, useSavePlans } from "../hooks";
 import { KINDS } from "../lib/progress";
 import { BottomSheet } from "./BottomSheet";
 import { ExercisePicker } from "./ExercisePicker";
@@ -37,8 +36,6 @@ export function PlanEditor({ plans, today, onClose }: { plans: TrainingPlans; to
   const save = useSavePlans(today);
   const [days, setDays] = useState<DayPlan[]>(() => plans.weeks.flatMap((w) => w.days));
   const [openId, setOpen] = useState<string | null>(null);
-  const [showHistory, setShowHistory] = useState(false);
-  const history = usePlanHistory(showHistory);
   const open = days.find((d) => d.id === openId);
   const keepId = plans.weeks[0]?.id ?? "days";
 
@@ -98,37 +95,6 @@ export function PlanEditor({ plans, today, onClose }: { plans: TrainingPlans; to
         <Plus size={18} weight="bold" aria-hidden /> Add day
       </button>
 
-      {/* Every saved version (Sergio, 2026-11-23): look back, or bring one back and save it. */}
-      <section className="mt-8 border-t border-stone-200 pt-4">
-        <button type="button" onClick={() => setShowHistory(!showHistory)} aria-expanded={showHistory}
-          className="text-sm font-semibold tracking-wide text-stone-500 uppercase">
-          {showHistory ? "Hide earlier versions" : "Earlier versions"}
-        </button>
-        {showHistory && (
-          history.isLoading ? <p className="mt-2 text-sm text-stone-500">Loading…</p>
-            : (history.data ?? []).length === 0 ? <p className="mt-2 text-sm text-stone-500">Nothing saved yet: each save is kept here.</p>
-              : (
-                <ul className="mt-2 divide-y divide-stone-200">
-                  {history.data!.map((v) => {
-                    const vDays = v.weeks.flatMap((w) => w.days);
-                    return (
-                      <li key={v.savedAt + v.start} className="flex items-center gap-2 py-2.5">
-                        <div className="min-w-0 flex-1">
-                          <div className="text-sm font-medium">From the week of {friendlyDate(v.start)}</div>
-                          <div className="truncate text-xs text-stone-500">{vDays.length} days: {vDays.map((d) => d.name).join(", ")}</div>
-                        </div>
-                        <button type="button" onClick={() => setDays(vDays)}
-                          className="shrink-0 rounded-lg px-2.5 py-1.5 text-sm font-medium text-stone-700 ring-1 ring-stone-300">
-                          Restore
-                        </button>
-                      </li>
-                    );
-                  })}
-                </ul>
-              )
-        )}
-        {showHistory && <p className="mt-2 text-xs text-stone-500">Restore loads it here; Save makes it the plan.</p>}
-      </section>
 
       {open && (
         <DayEditor

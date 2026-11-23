@@ -8,6 +8,10 @@ from pydantic import BaseModel, Field, field_validator
 
 from app.catalog import Group, Load, Measure
 
+# How an exercise moves up (Sergio, 2026-11-23): "heavy" climbs 3x2, 4x2, 5x2, 3x3 ... 5x5, then more
+# weight; "reps" (accessories) climbs 3x6, 3x7 ... 3x10, then more weight.
+Progression = Literal["heavy", "reps"]
+
 CueSection = Literal["setup", "brace", "lift"]
 
 LOCAL_TIME = re.compile(r"^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}(:\d{2})?$")
@@ -174,12 +178,15 @@ class Exercise(BaseModel):
     mergedInto: str | None = None
     # The weight stepper's step in lb (Sergio, 2026-11-19: 2.5 for some exercises); None = the default.
     stepLb: float | None = None
+    # Set by Sergio on the exercise page or when creating it; None = inferred from the sessions.
+    progression: Progression | None = None
 
 
 class ExerciseUpdate(BaseModel):
     name: str | None = Field(None, min_length=1, max_length=80)
     group: Group | None = None
     stepLb: Literal[2.5, 5] | None = None
+    progression: Literal["heavy", "reps", "auto"] | None = None  # "auto": inferred again
 
 
 class MergeBody(BaseModel):
@@ -191,6 +198,7 @@ class ExerciseCreate(BaseModel):
     group: Group = "push"
     load: Load = "machine"
     measure: Measure = "reps"
+    progression: Progression | None = None
 
 
 class Note(BaseModel):
@@ -261,6 +269,8 @@ class Streak(BaseModel):
     scheme: Scheme
     times: int
     goal: int = 3
+    # The ladder it climbs (set, or inferred from the sessions).
+    style: Progression = "heavy"
 
 
 class LastTime(BaseModel):
@@ -357,6 +367,7 @@ class Lift(BaseModel):
     load: Load
     # The bar for barbell lifts (weights are plates as written; + barLb = the total lifted).
     barLb: float = 0
+    style: Progression = "heavy"
     # Oldest first; the last one is the current target.
     steps: list[Step]
 

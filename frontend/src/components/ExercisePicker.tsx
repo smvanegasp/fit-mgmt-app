@@ -163,12 +163,16 @@ function CreateExercise({ name: initial, onCreated, onCancel }: { name: string; 
   const [name, setName] = useState(initial.trim());
   const [group, setGroup] = useState<Group>("push");
   const [load, setLoad] = useState<Load>("machine");
+  // What Sergio is aiming for (2026-11-23): heavy for barbell and weighted lifts, reps for the rest,
+  // until they pick.
+  const [aim, setAim] = useState<"heavy" | "reps" | null>(null);
+  const progression = aim ?? (load === "barbell" || load === "added" ? "heavy" : "reps");
 
   return (
     <form
       onSubmit={async (e) => {
         e.preventDefault();
-        onCreated(await create.mutateAsync({ name, group, load, measure: "reps" }));
+        onCreated(await create.mutateAsync({ name, group, load, measure: "reps", progression }));
       }}
       className="space-y-4"
     >
@@ -193,6 +197,18 @@ function CreateExercise({ name: initial, onCreated, onCancel }: { name: string; 
           ))}
         </select>
       </label>
+      <fieldset>
+        <legend className="text-sm font-medium text-stone-600">Aiming for</legend>
+        <div role="radiogroup" aria-label="Aiming for" className="mt-1 grid grid-cols-2 gap-1 rounded-xl bg-stone-100 p-1">
+          {([["heavy", "Heavy", "3x2 → 5x5"], ["reps", "Reps", "3x6 → 3x10"]] as const).map(([id, label, ladder]) => (
+            <button key={id} type="button" role="radio" aria-checked={progression === id} onClick={() => setAim(id)}
+              className={`rounded-lg px-2 py-2 text-center ${progression === id ? "bg-white shadow-sm" : "text-stone-600"}`}>
+              <span className="block font-semibold">{label}</span>
+              <span className="block text-xs text-stone-500">{ladder}</span>
+            </button>
+          ))}
+        </div>
+      </fieldset>
       {create.error && <p className="text-sm text-red-600">{create.error.message}</p>}
       <div className="flex gap-2">
         <button type="button" onClick={onCancel} className="flex-1 rounded-xl border border-stone-300 py-3 font-medium">Back</button>
