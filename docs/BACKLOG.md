@@ -109,6 +109,11 @@ Not tested: the iPhone's pull-down and the sheets' scroll lock on the phone itse
 | The feedback inbox showed everything at once. | Tabs New / Done with counts, 5 at a time with "Show more". |
 | Generalize the week structure (more week types, custom names, mixed days like upper body). | Proposal below; not built yet, waiting for Sergio's OK. |
 
+**11e (`stage-11e-search-keyboard`):** the exercise search still scrolled away on the iPhone. Cause: with the
+keyboard open, iOS pans the whole screen to keep the field in view, carrying the fixed sheet with it.
+Sheets now size and place themselves to the visible area above the keyboard (`useVisibleArea` in
+`lib/scrollLock.ts`, from `window.visualViewport`). Only testable on the phone.
+
 **Proposal: flexible weeks.** Today the plans are exactly two week types (A/B) of Push, Legs and Pull
 days plus a cardio day. Generalized: a **rotation** of any number of week types (each with a name and
 an order: A, B, C... repeating), each week a list of days, each day a name, its exercises and a
