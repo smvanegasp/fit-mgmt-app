@@ -101,7 +101,7 @@ A mobile-first web app where Sergio logs their gym workouts and sees their progr
 - **The streak, up front on Train** (stage 10a, reworked in 11a): the week streak, longest, shields,
   **this week as four slots** (Push, Legs, Pull, Cardio; weeks run Monday to Sunday) and a labeled
   ladder to the next milestone (4, 8, 12, 16, 24, 36, 52 weeks, then every 52); a link opens Progress.
-  **Shields** (Sergio, 2026-11-20): every 10 weeks of the run earn one, and a missed week uses one up
+  **Shields** (Sergio, 2026-11-20; every 8 weeks since 11-23): every 8 weeks of the run earn one, and a missed week uses one up
   instead of ending the streak. Crossing a milestone or earning a shield while the app is open shows
   its own congrats. All in the frontend (`lib/progress.ts` `streaks`, `lib/streak.ts`,
   `components/Streak.tsx`) from `/api/progress` days, replayed over the history; nothing is stored.
@@ -276,7 +276,7 @@ frontend/
 
 - **Day types** (Sergio, 2026-10-30): **Push, Legs, Pull, Cardio**. Squat and deadlift share Legs
   (heavy squat + lighter deadlift, alternating); front lever and climbing are Pull; cardio is once a
-  week (Peloton run or walk). `labels.py`: new sessions use these names; imported sessions keep
+  week (the Peloton ride or the treadmill only, since 2026-11-23). `labels.py`: new sessions use these names; imported sessions keep
   theirs (Squat, Deadlift, Front lever, Climb, Run) and map to today's types via `day_type`.
 - `pk = SPACE#main` is Sergio's log; `SPACE#sb-<unixExpiry>-<hex>` is a guest sandbox (stage 5a;
   rows carry `ttl`).

@@ -58,6 +58,14 @@ body {
   overscroll-behavior: none;
 }
 
+/* No scroll bars anywhere (Sergio, 2026-11-23); scrolling works the same. */
+* {
+  scrollbar-width: none;
+}
+*::-webkit-scrollbar {
+  display: none;
+}
+
 /* iPhones zoom the page when a field with text under 16px gets focus, and don't always zoom
    back out. Unlayered, so it wins over Tailwind's text-sm on touch screens only. */
 @media (pointer: coarse) {

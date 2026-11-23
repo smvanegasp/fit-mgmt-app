@@ -284,10 +284,9 @@ def session_types(space: str, recent: int = 40) -> list[SessionType]:
         usual = [x for x, positions in seen.items() if len(positions) >= max(1, len(sessions) / 4)]
         usual.sort(key=lambda x: sum(seen[x]) / len(seen[x]))
         if label == "Cardio":
-            # Weekly cardio from 2026-10-30: a Peloton run or a walk.
-            # Rides on the Peloton bike from 2026-11-01 (Sergio's screenshots).
-            first = ["peloton-ride", "peloton-run", "walk"]
-            usual = [*first, *[x for x in usual if x not in first]]
+            # Weekly cardio: the Peloton ride or the treadmill, nothing else (Sergio, 2026-11-23).
+            first = ["peloton-ride", "treadmill"]
+            usual = [*first, *[x for x in usual if x not in first and x not in ("peloton-run", "walk")]]
         types.append(SessionType(label=label, exercises=usual, lastDate=sessions[-1]["date"], sessions=len(sessions)))
     return sorted(types, key=lambda t: -t.sessions)
 

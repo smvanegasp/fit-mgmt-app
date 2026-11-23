@@ -26,8 +26,8 @@ Sergio merges.
 
 ## Now
 
-Stage 11: the second round of in-app feedback (18 notes from Sergio, 2026-11-19 to 11-22), in two
-stacked PRs: 11a (streak and going up) and 11b (the rest).
+Stage 11: the second round of in-app feedback (18 notes from Sergio, 2026-11-19 to 11-22): 11a (#42)
+and 11b (#43) are merged; 11c (Sergio's follow-ups from the phone, 2026-11-23) is open.
 
 ## Stage 11: feedback round 2 (2026-11-22)
 
@@ -78,6 +78,25 @@ plan editor's save, feedback screenshots and scroll memory in a browser (API tes
 overscroll, Sergio's phone. Note for the agent: run vitest from `C:` (PowerShell `Set-Location
 C:/Users/...`); from the harness's lowercase `c:` working directory it loads two copies of vitest
 and every suite fails with "reading 'config'".
+
+### 11c: follow-ups from the phone (`stage-11c-polish`, Sergio 2026-11-23)
+
+| Item | Done |
+|---|---|
+| Shields every 8 weeks instead of 10, after a replay of the whole log (current 11 and longest 11 under every interval from 4 to 10: the June-August run ended with three missed weeks in a row; with 8 the next shield comes in 5 weeks, and the sample demo earns one). | `SHIELD_EVERY = 8`. |
+| Hide the scroll bars. | Hidden everywhere (`index.css`); scrolling unchanged. |
+| A day chosen in "Ready to train" can't be unchosen. | Tapping the chosen day again clears it ("Start workout" with just the warm-up). |
+| Only the Peloton ride and the treadmill as cardio (no Peloton run, no walk). | The Cardio day offers those two; the usual Cardio exercises too. Old runs and walks stay in the log and the catalog. |
+| Better week names. | "Squat & heavy push week" and "Deadlift & heavy pull week" (the week's Legs lift and its heavy day). |
+| Just the day's name in the plan, not its exercises. | Rows show the name, Done or Next. |
+| During a workout, pulling the page down still moved the stopwatch. | The stopwatch bar is fixed to the top (a spacer keeps its place) instead of sticky, so the iPhone's pull no longer drags it. |
+| "Lap" as big as the lap time. | Same display font and size. |
+| The page behind Feedback (any sheet) scrolled. | Sheets pin the page in place while open (iOS ignores `overflow: hidden`) and keep their own scrolling inside. |
+| The exercise search could scroll out of view. | Search and categories stay pinned at the top of the picker. |
+
+Checked: backend 116 and frontend 97 tests, build, screenshots in a sample demo (the plan card,
+deselecting, a workout scrolled with the bar in place, the picker scrolled; the workout discarded).
+Not tested: the iPhone's pull-down and the sheets' scroll lock on the phone itself.
 
 ## Stage 10a: the Lovable redesign (2026-11-17)
 

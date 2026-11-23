@@ -84,11 +84,11 @@ export function goalText(monday: string, c: WeekCount | undefined): string {
 }
 
 /**
- * Shields (Sergio, 2026-11-20): every SHIELD_EVERY weeks of the run earn one, and a shield covers
+ * Shields (Sergio, 2026-11-20; every 8 weeks from 11-23, was 10): every SHIELD_EVERY weeks of the run earn one, and a shield covers
  * one missed week (used up automatically when the week ends). A covered week keeps the streak
  * alive without adding to it; a missed week with no shield left ends the run and its shields.
  */
-export const SHIELD_EVERY = 10;
+export const SHIELD_EVERY = 8;
 
 export interface StreakRun {
   /** Weeks in a row that reached the goal (shielded weeks keep it alive but don't add). */

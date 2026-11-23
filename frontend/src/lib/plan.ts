@@ -57,16 +57,20 @@ export function currentIndex(entries: Entry[]): number {
   return entries.findIndex((e) => !e.done);
 }
 
-/** "Squat week" / "Deadlift week" (from the week's Legs plan), else "Week A". */
+/**
+ * "Squat & heavy push week" / "Deadlift & heavy pull week" (Sergio, 2026-11-23): the week's Legs
+ * lift and its heavy day. "Week A" when the plans can't tell the two weeks apart.
+ */
 export function weekName(plans: Pick<DayPlan, "week" | "dayType" | "name">[], week: "A" | "B"): string {
-  const lift = (w: "A" | "B") => {
+  const name = (w: "A" | "B") => {
     const legs = plans.find((p) => p.week === w && p.dayType === "Legs");
-    const short = legs?.name.replace(/^Legs\s*·\s*/, "");
-    return short && short !== legs?.name ? short : null;
+    const lift = legs?.name.replace(/^Legs\s*·\s*/, "");
+    const heavy = plans.find((p) => p.week === w && /^heavy /i.test(p.name));
+    const parts = [lift && lift !== legs?.name ? lift : null, heavy ? heavy.name.toLowerCase() : null].filter(Boolean);
+    return parts.length ? `${parts.join(" & ")} week` : null;
   };
-  const mine = lift(week);
-  // Both weeks on the same lift can't tell them apart.
-  return mine && mine !== lift(week === "A" ? "B" : "A") ? `${mine} week` : `Week ${week}`;
+  const mine = name(week);
+  return mine && mine !== name(week === "A" ? "B" : "A") ? mine.charAt(0).toUpperCase() + mine.slice(1) : `Week ${week}`;
 }
 
 export interface DayOption {

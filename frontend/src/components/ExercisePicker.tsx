@@ -84,6 +84,8 @@ export function ExercisePicker({ onPick, onClose, inWorkout, plan, title = "Add 
 
   return (
     <BottomSheet title={title} onClose={onClose} tall>
+      {/* The search and categories stay at the top while the list scrolls (Sergio, 2026-11-23). */}
+      <div className="sticky -top-4 z-10 -mx-4 -mt-4 border-b border-stone-200 bg-white px-4 pt-4 pb-2">
       <div className="relative">
         <MagnifyingGlass size={18} className="absolute top-1/2 left-3 -translate-y-1/2 text-stone-400" aria-hidden />
         <input
@@ -114,6 +116,7 @@ export function ExercisePicker({ onPick, onClose, inWorkout, plan, title = "Add 
           ))}
         </div>
       )}
+      </div>
 
       {exercises.isLoading && <p className="py-6 text-center text-stone-500">Loading...</p>}
       {tab === "usual" && !query.trim() && usualLeft.length === 0 && (
