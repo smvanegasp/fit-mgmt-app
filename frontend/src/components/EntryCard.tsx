@@ -251,7 +251,7 @@ function StepSwitch({ exercise, step, onStep }: { exercise: Exercise; step: numb
               onStep(s);
               update.mutate({ id: exercise.id, patch: { stepLb: s } });
             }}
-            className={`flex-1 rounded px-1 py-1 text-xs font-semibold tabular-nums ${step === s ? "bg-white text-stone-900 shadow-sm" : "text-stone-500"}`}>
+            className={`flex-1 rounded px-1 py-1 text-xs font-semibold tabular-nums ${step === s ? "bg-blue-600 text-[#f6f1e7]" : "text-stone-500"}`}>
             {s}
           </button>
         ))}
@@ -312,9 +312,9 @@ function SetLog({ entry, exercise, draftKey, lastSets, bestDrop, target, onChang
   }
 
   const weightUnit =
-    exercise.load === "barbell" ? `lb plates + ${exercise.barLb} bar`
+    exercise.load === "barbell" ? `lbs plates + ${exercise.barLb} bar`
       : exercise.load === "added" ? "lb added (0 = body weight)"
-        : draft.each ? "lb each hand" : "lb";
+        : draft.each ? "lbs each hand" : "lbs";
 
   return (
     <div className="mt-3">

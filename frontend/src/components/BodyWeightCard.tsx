@@ -7,7 +7,7 @@ import { BottomSheet } from "./BottomSheet";
 import { LineChart } from "./LineChart";
 import { Stepper } from "./Stepper";
 
-const lb = (v: number) => `${v} lb`;
+const lb = (v: number) => `${v} lbs`;
 
 /**
  * Body weight (Sergio, 2026-11-03): its home is Progress. The latest weigh-in, the change since the
@@ -29,7 +29,7 @@ export function BodyWeightCard() {
           {latest ? (
             <p className="text-sm text-stone-500">
               <span className="font-display text-2xl font-semibold text-stone-900">{latest.value}</span> lb · {friendlyDate(latest.date)}
-              {change !== null && ` · ${change > 0 ? "+" : ""}${change} lb since ${friendlyDate(points[0].date)}`}
+              {change !== null && ` · ${change > 0 ? "+" : ""}${change} lbs since ${friendlyDate(points[0].date)}`}
             </p>
           ) : (
             <p className="text-sm text-stone-500">Log a weigh-in to start the line.</p>
@@ -64,7 +64,7 @@ function LogSheet({ last, onClose }: { last?: number; onClose: () => void }) {
         <button type="button" disabled={log.isPending || !date || !(weight > 50)}
           onClick={async () => { await log.mutateAsync({ date, weightLb: weight }); onClose(); }}
           className="flex w-full items-center justify-center gap-2 rounded-xl bg-blue-600 py-3.5 text-lg font-semibold text-white disabled:opacity-50">
-          <Scales size={22} weight="fill" aria-hidden /> Save {weight} lb
+          <Scales size={22} weight="fill" aria-hidden /> Save {weight} lbs
         </button>
       </div>
     </BottomSheet>
