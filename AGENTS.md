@@ -50,9 +50,10 @@ A mobile-first web app where Sergio logs their gym workouts and sees their progr
   nothing changes until they accept. **Peloton screenshots** (Sergio, 2026-11-17: "I just want to add a
   photo"): qwen/qwen3.8-27b (`app/peloton.py`, `PELOTON_MODEL`) reads a class summary screenshot into
   stats; the date on the screen isn't read (it misread one in testing; the workout has its own).
-- **Weekly goal** (Sergio, 2026-11-17): 3 strength days (Push, Legs, Pull) and 1 cardio day (a ride,
-  run or walk, alone or after lifting), from the week of 2026-10-26 (the first ride); weeks before
-  keep the old goal of 3 workouts, so the streak carries over (`lib/progress.ts`: `GOAL`, `GOAL_FROM`). Decisions from stage 1 (2026-10-29): barbell weights
+- **The streak's weekly rule** (Sergio, 2026-11-23, stage 13a; replaced the plan-based goal of 12b and
+  the 3 strength + 1 cardio goal of 2026-11-17): **4 training days** in a week (any kind) grow the
+  streak, **2 or 3 hold it**, 0 or 1 use a shield or end it. Applied to the whole history
+  (`lib/progress.ts`: `GROW_DAYS`, `KEEP_DAYS`, `weekState`). Decisions from stage 1 (2026-10-29): barbell weights
   are written as plates and the app adds a 45 lb bar for totals; weighted dips and chin-ups track
   only the added weight; exercise names are English (Spanish spellings are aliases; notes stay
   as written, mostly Spanish); **bouldering and treadmill runs are part of the app** alongside
@@ -100,12 +101,17 @@ A mobile-first web app where Sergio logs their gym workouts and sees their progr
   - **Welcome page** opens on a grayscale gym photo (`src/assets/hardcore-gym.jpg`, chosen by Sergio)
     under the mark, then the live log: stats, the training-days heatmap, current targets, the note
     and clips; Continue / I'm Sergio stay in a bottom bar on phones.
-- **The streak, up front on Train** (stage 10a, reworked in 11a): the week streak, longest, shields,
-  **this week as four slots** (Push, Legs, Pull, Cardio; weeks run Monday to Sunday) and a labeled
-  ladder to the next milestone (4, 8, 12, 16, 24, 36, 52 weeks, then every 52); a link opens Progress.
-  **Shields** (Sergio, 2026-11-20; every 8 weeks since 11-23): every 8 weeks of the run earn one, and a missed week uses one up
-  instead of ending the streak. Crossing a milestone or earning a shield while the app is open shows
-  its own congrats. All in the frontend (`lib/progress.ts` `streaks`, `lib/streak.ts`,
+- **The streak, up front on Train** (stage 10a, reworked in 11a and 13a): the week streak, its tier,
+  longest, shields, **this week as four day slots** (filled in order with the day types trained; the
+  second "keeps", the fourth "grows"; weeks run Monday to Sunday), a ladder to the next streak tier, and
+  the workouts count with its tier; links open Progress.
+  **Shields** (Sergio, 2026-11-20; every 8 weeks since 11-23): every 8 weeks that grow the streak earn one,
+  and a week under 2 days uses one up instead of ending the streak.
+  **Tiers** (stage 13a, `lib/tiers.ts`, `components/Tiers.tsx`): streak tiers at 4, 8, 16, 24, 32, 52,
+  104 weeks (then every 52) and workout tiers at 50, 100, 200, 300, 400, 500, 750, 1000 workouts (then
+  every 250), each with a name and a Phosphor icon (brass when earned); the full ladders are a card on
+  Progress. Crossing a streak tier, earning a shield or reaching a workout tier while the app is open
+  shows its own congrats. All in the frontend (`lib/progress.ts` `streaks`, `lib/streak.ts`,
   `components/Streak.tsx`) from `/api/progress` days, replayed over the history; nothing is stored.
 - **Python** with **uv** (`uv sync`, `uv run pytest`, `uv add`). **Node 22+** (Vite 8).
 - **Testing against the local stack:** it holds Sergio's real history, and they may be using it from their
@@ -153,7 +159,8 @@ A mobile-first web app where Sergio logs their gym workouts and sees their progr
 | 9d | Peloton: the summary screenshot (from the photo library: no more forced camera, for every photo) is read into the class stats (`entry.peloton`); Peloton ride in the catalog; output chart on the ride's page and a Peloton card on Progress; weekly goal 3 strength + 1 cardio; Sergio's three November rides added; screenshots kept apart from setup photos; a Cardio day starts with the one activity picked; both AI features on in demos (capped) | #29 |
 | 10a | The Lovable redesign ("Iron & Ember"): ink and blood-red theme through Tailwind token remaps, Anton and Archivo, sharp corners, film grain, barbell logo and icons, gym photo on the welcome page; the streak card on Train with milestones and their congrats; a weekly ride in the sample log; re-recorded clips; follow-ups: iPhone Home Screen fix (grain under full-screen pages), landscape rail labels, all weekday letters, no goal line on the welcome chart, Sergio's gym photo, page under the clock in the Home Screen app | #32-#38 |
 | 11a-12b | Feedback round 2: streak shields, the ladder for going up, training plans (week types in a rotation, mixed days, optional days, history), the goal follows the plan, fixed headers everywhere, loading screen (details in the backlog) | #42-#48 |
-| 12c | Feedback: the plan editor as rotation list + week-type pages (quiet styling, confirm on duplicate/delete, reorder), every tab starts at the same height, delete from the workout page, the exercise picker as a full page, short InfoTips, the welcome note counts years from Aug 2014 | (open) |
+| 12c | Feedback: the plan editor as rotation list + week-type pages (quiet styling, confirm on duplicate/delete, reorder), every tab starts at the same height, delete from the workout page, the exercise picker as a full page, short InfoTips, the welcome note counts years from Aug 2014 | #49, #50 |
+| 13a | The streak counts training days (4 grow, 2-3 hold, 0-1 shield or end) over the whole history; streak and workout tiers with icons, a Tiers card on Progress and congrats; full-screen pages hide the app underneath on phones (the strip above the iPhone keyboard) | (open) |
 
 **Where things stand (2026-11-23):** PRs up to #48 are merged and live; stage 12c (the in-app feedback
 of 2026-11-23) is the open PR. The notes below on stage 10a are kept for context.
@@ -339,12 +346,9 @@ frontend/
   (`{plans: [{..., dayType, week: A/B}]}`, stage 11b, still on AWS) is read as two week types. Days
   can be `optional` (in the plan, not in the goal). Every save also writes **`PLANS#<savedAt µs>`**
   `{weeks, anchor?, savedAt, start}` (the history; `start` = the Monday it's in force from).
-- **The weekly goal follows the plan** (stage 12b): from the first saved version on, each week's goal
-  is its week type's non-optional days (strength = every kind but Cardio), from the version in force
-  that week (`plans.goals`, sent in `/api/progress`). Weeks before keep the fixed goal (`lib/progress.ts`
-  `GOAL`/`OLD_GOAL`), so the streak's past never changes. A planned week of only optional days is a
-  rest week and counts as met. The streak card's slots are that week's days (filled by kind first,
-  then any strength day for a strength slot).
+- **Plan goals** (stage 12b): `/api/progress` still sends each week's goal from the plans
+  (`plans.goals`), but since stage 13a the frontend ignores it: the streak counts training days
+  (section 1). Optional days only matter for which day is next up.
 - **`BODY#<date>`** `{date, weightLb, source}` (Progress, `/api/body`) · **`ROUTINE#<from>#<id>`** `{name, from, to, days[], notes,
   photos}` (the routine eras, for the evolution timeline) · later `ACTIVE` (workout in progress,
   server-side `startedAt`) and `SETTINGS`.

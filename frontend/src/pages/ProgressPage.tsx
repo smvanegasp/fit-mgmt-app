@@ -15,7 +15,9 @@ import { WorkoutCard } from "../components/WorkoutCard";
 import { useDesktop, useExerciseHistory, useExercises, useProgress, useWorkouts } from "../hooks";
 import { climbing } from "../lib/kinds";
 import { topSeries } from "../lib/series";
-import { SHIELD_EVERY, goalText, goalsByWeek, type Goals, shortDate, streaks, weekCounts, weekMet, weekRows } from "../lib/progress";
+import { SHIELD_EVERY, shortDate, streaks, weekCounts, weekRows, weekState, weekText } from "../lib/progress";
+import { TiersCard } from "../components/Tiers";
+import { weekNeedText, weekProgress } from "../lib/streak";
 import { localIso } from "../lib/time";
 import { longDate } from "../lib/weeks";
 
@@ -25,7 +27,6 @@ export function ProgressPage() {
   const screens = useScreens();
   const today = localIso().slice(0, 10);
   const days = progress.data?.days ?? [];
-  const goals = useMemo(() => goalsByWeek(progress.data?.goals), [progress.data]);
   const desktop = useDesktop();
 
   if (progress.isLoading) return <p className="py-10 text-center text-stone-500">Loading...</p>;
@@ -38,7 +39,8 @@ export function ProgressPage() {
     // Phones: one column. Computers: a dashboard (the year at a glance, lifts in a grid, the
     // routine next to the last workouts).
     <div className="space-y-3 pb-28 lg:space-y-6 lg:pb-12">
-      {desktop ? <YearConsistency days={days} today={today} goals={goals} /> : <Consistency days={days} today={today} goals={goals} />}
+      {desktop ? <YearConsistency days={days} today={today} /> : <Consistency days={days} today={today} />}
+      <Tiers days={days} today={today} />
 
       <section className="space-y-3 lg:space-y-0">
         <h2 className="flex items-center gap-1 px-1 pt-3 font-semibold lg:pt-0 lg:pb-3">
@@ -75,6 +77,12 @@ export function ProgressPage() {
   );
 }
 
+/** Workouts ever and the streak, as tiers (Sergio, 2026-11-23). */
+function Tiers({ days, today }: { days: ProgressDay[]; today: string }) {
+  const streak = useMemo(() => streaks(days, today), [days, today]);
+  return <TiersCard workouts={days.length} current={streak.current} longest={streak.longest} />;
+}
+
 /** Computers: the last workouts next to the routine (on phones they're on Train). */
 function LastWorkouts() {
   const workouts = useWorkouts(3);
@@ -95,10 +103,10 @@ function LastWorkouts() {
 
 /** Computers: the streak next to a year of training days (weeks as columns, Monday on top), with a
  * mark under each week that reached the goal. Same data as the phone's weeks view, laid wide. */
-function YearConsistency({ days, today, goals }: { days: ProgressDay[]; today: string; goals: Goals }) {
+function YearConsistency({ days, today }: { days: ProgressDay[]; today: string }) {
   const screens = useScreens();
   const counts = useMemo(() => weekCounts(days), [days]);
-  const streak = useMemo(() => streaks(days, today, goals), [days, today, goals]);
+  const streak = useMemo(() => streaks(days, today), [days, today]);
   const monday = weekRows(today, 1)[0].monday;
   const thisYear = days.filter((d) => d.date.startsWith(today.slice(0, 4))).length;
 
@@ -109,13 +117,13 @@ function YearConsistency({ days, today, goals }: { days: ProgressDay[]; today: s
         <div className="flex items-center gap-1 text-sm text-stone-500">
           week streak
           <InfoTip title="Streak">
-            Weeks in a row where you trained every planned day. Every {SHIELD_EVERY} weeks earn a shield, which saves the streak from one missed week.
+            4 training days in a week grow it, 2 keep it. Fewer uses a shield; you earn one every {SHIELD_EVERY} weeks it grows.
           </InfoTip>
         </div>
         <dl className="mt-5 space-y-3 text-sm">
           <div><dt className="text-stone-500">Longest</dt><dd className="font-semibold">{streak.longest} weeks</dd></div>
-          <div><dt className="text-stone-500">Shields</dt><dd className="flex items-center gap-1 font-semibold"><ShieldCheck size={14} weight="fill" className={streak.shields ? "text-sky-600" : "text-stone-300"} aria-hidden />{streak.shields} <span className="font-normal text-stone-500">· next in {streak.toShield} weeks</span></dd></div>
-          <div><dt className="text-stone-500">This week</dt><dd className="font-semibold">{goalText(monday, counts.get(monday), goals.get(monday))}</dd></div>
+          <div><dt className="text-stone-500">Shields</dt><dd className="flex items-center gap-1 font-semibold"><ShieldCheck size={14} weight="fill" className={streak.shields ? "text-sky-600" : "text-stone-300"} aria-hidden />{streak.shields} <span className="font-normal text-stone-500">· next in {streak.toShield} week{streak.toShield === 1 ? "" : "s"}</span></dd></div>
+          <div><dt className="text-stone-500">This week</dt><dd className="font-semibold">{counts.get(monday)?.workouts ?? 0} days · {weekNeedText(weekProgress(days, today))}</dd></div>
           <div><dt className="text-stone-500">In {today.slice(0, 4)}</dt><dd className="font-semibold">{thisYear} workouts</dd></div>
         </dl>
       </div>
@@ -124,8 +132,8 @@ function YearConsistency({ days, today, goals }: { days: ProgressDay[]; today: s
           <h2 className="font-semibold">Consistency</h2>
           <TypeLegend />
         </div>
-        <div className="mt-4"><Heatmap days={days} today={today} onOpen={screens.openWorkout} goals={goals} /></div>
-        <p className="mt-2 text-xs text-stone-500">The red marks under the weeks reached the goal. Click a day to open it.</p>
+        <div className="mt-4"><Heatmap days={days} today={today} onOpen={screens.openWorkout} /></div>
+        <p className="mt-2 text-xs text-stone-500">Under each week: red grew the streak (4+ days), gray held it (2 or 3). Click a day to open it.</p>
       </div>
     </section>
   );
@@ -229,12 +237,12 @@ const WEEKDAYS = ["M", "T", "W", "T", "F", "S", "S"];
 
 /** The streak, and the last weeks as rows of 7 days (training days in their day type's color) with
  * each week's count: one view for the calendar, workouts per week and the streak. */
-function Consistency({ days, today, goals }: { days: ProgressDay[]; today: string; goals: Goals }) {
+function Consistency({ days, today }: { days: ProgressDay[]; today: string }) {
   const screens = useScreens();
   const [count, setCount] = useState(12);
   const byDate = useMemo(() => new Map(days.map((d) => [d.date, d])), [days]);
   const counts = useMemo(() => weekCounts(days), [days]);
-  const streak = useMemo(() => streaks(days, today, goals), [days, today, goals]);
+  const streak = useMemo(() => streaks(days, today), [days, today]);
   const first = days[0].date;
   // No empty weeks from before the first workout.
   const rows = weekRows(today, count).filter((row) => row.days[6] >= first);
@@ -251,7 +259,7 @@ function Consistency({ days, today, goals }: { days: ProgressDay[]; today: strin
           </div>
         </div>
         <InfoTip title="Streak">
-          Weeks in a row where you trained every planned day. Every {SHIELD_EVERY} weeks earn a shield, which saves the streak from one missed week. Tap a day to open it.
+          4 training days in a week grow it, 2 keep it. Fewer uses a shield; you earn one every {SHIELD_EVERY} weeks it grows. Tap a day to open it.
         </InfoTip>
       </div>
       <div className="mt-3"><TypeLegend /></div>
@@ -263,7 +271,7 @@ function Consistency({ days, today, goals }: { days: ProgressDay[]; today: strin
         {rows.map((row, r) => {
           const week = counts.get(row.monday);
           const n = week?.workouts ?? 0;
-          const met = weekMet(row.monday, week, goals.get(row.monday));
+          const state = weekState(n);
           const covered = streak.shielded.includes(row.monday);
           // Newest first: the month shows on its newest week (weeks go by their Monday).
           const month = r === 0 || row.monday.slice(0, 7) !== rows[r - 1].monday.slice(0, 7);
@@ -281,9 +289,9 @@ function Consistency({ days, today, goals }: { days: ProgressDay[]; today: strin
               }
               return <span key={day} className={`h-6 rounded-md ${day > today || day < first ? "" : "bg-stone-100"} ${ring}`} />;
             }),
-            <span key={`${row.monday}-n`} title={goalText(row.monday, week, goals.get(row.monday))} className={`flex items-center justify-end gap-0.5 tabular-nums ${met ? "font-semibold text-stone-800" : "text-stone-400"}`}>
+            <span key={`${row.monday}-n`} title={weekText(n)} className={`flex items-center justify-end gap-0.5 tabular-nums ${state === "grow" ? "font-semibold text-stone-800" : state === "hold" ? "text-stone-600" : "text-stone-400"}`}>
               {n > 0 && n}
-              {met && <Check size={12} weight="bold" aria-label="goal reached" />}
+              {state === "grow" && <Check size={12} weight="bold" aria-label="grew the streak" />}
               {covered && <ShieldCheck size={12} weight="fill" className="text-sky-600" aria-label="covered by a shield" />}
             </span>,
           ];

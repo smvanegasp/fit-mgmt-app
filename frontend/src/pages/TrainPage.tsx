@@ -6,6 +6,7 @@ import { BottomSheet } from "../components/BottomSheet";
 import { InfoTip } from "../components/InfoTip";
 import { PlanEditor } from "../components/PlanEditor";
 import { StreakCard, StreakCelebration } from "../components/Streak";
+import { WorkoutTierCelebration } from "../components/Tiers";
 import { WorkoutCard } from "../components/WorkoutCard";
 import { useScreens } from "../components/Screens";
 import { WorkoutEditor } from "../components/WorkoutEditor";
@@ -25,7 +26,8 @@ import {
 import { formatDuration } from "../lib/duration";
 import { abandonedAt, currentLap, lapRows } from "../lib/laps";
 import { isLogged, lastCardio, nextWeek, planEntries, startingEntries, weekOptions, type DayOption } from "../lib/plan";
-import { goalsByWeek, streaks } from "../lib/progress";
+import { streaks } from "../lib/progress";
+import type { Tier } from "../lib/tiers";
 import { dayType, heavyNext, nextUp, setCount } from "../lib/sets";
 import { streakNews } from "../lib/streak";
 import { clockTime, friendlyDate, localIso, secondsBetween } from "../lib/time";
@@ -36,23 +38,26 @@ export function TrainPage() {
   const screens = useScreens();
   const [ended, dismiss] = useAutoFinish(active.data);
   const progress = useProgress();
-  // The congrats for crossing a streak milestone or earning a shield: fired once, when it happens.
-  const [news, setNews] = useState<{ weeks: number; shield: boolean } | null>(null);
-  const seen = useRef<{ current: number; shields: number } | null>(null);
+  // The congrats for a new streak tier, a shield or a workout tier: fired once, when it happens.
+  const [news, setNews] = useState<{ weeks: number; shield: boolean } | { workouts: Tier } | null>(null);
+  const seen = useRef<{ current: number; shields: number; workouts: number } | null>(null);
 
   useEffect(() => {
     const days = progress.data?.days;
     if (!days) return;
-    const now = streaks(days, localIso().slice(0, 10), goalsByWeek(progress.data?.goals));
+    const now = { ...streaks(days, localIso().slice(0, 10)), workouts: days.length };
     const was = seen.current;
     seen.current = now;
     if (!was) return;
-    const { milestone, shield } = streakNews(was, now);
+    const { milestone, shield, workouts } = streakNews(was, now);
     if (milestone) setNews({ weeks: milestone, shield: false });
     else if (shield) setNews({ weeks: now.current, shield: true });
+    else if (workouts) setNews({ workouts });
   }, [progress.data]);
 
-  const congrats = news ? <StreakCelebration weeks={news.weeks} shield={news.shield} onClose={() => setNews(null)} /> : null;
+  const congrats = !news ? null : "workouts" in news
+    ? <WorkoutTierCelebration tier={news.workouts} onClose={() => setNews(null)} />
+    : <StreakCelebration weeks={news.weeks} shield={news.shield} onClose={() => setNews(null)} />;
 
   if (active.isLoading) return null;
   if (active.error) return <p className="mt-16 text-center text-red-600">Couldn't load: {active.error.message}</p>;
@@ -184,7 +189,7 @@ function Idle({ onOpen }: { onOpen: (w: Workout) => void }) {
     <div className="pb-28 [&>*:first-child]:mt-0">
       {progress.data && (
         <div className="mt-6">
-          <StreakCard days={progress.data.days} today={today} goals={goalsByWeek(progress.data.goals)} />
+          <StreakCard days={progress.data.days} today={today} />
         </div>
       )}
       <section className="mt-6">

@@ -1,7 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { addDays, goalsByWeek, streaks, weekCounts, weekMet } from "./progress";
-import { weekStart } from "./weeks";
+import { addDays, streaks } from "./progress";
 import {
   daysLeftText,
   milestoneAt,
@@ -9,186 +8,110 @@ import {
   milestoneCrossed,
   nextMilestone,
   streakAtRisk,
-  weekRemaining,
-  weekSlots,
   streakNews,
   streakStatus,
+  weekNeedText,
+  weekProgress,
+  weekSlots,
 } from "./streak";
+import { STREAK_TIERS, WORKOUT_TIERS, nextTier, tierAt, tierCrossed } from "./tiers";
+import { weekStart } from "./weeks";
 
-const MONDAY = weekStart("2026-11-18"); // the week of the demo's "today"
-const SUNDAY = addDays(MONDAY, 6);
+const MONDAY = weekStart("2026-11-18");
 
-describe("streak milestones", () => {
-  it("counts weeks in a row against the goal", () => {
-    expect(milestoneAt(0)).toBe(0);
-    expect(milestoneAt(3)).toBe(0);
-    expect(milestoneAt(4)).toBe(4);
-    expect(milestoneAt(11)).toBe(8);
-    expect(milestoneAt(52)).toBe(52);
-  });
+/** `n` training days from a Monday. */
+const week = (monday: string, n: number, type = "Push") => Array.from({ length: n }, (_, i) => ({ date: addDays(monday, i), type }));
+/** `count` weeks of `n` days each, ending the week before `MONDAY`. */
+const weeks = (count: number, n = 4) => Array.from({ length: count }, (_, i) => week(addDays(MONDAY, -7 * (count - i)), n)).flat();
 
-  it("aims at the next milestone, and at a new one every year past 52", () => {
-    expect(nextMilestone(0)).toBe(4);
-    expect(nextMilestone(4)).toBe(8);
-    expect(nextMilestone(52)).toBe(104);
+describe("streak milestones are the tiers", () => {
+  it("steps 4, 8, 16, 24, 32, 52, 104, then every 52", () => {
+    expect(STREAK_TIERS.map((t) => t.at)).toEqual([4, 8, 16, 24, 32, 52, 104]);
+    expect(milestoneAt(9)).toBe(8);
+    expect(nextMilestone(9)).toBe(16);
     expect(nextMilestone(104)).toBe(156);
+    expect(milestoneAt(160)).toBe(156);
   });
 
   it("shows the band being climbed", () => {
+    expect(milestoneBand(9)).toEqual({ filled: 1, total: 8, to: 16 });
     expect(milestoneBand(0)).toEqual({ filled: 0, total: 4, to: 4 });
-    expect(milestoneBand(1)).toEqual({ filled: 1, total: 4, to: 4 });
-    expect(milestoneBand(5)).toEqual({ filled: 1, total: 4, to: 8 });
-    // Standing on a milestone means the next band starts empty.
-    expect(milestoneBand(12)).toEqual({ filled: 0, total: 4, to: 16 });
-    expect(milestoneBand(52)).toEqual({ filled: 0, total: 52, to: 104 });
   });
 
   it("fires once, for the milestone actually crossed", () => {
-    expect(milestoneCrossed(3, 4)).toBe(4);
-    expect(milestoneCrossed(3, 5)).toBe(4);
-    expect(milestoneCrossed(4, 5)).toBeNull();
-    expect(milestoneCrossed(5, 5)).toBeNull();
-    expect(milestoneCrossed(5, 4)).toBeNull();
-    expect(milestoneCrossed(11, 12)).toBe(12);
-    expect(milestoneCrossed(51, 52)).toBe(52);
+    expect(milestoneCrossed(7, 8)).toBe(8);
+    expect(milestoneCrossed(8, 9)).toBeNull();
+    expect(milestoneCrossed(9, 9)).toBeNull();
   });
 });
 
-describe("what this week still needs", () => {
-  const day = (offset: number, type: string) => ({ date: addDays(MONDAY, offset), type });
-
-  it("names the strength and cardio days still missing", () => {
-    const days = [day(0, "Push"), day(1, "Legs")]; // 2 strength, no cardio yet
-    const r = weekRemaining(days, MONDAY);
-    expect(r.met).toBe(false);
-    expect(r.text).toBe("1 strength day and 1 cardio day");
-    expect(r.daysLeft).toBe(6);
+describe("workout tiers", () => {
+  it("50, 100, 200, 300, 400, 500, 750, 1000, then every 250", () => {
+    expect(tierAt(WORKOUT_TIERS, 49)).toBeNull();
+    expect(tierAt(WORKOUT_TIERS, 190)?.name).toBe("Bronze");
+    expect(nextTier(WORKOUT_TIERS, 190)).toMatchObject({ at: 200, name: "Silver" });
+    expect(nextTier(WORKOUT_TIERS, 1000).at).toBe(1250);
+    expect(tierCrossed(WORKOUT_TIERS, 199, 200)?.name).toBe("Silver");
+    expect(tierCrossed(WORKOUT_TIERS, 200, 201)).toBeNull();
   });
+});
 
-  it("is met once 3 strength days and 1 cardio day are in", () => {
-    const days = [day(0, "Push"), day(1, "Legs"), day(2, "Pull"), day(3, "Cardio")];
-    const r = weekRemaining(days, MONDAY);
-    expect(r.met).toBe(true);
-    expect(r.text).toBe("Week's goal reached");
-  });
-
-  it("treats a cardio ride that same day as counting", () => {
-    const days = [day(0, "Push"), day(1, "Legs"), day(2, "Pull"), { date: addDays(MONDAY, 2), type: "Cardio" }];
-    expect(weekRemaining(days, MONDAY).met).toBe(true);
+describe("this week", () => {
+  it("counts days and says what's next", () => {
+    const w = weekProgress(week(MONDAY, 1), addDays(MONDAY, 2));
+    expect(w).toEqual({ days: 1, state: "miss", daysLeft: 4 });
+    expect(weekNeedText(w)).toBe("1 more day keeps it");
+    expect(weekNeedText(weekProgress(week(MONDAY, 2), addDays(MONDAY, 2)))).toBe("2 more days grow it");
+    expect(weekNeedText(weekProgress(week(MONDAY, 4), addDays(MONDAY, 4)))).toBe("Grew the streak");
   });
 
   it("runs out of days on Sunday", () => {
-    const r = weekRemaining([day(0, "Push")], SUNDAY);
-    expect(r.daysLeft).toBe(0);
-    expect(daysLeftText(r.daysLeft)).toBe("today is the last day");
+    expect(weekProgress([], addDays(MONDAY, 6)).daysLeft).toBe(0);
+    expect(daysLeftText(0)).toBe("today is the last day");
     expect(daysLeftText(1)).toBe("1 day left");
-    expect(daysLeftText(3)).toBe("3 days left");
   });
 
-  it("warns only when the week is short on days", () => {
-    const days = [day(0, "Push")];
-    expect(streakAtRisk(days, MONDAY)).toBe(false); // 6 days left
-    expect(streakAtRisk(days, addDays(MONDAY, 4))).toBe(true); // 2 days left
-    expect(streakAtRisk(days, SUNDAY)).toBe(true);
-    // The same week, goal met, is never at risk.
-    expect(streakAtRisk([day(0, "Push"), day(1, "Legs"), day(2, "Pull"), day(3, "Cardio")], SUNDAY)).toBe(false);
-  });
-});
-
-describe("this week's slots", () => {
-  const day = (offset: number, type: string, cardio = false) => ({ date: addDays(MONDAY, offset), type, cardio });
-
-  it("starts as the rotation and a cardio day, all to do", () => {
-    expect(weekSlots([], MONDAY)).toEqual([
-      { type: "Push", done: false }, { type: "Legs", done: false }, { type: "Pull", done: false }, { type: "Cardio", done: false },
-    ]);
+  it("warns only when under 2 days late in the week", () => {
+    expect(streakAtRisk(week(MONDAY, 1), addDays(MONDAY, 3))).toBe(false);
+    expect(streakAtRisk(week(MONDAY, 1), addDays(MONDAY, 4))).toBe(true);
+    expect(streakAtRisk(week(MONDAY, 2), addDays(MONDAY, 6))).toBe(false);
   });
 
-  it("fills the days trained in order, the rest show what's missing", () => {
-    expect(weekSlots([day(1, "Legs")], MONDAY)).toEqual([
-      { type: "Legs", done: true }, { type: "Push", done: false }, { type: "Pull", done: false }, { type: "Cardio", done: false },
-    ]);
-    // Two Push days still count as two strength days.
-    expect(weekSlots([day(0, "Push"), day(2, "Push"), day(3, "Legs", true)], MONDAY)).toEqual([
-      { type: "Push", done: true }, { type: "Push", done: true }, { type: "Legs", done: true }, { type: "Cardio", done: true },
-    ]);
-  });
-
-  it("ignores last week", () => {
-    expect(weekSlots([{ date: addDays(MONDAY, -1), type: "Push" }], MONDAY).every((s) => !s.done)).toBe(true);
+  it("fills four slots in the order trained, any kind, and counts days past four", () => {
+    const days = [{ date: addDays(MONDAY, 1), type: "Legs" }, { date: MONDAY, type: "Cardio" }];
+    const { slots, extra } = weekSlots(days, addDays(MONDAY, 2));
+    expect(slots).toEqual([{ type: "Cardio", done: true }, { type: "Legs", done: true }, { type: "", done: false }, { type: "", done: false }]);
+    expect(extra).toBe(0);
+    expect(weekSlots(week(MONDAY, 6), addDays(MONDAY, 6)).extra).toBe(2);
+    expect(weekSlots(week(addDays(MONDAY, -7), 4), MONDAY).slots.every((s) => !s.done)).toBe(true);
   });
 });
 
 describe("shields", () => {
-  // Weeks of the new goal from GOAL_FROM: Push, Legs, Pull and a ride.
-  const full = (monday: string) => ["Push", "Legs", "Pull", "Cardio"].map((type, i) => ({ date: addDays(monday, i), type }));
-  const weeks = (from: string, n: number) => Array.from({ length: n }, (_, i) => full(addDays(from, 7 * i))).flat();
-  const START = "2026-10-26";
-
-  it("earns one every 8 weeks of the streak", () => {
-    const s = streaks(weeks(START, 7), addDays(START, 7 * 6 + 6));
-    expect(s).toMatchObject({ current: 7, shields: 0, toShield: 1 });
-    const t = streaks(weeks(START, 8), addDays(START, 7 * 7 + 6));
-    expect(t).toMatchObject({ current: 8, shields: 1, toShield: 8 });
+  it("earn one every 8 weeks that grow it; held weeks don't earn", () => {
+    expect(streaks(weeks(8), MONDAY)).toMatchObject({ current: 8, shields: 1, toShield: 8 });
+    expect(streaks([...weeks(7), ...week(MONDAY, 3)], addDays(MONDAY, 6))).toMatchObject({ current: 7, shields: 0, toShield: 1 });
   });
 
-  it("a missed week uses one up and keeps the streak", () => {
-    const days = [...weeks(START, 8), ...weeks(addDays(START, 7 * 9), 2)]; // week 9 missed
-    const s = streaks(days, addDays(START, 7 * 10 + 6));
-    expect(s).toMatchObject({ current: 10, longest: 10, shields: 0, shielded: [addDays(START, 56)] });
-  });
-
-  it("without a shield a missed week ends the streak", () => {
-    const days = [...weeks(START, 5), ...weeks(addDays(START, 7 * 6), 1)];
-    expect(streaks(days, addDays(START, 7 * 6 + 6))).toMatchObject({ current: 1, shields: 0, toShield: 7 });
+  it("a week under 2 days uses one up and keeps the streak", () => {
+    const days = [...weeks(9).slice(0, 32), ...week(addDays(MONDAY, -7), 1)];
+    expect(streaks(days, MONDAY)).toMatchObject({ current: 8, shields: 0 });
   });
 
   it("this week can't use a shield before it ends", () => {
-    const s = streaks(weeks(START, 8), addDays(START, 7 * 8 + 2));
-    expect(s).toMatchObject({ current: 8, shields: 1, shielded: [] });
+    expect(streaks(weeks(8), addDays(MONDAY, 6))).toMatchObject({ current: 8, shields: 1 });
   });
 
   it("tells the congrats what happened", () => {
-    expect(streakNews({ current: 11, shields: 1 }, { current: 12, shields: 1 })).toEqual({ milestone: 12, shield: false });
-    expect(streakNews({ current: 9, shields: 0 }, { current: 10, shields: 1 })).toEqual({ milestone: null, shield: true });
-    expect(streakNews({ current: 10, shields: 1 }, { current: 10, shields: 1 })).toEqual({ milestone: null, shield: false });
+    expect(streakNews({ current: 7, shields: 0 }, { current: 8, shields: 1 })).toEqual({ milestone: 8, shield: true, workouts: null });
+    expect(streakNews({ current: 9, shields: 1, workouts: 199 }, { current: 9, shields: 1, workouts: 200 }).workouts?.name).toBe("Silver");
   });
 
   it("keeps a just-reached milestone's band full for the rest of the week", () => {
-    expect(streakStatus(weeks(START, 4), addDays(START, 7 * 3 + 4)).onMilestone).toBe(true);
-    expect(streakStatus(weeks(START, 4), addDays(START, 7 * 4 + 1)).onMilestone).toBe(false);
-  });
-});
-
-describe("the goal follows the plan", () => {
-  const day = (offset: number, type: string, cardio = false) => ({ date: addDays(MONDAY, offset), type, cardio });
-  const upperLower = {
-    week: "Upper/lower week", strength: 4, cardio: 1,
-    days: [{ name: "Upper 1", kind: "Upper" }, { name: "Lower 1", kind: "Lower" }, { name: "Upper 2", kind: "Upper" },
-      { name: "Lower 2", kind: "Lower" }, { name: "Ride", kind: "Cardio" }],
-  };
-  const goals = goalsByWeek([{ monday: MONDAY, ...upperLower }]);
-
-  it("judges the week by its plan", () => {
-    const three = [day(0, "Upper"), day(1, "Lower"), day(2, "Upper"), day(3, "Cardio")];
-    expect(weekMet(MONDAY, weekCounts(three).get(MONDAY), goals.get(MONDAY))).toBe(false);
-    const all = [...three, day(4, "Lower")];
-    expect(weekMet(MONDAY, weekCounts(all).get(MONDAY), goals.get(MONDAY))).toBe(true);
-    // Without a plan for the week, the fixed 3 + 1.
-    expect(weekMet(MONDAY, weekCounts(three).get(MONDAY))).toBe(true);
-  });
-
-  it("a planned week of only optional days is a rest week, met as it is", () => {
-    expect(weekMet(MONDAY, undefined, { strength: 0, cardio: 0 })).toBe(true);
-  });
-
-  it("shows the plan's days as the slots, filled by kind first", () => {
-    const slots = weekSlots([day(0, "Lower"), day(1, "Push", true)], SUNDAY, goals.get(MONDAY));
-    expect(slots.map((s) => [s.name, s.done])).toEqual([
-      ["Upper 1", true], ["Lower 1", true], ["Upper 2", false], ["Lower 2", false], ["Ride", true],
-    ]);
-    const status = streakStatus([day(0, "Lower")], SUNDAY, goals);
-    expect(status.weekName).toBe("Upper/lower week");
-    expect(status.week.text).toBe("3 strength days and 1 cardio day");
+    const s = streakStatus([...weeks(7), ...week(MONDAY, 4)], addDays(MONDAY, 4));
+    expect(s.current).toBe(8);
+    expect(s.onMilestone).toBe(true);
+    expect(s.tier?.name).toBe("Ember");
+    expect(s.next.name).toBe("Flame");
   });
 });

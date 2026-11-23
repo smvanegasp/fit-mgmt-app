@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import type { Step } from "../api";
-import { goalText, shortDate, stepDates, streaks, weekCounts, weekMet, weekRows } from "./progress";
+import { shortDate, stepDates, streaks, weekCounts, weekRows, weekState, weekText } from "./progress";
 
 describe("weekRows", () => {
   it("lists weeks newest first, Monday to Sunday", () => {
@@ -21,51 +21,35 @@ describe("weekRows", () => {
   });
 });
 
-describe("the weekly goal", () => {
-  const strength = (date: string) => ({ date, type: "Push" });
-  const ride = (date: string) => ({ date, type: "Cardio", cardio: true });
-
-  it("from the week of Oct 26, 2026: 3 strength days and 1 cardio day", () => {
-    const c = (days: { date: string; type: string; cardio?: boolean }[]) => weekCounts(days).get("2026-11-09");
-    const lifting = [strength("2026-11-09"), strength("2026-11-11"), strength("2026-11-14")];
-    expect(weekMet("2026-11-09", c(lifting))).toBe(false);
-    expect(weekMet("2026-11-09", c([...lifting, ride("2026-11-15")]))).toBe(true);
-    expect(weekMet("2026-11-09", c([strength("2026-11-09"), ride("2026-11-10"), ride("2026-11-12"), ride("2026-11-15")]))).toBe(false);
-    expect(goalText("2026-11-09", c(lifting))).toBe("3 of 3 strength · 0 of 1 cardio");
-  });
-
-  it("before it: 3 workouts of any kind", () => {
-    const c = weekCounts([strength("2026-10-12"), strength("2026-10-14"), strength("2026-10-16")]).get("2026-10-12");
-    expect(weekMet("2026-10-12", c)).toBe(true);
-    expect(goalText("2026-10-12", c)).toBe("3 of 3 workouts");
-  });
-
-  it("keeps the streak across the change", () => {
-    const days = [
-      strength("2026-10-12"), strength("2026-10-14"), strength("2026-10-16"),
-      strength("2026-10-19"), strength("2026-10-21"), strength("2026-10-23"),
-      strength("2026-10-26"), strength("2026-10-28"), strength("2026-10-29"), ride("2026-11-01"),
-    ];
-    expect(streaks(days, "2026-11-02")).toMatchObject({ current: 3, longest: 3 });
+describe("the weekly rule", () => {
+  it("4 days grow the streak, 2 or 3 hold it, 0 or 1 miss", () => {
+    expect([0, 1, 2, 3, 4, 5].map(weekState)).toEqual(["miss", "miss", "hold", "hold", "grow", "grow"]);
+    expect(weekText(3)).toBe("3 days: held");
+    expect(weekText(1)).toBe("1 day: missed");
   });
 });
 
 describe("streaks", () => {
   const week = (monday: string, n: number) => Array.from({ length: n }, (_, i) => ({ date: `${monday.slice(0, 8)}${String(Number(monday.slice(8)) + i).padStart(2, "0")}` }));
 
-  it("counts weeks in a row that reach the goal", () => {
-    const days = [...week("2026-09-07", 3), ...week("2026-09-14", 2), ...week("2026-09-21", 3), ...week("2026-09-28", 4), ...week("2026-10-05", 3)];
+  it("counts weeks of 4+ days; weeks of 2 or 3 hold it without adding", () => {
+    const days = [...week("2026-09-07", 4), ...week("2026-09-14", 3), ...week("2026-09-21", 4), ...week("2026-09-28", 2), ...week("2026-10-05", 5)];
     expect(streaks(days, "2026-10-11")).toMatchObject({ current: 3, longest: 3 });
   });
 
+  it("any kind of day counts", () => {
+    const days = ["2026-10-05", "2026-10-06", "2026-10-07", "2026-10-08"].map((date, i) => ({ date, type: i ? "Cardio" : "Legs" }));
+    expect(streaks(days, "2026-10-11").current).toBe(1);
+  });
+
   it("this week doesn't break the streak until it's over", () => {
-    const days = [...week("2026-10-12", 3), ...week("2026-10-19", 3), ...week("2026-10-26", 1)];
+    const days = [...week("2026-10-12", 4), ...week("2026-10-19", 4), ...week("2026-10-26", 1)];
     expect(streaks(days, "2026-10-28")).toMatchObject({ current: 2, longest: 2 });
     expect(streaks(days, "2026-11-03").current).toBe(0);
   });
 
-  it("an empty week breaks it", () => {
-    const days = [...week("2026-10-05", 3), ...week("2026-10-19", 3)];
+  it("a week under 2 days ends it without a shield", () => {
+    const days = [...week("2026-10-05", 4), ...week("2026-10-12", 1), ...week("2026-10-19", 4)];
     expect(streaks(days, "2026-10-25")).toMatchObject({ current: 1, longest: 1 });
     expect(streaks([], "2026-10-25")).toMatchObject({ current: 0, longest: 0 });
   });

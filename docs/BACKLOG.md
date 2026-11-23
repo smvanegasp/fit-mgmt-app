@@ -145,6 +145,41 @@ Checked: backend 121 and frontend 100 tests, build, the real log (read-only: no 
 goals and the streak unchanged), screenshots in a sample demo with an Upper/Lower plan saved in that
 sandbox (five named slots, the goal of 4 strength days). Not tested: Restore in a browser (API tests only), the iPhone.
 
+## Stage 13a: the streak counts training days, tiers (`stage-13a-streak-tiers`, Sergio 2026-11-23)
+
+Sergio's request: grow the streak with 4 training days a week, hold it with 2 or 3 (any kind), and use a
+shield under 2; replay it over the whole history; plus tiers for workouts (50, 100, 200, 300, 400...)
+and streaks (4, 8, 16, 32... weeks), each with its own icon, and their current and best tier.
+
+**Analysis** (the real log on AWS, read-only, 190 workout days from Sep 2025, 64 finished weeks): 27
+weeks had 4 days, 4 had 5, 13 had 3, 9 had 2, 5 had 1 and 6 had 0. So 4 days is reached about half the
+time, and 2+ in 83% of weeks: the hold band is what keeps a run alive. Replayed with shields every 8
+growing weeks:
+
+| Rule | Current | Longest | Shields |
+|---|---|---|---|
+| **Sergio's: 4 grow, 2-3 hold, 0-1 shield** (built) | **9** | **10** (Jun-Aug 2026) | 1 |
+| Same, shield every 4 weeks | 19 | 19 | 2 (too forgiving) |
+| 3 grow, 2 hold | 11 | 11 | 1 |
+| 4 grow, no hold | 4 | 7 | 0 (too harsh: the summer run breaks twice) |
+
+The card showed 11 under the old goal; it now reads 9, honest to "4 days a week". Recommendation
+taken: Sergio's rule as is, shields unchanged (every 8 growing weeks; held weeks don't earn).
+
+| Item | Done |
+|---|---|
+| The rule | `weekState` / `streaks` in `lib/progress.ts`; any kind of day counts, one per date. The plan no longer sets the goal (12b's plan goals are ignored); optional days only affect next up. |
+| Train card | Four day slots filled in the order trained (day-type colors), "keeps" under the second and "grows" under the fourth, "1 more day keeps it" / "2 more days grow it"; amber late in the week under 2 days. |
+| Streak tiers | Spark 4, Ember 8, Flame 16, Blaze 24, Inferno 32, Forged 52, Eternal 104 weeks, then every 52 (Sergio suggested doubling or multiples of 8; doubling leaves 32 to 64 as a 32-week gap, so after 32 it goes to a year, then two). Current tier next to the streak, the next one on the ladder, the congrats shows the new tier. |
+| Workout tiers | Iron 50, Bronze 100, Silver 200, Gold 300, Platinum 400, Diamond 500, Titan 750, Legend 1000, then every 250. Sergio is at 190 (Bronze, 10 to Silver). Line on the Train card, congrats on reaching one. |
+| Progress | A Tiers card: workouts and streak, each a row of tier badges (earned in brass, the next outlined, the best ever streak tier faded in). Week rows and the heatmap mark weeks that grew (red, check) and held (gray). |
+| (In-app feedback) The picker still showed the page behind above the iPhone keyboard after #50. | iOS shrinks the window with the keyboard in the Home Screen app, so sizing the page wasn't enough. Full-screen pages now hide the app underneath on phones while open (`useCoverApp` in `lib/scrollLock.ts`, counted), and size from the larger of the window and the screen. |
+
+Checked: frontend 92 tests (the goal tests replaced by ones for the rule, tiers and news), build, the
+replay above, a sample demo at 390x844 dark and light and 1440x900 (the card, the Tiers card, the
+heatmap marks), the app hidden under a page and back at its scroll on close. Not tested: the tier and
+shield congrats in a browser (unit tests only), the iPhone keyboard.
+
 ## Stage 12c: in-app feedback (`stage-12c-feedback`, 7 notes from Sergio, 2026-11-23)
 
 | Feedback | Done |
