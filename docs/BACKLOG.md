@@ -26,8 +26,8 @@ Sergio merges.
 
 ## Now
 
-Stage 11: the second round of in-app feedback (18 notes from Sergio, 2026-11-19 to 11-22): 11a (#42)
-11b (#43), 11c (#44) and 11d (#45) are merged. Open: 11e (#46, the search with the iPhone keyboard), 12a (#47, flexible weeks, loading screen) and 12b (the goal follows the plan).
+Stages 11a to 12b (#42-#48) are merged. Open: 12c (seven notes left in the app on 2026-11-23: plan
+editor, tab tops, delete a workout, the picker as a page, shorter info pop-ups, the welcome note's years).
 
 ## Stage 11: feedback round 2 (2026-11-22)
 
@@ -144,6 +144,24 @@ the iPhone.
 Checked: backend 121 and frontend 100 tests, build, the real log (read-only: no versions yet, so no plan
 goals and the streak unchanged), screenshots in a sample demo with an Upper/Lower plan saved in that
 sandbox (five named slots, the goal of 4 strength days). Not tested: Restore in a browser (API tests only), the iPhone.
+
+## Stage 12c: in-app feedback (`stage-12c-feedback`, 7 notes from Sergio, 2026-11-23)
+
+| Feedback | Done |
+|---|---|
+| The welcome note's "12 years" will go stale: count from August 2014, rounded up. | `yearsSince("2014-08")` in `lib/time.ts` (always rounds up), so it reads **13** today. |
+| Info pop-ups are too long to be read. | Every InfoTip cut to one or two short sentences. |
+| Editing plans isn't intuitive, and the red highlights look cheap. | Rebuilt as list then detail: the plan page is **the rotation** (week types in order, numbered, with their days, a quiet "This week" tag, up/down arrows), and tapping one opens it on its **own page** (name, "Current week", days, Duplicate, Delete). No red outlines or fills; neutral borders and stone icons. Save stays on the plan page. |
+| Copying a week should confirm first; week types should be reorderable. | Duplicate and Delete each ask in a sheet first. Reordering is up/down on each row of the rotation. |
+| Tabs start at different heights. | Each page had its own top margin (Train 24 px, History and Progress 8, Settings 0); all removed, so every tab starts its first block at the same spot. |
+| A way to delete a workout logged by mistake. | It existed only at the bottom of Edit. The workout page header now has a trash button with a confirm sheet. |
+| Adding an exercise felt odd: a sheet over the workout that moved once typing. | The picker is a full page (`Screen`, new `top` slot and `fitKeyboard`, sized to the area above the keyboard) with the search fixed at the top. |
+| (Found on the way) Saving plans didn't refresh the streak's goals. | `useSavePlans` invalidated a `["progress"]` key that doesn't exist; now `["workouts", "progress"]`. |
+
+Checked: frontend 101 tests, build, a sample demo at 390x844 (dark and light) and 1440x900: tab tops
+measured equal, the plan page and a week type's page, Duplicate's confirm, the picker page with a search,
+the delete sheet (Keep it; nothing deleted). Not tested: the picker with the iPhone keyboard, saving a
+reordered rotation in a browser, Sergio's phone.
 
 ## Stage 10a: the Lovable redesign (2026-11-17)
 

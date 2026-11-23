@@ -77,7 +77,9 @@ A mobile-first web app where Sergio logs their gym workouts and sees their progr
   status (say what wasn't tested). They want to be asked what to have ready before a step that
   needs them (credentials, exports, DNS).
 - **UI style:** no emojis anywhere. Phosphor icons (`@phosphor-icons/react`, `weight="fill"`).
-  Add an `InfoTip` (copy from the pantry) wherever a feature isn't obvious.
+  Add an `InfoTip` (copy from the pantry) wherever a feature isn't obvious. **Keep each one to one or two
+  short sentences** (Sergio, 2026-11-23: "if they are short people will read them"). Page tops: pages
+  start with no top margin, so every tab's first block sits at the same height.
 - **The look: "Iron & Ember"** (stage 10a, Sergio 2026-11-17: designed in Lovable to give the app its
   soul; it replaces the stage 8b blue identity). Ink-black dark mode with film grain, bone-and-ink light
   mode, sharp corners (radii 1-4 px), one blood-red accent with cold steel and brass as secondaries.
@@ -150,8 +152,12 @@ A mobile-first web app where Sergio logs their gym workouts and sees their progr
 | 9c | Workout names are the day type and first exercise ("Legs · Deadlift", computed in the app; stored labels unchanged); a top-weight (or most reps, longest hold) chart on each exercise page; body weight on Progress (log, latest, change, line; `/api/body`); shared `LineChart` | #28 |
 | 9d | Peloton: the summary screenshot (from the photo library: no more forced camera, for every photo) is read into the class stats (`entry.peloton`); Peloton ride in the catalog; output chart on the ride's page and a Peloton card on Progress; weekly goal 3 strength + 1 cardio; Sergio's three November rides added; screenshots kept apart from setup photos; a Cardio day starts with the one activity picked; both AI features on in demos (capped) | #29 |
 | 10a | The Lovable redesign ("Iron & Ember"): ink and blood-red theme through Tailwind token remaps, Anton and Archivo, sharp corners, film grain, barbell logo and icons, gym photo on the welcome page; the streak card on Train with milestones and their congrats; a weekly ride in the sample log; re-recorded clips; follow-ups: iPhone Home Screen fix (grain under full-screen pages), landscape rail labels, all weekday letters, no goal line on the welcome chart, Sergio's gym photo, page under the clock in the Home Screen app | #32-#38 |
+| 11a-12b | Feedback round 2: streak shields, the ladder for going up, training plans (week types in a rotation, mixed days, optional days, history), the goal follows the plan, fixed headers everywhere, loading screen (details in the backlog) | #42-#48 |
+| 12c | Feedback: the plan editor as rotation list + week-type pages (quiet styling, confirm on duplicate/delete, reorder), every tab starts at the same height, delete from the workout page, the exercise picker as a full page, short InfoTips, the welcome note counts years from Aug 2014 | (open) |
 
-**Where things stand (2026-11-18):** everything is merged and live (PRs up to #38): no open PRs.
+**Where things stand (2026-11-23):** PRs up to #48 are merged and live; stage 12c (the in-app feedback
+of 2026-11-23) is the open PR. The notes below on stage 10a are kept for context.
+**Earlier (2026-11-18):** everything was merged and live (PRs up to #38).
 Stage 10a brought Sergio's Lovable redesign ("Iron & Ember", #32) and the streak card on Train, then
 same-day follow-ups from their phone: the iPhone Home Screen fix (#33: the film grain sat over
 full-screen pages, so iOS showed the page under them in the status-bar strip), the landscape rail's

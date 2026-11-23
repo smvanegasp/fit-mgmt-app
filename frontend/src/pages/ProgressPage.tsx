@@ -15,7 +15,7 @@ import { WorkoutCard } from "../components/WorkoutCard";
 import { useDesktop, useExerciseHistory, useExercises, useProgress, useWorkouts } from "../hooks";
 import { climbing } from "../lib/kinds";
 import { topSeries } from "../lib/series";
-import { GOAL, OLD_GOAL, SHIELD_EVERY, goalText, goalsByWeek, type Goals, shortDate, streaks, weekCounts, weekMet, weekRows } from "../lib/progress";
+import { SHIELD_EVERY, goalText, goalsByWeek, type Goals, shortDate, streaks, weekCounts, weekMet, weekRows } from "../lib/progress";
 import { localIso } from "../lib/time";
 import { longDate } from "../lib/weeks";
 
@@ -37,15 +37,14 @@ export function ProgressPage() {
   return (
     // Phones: one column. Computers: a dashboard (the year at a glance, lifts in a grid, the
     // routine next to the last workouts).
-    <div className="mt-2 space-y-3 pb-28 lg:mt-0 lg:space-y-6 lg:pb-12">
+    <div className="space-y-3 pb-28 lg:space-y-6 lg:pb-12">
       {desktop ? <YearConsistency days={days} today={today} goals={goals} /> : <Consistency days={days} today={today} goals={goals} />}
 
       <section className="space-y-3 lg:space-y-0">
         <h2 className="flex items-center gap-1 px-1 pt-3 font-semibold lg:pt-0 lg:pb-3">
           Strength
           <InfoTip title="Strength">
-            Your last targets, oldest to newest: columns are sets and squares are reps, the number under each is the weight.
-            Tap a lift for its full progression. Every exercise has one on its page (History, Exercises).
+            Your recent targets: columns are sets, squares are reps, the weight below. Tap a lift for more.
           </InfoTip>
         </h2>
         <div className="space-y-3 lg:grid lg:grid-cols-2 lg:gap-4 lg:space-y-0 xl:grid-cols-3">
@@ -110,7 +109,7 @@ function YearConsistency({ days, today, goals }: { days: ProgressDay[]; today: s
         <div className="flex items-center gap-1 text-sm text-stone-500">
           week streak
           <InfoTip title="Streak">
-            Weeks in a row that reached the goal: {GOAL.strength} strength days (Push, Legs, Pull) and {GOAL.cardio} cardio day (a ride or run). Before the week of Oct 26, 2026, it was {OLD_GOAL} workouts of any kind. This week doesn't break the streak while it's still going. Every {SHIELD_EVERY} weeks of the streak earn a shield, which covers one missed week.
+            Weeks in a row where you trained every planned day. Every {SHIELD_EVERY} weeks earn a shield, which saves the streak from one missed week.
           </InfoTip>
         </div>
         <dl className="mt-5 space-y-3 text-sm">
@@ -189,7 +188,7 @@ function Routines({ routines, today }: { routines: Routine[]; today: string }) {
     <section>
       <h2 className="flex items-center gap-1 px-1 pt-3 pb-2 font-semibold">
         Routine
-        <InfoTip title="Routine">The plans you followed, newest first, with the workouts logged in each. Tap one to see its days.</InfoTip>
+        <InfoTip title="Routine">Routines you followed, newest first. Tap one for its days.</InfoTip>
       </h2>
       <ol className="rounded-2xl border border-stone-200 bg-white px-4 py-2">
         {routines.map((r, i) => {
@@ -252,8 +251,7 @@ function Consistency({ days, today, goals }: { days: ProgressDay[]; today: strin
           </div>
         </div>
         <InfoTip title="Streak">
-          Weeks in a row that reached the goal: {GOAL.strength} strength days (Push, Legs, Pull) and {GOAL.cardio} cardio day (a ride or run). Before the week of Oct 26, 2026, it was {OLD_GOAL} workouts of any kind. This week doesn't break the streak while it's still going; it adds one as soon as it reaches the
-          goal. Every {SHIELD_EVERY} weeks of the streak earn a shield, which covers one missed week (marked with a shield). Tap a day to open that workout.
+          Weeks in a row where you trained every planned day. Every {SHIELD_EVERY} weeks earn a shield, which saves the streak from one missed week. Tap a day to open it.
         </InfoTip>
       </div>
       <div className="mt-3"><TypeLegend /></div>

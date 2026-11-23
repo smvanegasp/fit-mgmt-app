@@ -1,12 +1,13 @@
-import { CaretDown, CaretRight, PencilSimple } from "@phosphor-icons/react";
+import { CaretDown, CaretRight, PencilSimple, Trash } from "@phosphor-icons/react";
 import { useState } from "react";
 
 import type { Entry, Exercise, Workout } from "../api";
-import { useExercises, useWorkout } from "../hooks";
+import { useDeleteWorkout, useExercises, useWorkout } from "../hooks";
+import { BottomSheet } from "./BottomSheet";
 import { formatDuration } from "../lib/duration";
 import { lapRows } from "../lib/laps";
 import { summarizeSets, workoutTitle } from "../lib/sets";
-import { clockTime, localIso, minutesText, workoutMinutes } from "../lib/time";
+import { clockTime, friendlyDate, localIso, minutesText, workoutMinutes } from "../lib/time";
 import { pelotonStats, pelotonText } from "../lib/kinds";
 import { longDate } from "../lib/weeks";
 import { EditWorkout } from "./EditWorkout";
@@ -20,6 +21,8 @@ export function WorkoutDetail({ workoutId, onClose }: { workoutId: string; onClo
   const workout = useWorkout(workoutId);
   const exercises = useExercises();
   const [editing, setEditing] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+  const remove = useDeleteWorkout();
   const byId = new Map((exercises.data ?? []).map((e) => [e.id, e]));
   const w = workout.data;
 
@@ -30,10 +33,17 @@ export function WorkoutDetail({ workoutId, onClose }: { workoutId: string; onClo
       onBack={onClose}
       actions={
         w && (
-          <button type="button" onClick={() => setEditing(true)}
-            className="flex items-center gap-1.5 rounded-xl bg-white px-3 py-2 font-semibold text-stone-800 ring-1 ring-stone-300">
-            <PencilSimple size={18} weight="fill" aria-hidden /> Edit
-          </button>
+          <>
+            {/* Delete up front, not only inside Edit (Sergio, 2026-11-23: to remove a workout logged by mistake). */}
+            <button type="button" onClick={() => setDeleting(true)} aria-label="Delete workout"
+              className="rounded-xl p-2.5 text-red-600 ring-1 ring-stone-300">
+              <Trash size={18} weight="fill" aria-hidden />
+            </button>
+            <button type="button" onClick={() => setEditing(true)}
+              className="flex items-center gap-1.5 rounded-xl bg-white px-3 py-2 font-semibold text-stone-800 ring-1 ring-stone-300">
+              <PencilSimple size={18} weight="fill" aria-hidden /> Edit
+            </button>
+          </>
         )
       }
     >
@@ -63,6 +73,22 @@ export function WorkoutDetail({ workoutId, onClose }: { workoutId: string; onClo
         </div>
       )}
       {editing && w && <EditWorkout workout={w} onClose={() => setEditing(false)} onDeleted={onClose} />}
+      {deleting && w && (
+        <BottomSheet title="Delete this workout?" onClose={() => setDeleting(false)}>
+          <p className="text-stone-700">
+            {friendlyDate(w.date)} · {(w.entries ?? []).length} exercises. It's gone for good, and your streak and targets update.
+          </p>
+          {remove.error && <p className="mt-2 text-sm text-red-600">{remove.error.message}</p>}
+          <button type="button" disabled={remove.isPending}
+            onClick={async () => { await remove.mutateAsync(w.id); onClose(); }}
+            className="mt-4 flex w-full items-center justify-center gap-2 rounded-xl bg-red-600 py-3.5 text-lg font-semibold text-[#f6f1e7] disabled:opacity-50">
+            <Trash size={20} weight="fill" aria-hidden /> {remove.isPending ? "Deleting…" : "Delete workout"}
+          </button>
+          <button type="button" onClick={() => setDeleting(false)} className="mt-2 w-full rounded-xl border border-stone-300 py-3 font-medium">
+            Keep it
+          </button>
+        </BottomSheet>
+      )}
     </Screen>
   );
 }

@@ -67,7 +67,7 @@ export function TrainPage() {
   return (
     <>
       {ended && (
-        <div role="status" className="mt-4 flex items-start gap-3 rounded-2xl border border-blue-200 bg-blue-50 p-3 text-sm">
+        <div role="status" className="mb-6 flex items-start gap-3 rounded-2xl border border-blue-200 bg-blue-50 p-3 text-sm">
           <p className="flex-1 text-stone-700">
             Your workout was left running, so it was saved for you, ending at your last set ({clockTime(ended.endedAt ?? ended.startedAt)}).{" "}
             <button type="button" onClick={() => screens.openWorkout(ended.id)} className="font-semibold text-blue-700 underline">
@@ -180,7 +180,8 @@ function Idle({ onOpen }: { onOpen: (w: Workout) => void }) {
     : startingEntries(plan ?? undefined, types.data ?? [], workouts.data ?? [], known, cardio);
 
   return (
-    <div className="pb-28">
+    // Every tab starts its first block at the same height (Sergio, 2026-11-23): no margin on top.
+    <div className="pb-28 [&>*:first-child]:mt-0">
       {progress.data && (
         <div className="mt-6">
           <StreakCard days={progress.data.days} today={today} goals={goalsByWeek(progress.data.goals)} />
@@ -197,9 +198,7 @@ function Idle({ onOpen }: { onOpen: (w: Workout) => void }) {
                 <div className="font-display text-xl font-bold">{week!.name}</div>
               </div>
               <InfoTip title="Training plans">
-                Your week types repeat in order, one per week. The first day not trained yet this week is picked; tap another
-                to change it, or tap it again for none. Edit plans adds week types and days, renames them, changes their
-                exercises and the order of the rotation, or sets which week this is.
+                Next up is picked for you. Tap another day to switch, or tap it again for none.
               </InfoTip>
             </div>
             <div role="radiogroup" aria-label="Day" className="divide-y divide-stone-200">
@@ -241,8 +240,7 @@ function Idle({ onOpen }: { onOpen: (w: Workout) => void }) {
             <p className="mt-1 flex items-center gap-1 text-stone-600">
               What are you training today?
               <InfoTip title="Day type">
-                Preselected: the day you've gone longest without in the last three weeks, following your rotation. It
-                decides which exercises the app suggests first.
+                Picked for you: the day you've gone longest without. It sets the suggested exercises.
               </InfoTip>
             </p>
             {options.length > 0 && (
@@ -269,8 +267,7 @@ function Idle({ onOpen }: { onOpen: (w: Workout) => void }) {
             <span className="font-semibold">Heavy {heavy} today</span>
             <span className="text-stone-500">· {heavy === "squat" ? "deadlift" : "squats"} lighter</span>
             <InfoTip title="Legs day">
-              Squats and deadlifts share one day: one goes heavy, the other lighter, and they swap each time. Last
-              Legs day was heavy {heavy === "squat" ? "deadlift" : "squat"}. Done second and lighter, a lift has its own target.
+              Squat and deadlift take turns going heavy. Last time was heavy {heavy === "squat" ? "deadlift" : "squat"}.
             </InfoTip>
           </p>
         )}

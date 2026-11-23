@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { clockTime, friendlyDate, minutesText, workoutMinutes } from "./time";
+import { clockTime, friendlyDate, minutesText, workoutMinutes, yearsSince } from "./time";
 
 describe("time", () => {
   it("writes clock times", () => {
@@ -28,5 +28,13 @@ describe("workoutMinutes", () => {
     expect(workoutMinutes({ startedAt: "2026-10-29T12:44:00", endedAt: "2026-10-29T18:54:00", durationMin: 75 })).toBe(75);
     expect(workoutMinutes({ startedAt: "2026-10-29T12:00:00", endedAt: "2026-10-29T13:30:00" })).toBe(90);
     expect(workoutMinutes({ startedAt: "2026-10-29T12:00:00" })).toBeNull();
+  });
+});
+
+describe("yearsSince", () => {
+  it("rounds up to whole years", () => {
+    expect(yearsSince("2014-08", "2026-11-23")).toBe(13);
+    expect(yearsSince("2014-08", "2026-08-01")).toBe(12);
+    expect(yearsSince("2014-08", "2026-09-01")).toBe(13);
   });
 });

@@ -125,7 +125,7 @@ export function useSavePlans(today: string) {
     onSuccess: (data) => {
       qc.setQueryData(["plans", today], data);
       // The week's goal follows the plan, and the save is a new version in the history.
-      qc.invalidateQueries({ queryKey: ["progress"] });
+      qc.invalidateQueries({ queryKey: ["workouts", "progress"] });
       qc.invalidateQueries({ queryKey: ["plan-history"] });
     },
   });

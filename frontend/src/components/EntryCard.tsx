@@ -217,9 +217,7 @@ export function TargetGame({ streak, load, today }: { streak: Streak; load: Exer
       </div>
       <GameDots times={streak.times + (reachedToday && !done ? 1 : 0)} goal={streak.goal} />
       <InfoTip title="Target">
-        Reach these sets 3 sessions in a row, then go up. A session that misses takes one away. Reaching it means the same
-        total reps at this weight or more. Going up follows your ladder: 3, 4, then 5 sets of the same reps, then 3 sets
-        with one more rep (5x4, then 3x5), or more weight. A target not reached in two months gives way to what you do now.
+        Hit these sets 3 sessions in a row, then go up: one more set, one more rep, or more weight. A miss takes one away.
       </InfoTip>
     </div>
   );

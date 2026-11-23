@@ -3,7 +3,7 @@ import { useEffect, type ReactNode } from "react";
 import { createPortal } from "react-dom";
 
 import { DESKTOP } from "../hooks";
-import { useScrollLock } from "../lib/scrollLock";
+import { useScrollLock, useVisibleArea } from "../lib/scrollLock";
 
 interface Props {
   title: string;
@@ -13,6 +13,10 @@ interface Props {
   actions?: ReactNode;
   /** A bar fixed at the bottom (Save). */
   footer?: ReactNode;
+  /** Fixed under the header, never scrolled away (the exercise search). */
+  top?: ReactNode;
+  /** Fit the part of the screen above the iPhone keyboard (pages with a search field). */
+  fitKeyboard?: boolean;
   children: ReactNode;
 }
 
@@ -23,8 +27,10 @@ interface Props {
  * band (Sergio, 2026-11-23: the whole page used to bounce, header included). The page behind
  * stays put.
  */
-export function Screen({ title, subtitle, onBack, actions, footer, children }: Props) {
+export function Screen({ title, subtitle, onBack, actions, footer, top, fitKeyboard = false, children }: Props) {
   useScrollLock();
+  const area = useVisibleArea();
+  const fit = fitKeyboard && area ? { top: area.top, height: area.height, bottom: "auto" } : undefined;
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => e.key === "Escape" && onBack();
     document.addEventListener("keydown", onKey);
@@ -39,6 +45,7 @@ export function Screen({ title, subtitle, onBack, actions, footer, children }: P
       role="dialog"
       aria-modal="true"
       aria-label={title}
+      style={fit}
       onClick={(e) => e.target === e.currentTarget && window.matchMedia(DESKTOP).matches && onBack()}
     >
       <div className="flex h-full w-full flex-col bg-stone-50 lg:w-[36rem] lg:shadow-2xl">
@@ -54,6 +61,11 @@ export function Screen({ title, subtitle, onBack, actions, footer, children }: P
             {actions}
           </div>
         </header>
+        {top && (
+          <div className="shrink-0 border-b border-stone-200 bg-stone-50 pt-3 pb-2">
+            <div className="mx-auto max-w-lg px-4 lg:max-w-none lg:px-6">{top}</div>
+          </div>
+        )}
         <div data-screen-scroll className="min-h-0 flex-1 overflow-y-auto overscroll-none">
           <div className={`mx-auto max-w-lg px-4 pt-3 lg:max-w-none lg:px-6 ${footer ? "pb-6" : "pb-[calc(env(safe-area-inset-bottom)+4rem)]"}`}>
             {children}
