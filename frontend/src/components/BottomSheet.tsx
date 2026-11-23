@@ -2,7 +2,7 @@ import { X } from "@phosphor-icons/react";
 import { useEffect, type ReactNode } from "react";
 import { createPortal } from "react-dom";
 
-import { useScrollLock } from "../lib/scrollLock";
+import { useScrollLock, useVisibleArea } from "../lib/scrollLock";
 
 interface Props {
   title: string;
@@ -21,6 +21,9 @@ interface Props {
  */
 export function BottomSheet({ title, onClose, children, tall = false, top }: Props) {
   useScrollLock();
+  // Fit the part of the screen above the keyboard, so the title and search never leave view.
+  const area = useVisibleArea();
+  const room = area ? area.height - 12 : null;
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => e.key === "Escape" && onClose();
     document.addEventListener("keydown", onKey);
@@ -29,13 +32,15 @@ export function BottomSheet({ title, onClose, children, tall = false, top }: Pro
 
   // Rendered at the end of <body> so sheets never inherit styles from where they're opened.
   return createPortal(
-    <div className="fixed inset-0 z-40 flex items-end justify-center sm:items-center">
+    <div className="fixed inset-x-0 z-40 flex items-end justify-center sm:items-center"
+      style={area ? { top: area.top, height: area.height } : { top: 0, bottom: 0 }}>
       <div className="absolute inset-0 bg-black/40" onClick={onClose} aria-hidden />
       <div
         role="dialog"
         aria-modal="true"
         aria-label={title}
         className={`relative flex ${tall ? "h-[85dvh]" : ""} max-h-[92dvh] w-full max-w-lg flex-col rounded-t-2xl bg-white shadow-xl sm:rounded-2xl`}
+        style={room ? { maxHeight: room, ...(tall ? { height: Math.min(room, window.innerHeight * 0.85) } : {}) } : undefined}
       >
         <div className="flex shrink-0 items-center justify-between border-b border-stone-200 px-4 py-3">
           <h2 className="text-lg font-semibold">{title}</h2>

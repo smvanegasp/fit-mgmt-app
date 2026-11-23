@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 
 /**
  * While a sheet or a full-screen page is open, the page behind stays exactly where it was
@@ -30,4 +30,26 @@ export function lockScroll(): () => void {
 
 export function useScrollLock(): void {
   useEffect(() => lockScroll(), []);
+}
+
+/**
+ * The part of the screen actually visible: on the iPhone the keyboard covers the bottom and iOS
+ * pans the page to keep a focused field in view, which carried the exercise search off the top
+ * (Sergio, 2026-11-23). Sheets size and place themselves to this instead of the full screen.
+ */
+export function useVisibleArea(): { top: number; height: number } | null {
+  const [area, setArea] = useState<{ top: number; height: number } | null>(null);
+  useEffect(() => {
+    const vv = window.visualViewport;
+    if (!vv) return;
+    const update = () => setArea({ top: vv.offsetTop, height: vv.height });
+    update();
+    vv.addEventListener("resize", update);
+    vv.addEventListener("scroll", update);
+    return () => {
+      vv.removeEventListener("resize", update);
+      vv.removeEventListener("scroll", update);
+    };
+  }, []);
+  return area;
 }
