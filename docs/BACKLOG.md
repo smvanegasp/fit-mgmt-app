@@ -27,7 +27,7 @@ Sergio merges.
 ## Now
 
 Stage 11: the second round of in-app feedback (18 notes from Sergio, 2026-11-19 to 11-22): 11a (#42)
-11b (#43), 11c (#44) and 11d (#45) are merged. Open: 11e (#46, the search with the iPhone keyboard) and 12a (flexible weeks, loading screen).
+11b (#43), 11c (#44) and 11d (#45) are merged. Open: 11e (#46, the search with the iPhone keyboard), 12a (#47, flexible weeks, loading screen) and 12b (the goal follows the plan).
 
 ## Stage 11: feedback round 2 (2026-11-22)
 
@@ -132,6 +132,18 @@ Checked: backend 119 and frontend 96 tests, build, screenshots in a sample demo 
 API slowed, the plan card, the plan page with a third week type and an Upper day, not saved), the
 real plans read from AWS (read-only). Not tested: saving a new structure in a browser (API tests only),
 the iPhone.
+
+## Stage 12b: the goal follows the plan (`stage-12b-plan-goals`, Sergio 2026-11-23: "I want all of what I asked")
+
+| Item | Done |
+|---|---|
+| The weekly goal was fixed at 3 strength + 1 cardio, whatever the plan. | From the first plan saved after this ships, each week's goal is its week type's days: every day that isn't optional, strength = all kinds but Cardio. Past weeks are judged by the version in force then, and weeks before any saved version keep the fixed goal, so Sergio's streak (11 weeks) doesn't change. The streak card's slots are the planned days by name (as many as the plan has), and "what's left" counts from the plan. A planned week of only optional days is a rest week. |
+| Optional days. | A day can be marked optional in the plan page: it stays in the plan (tagged "optional" on Train, never next up while a counted day is left) but not in the goal. |
+| A history of the plans. | Every save is kept (`PLANS#...`); the plan page lists earlier versions ("From the week of ...") with Restore, which loads one to save again. `GET /api/plans/history`. |
+
+Checked: backend 121 and frontend 100 tests, build, the real log (read-only: no versions yet, so no plan
+goals and the streak unchanged), screenshots in a sample demo with an Upper/Lower plan saved in that
+sandbox (five named slots, the goal of 4 strength days). Not tested: Restore in a browser (API tests only), the iPhone.
 
 ## Stage 10a: the Lovable redesign (2026-11-17)
 

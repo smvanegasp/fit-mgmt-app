@@ -330,7 +330,15 @@ frontend/
   types repeat in list order, one per calendar week, counted from the anchor (or the log). Day kinds:
   Push, Legs, Pull, Upper, Lower, Full body, Cardio; the mixed ones label their workouts with the kind
   (`labels.MIXED`), count as strength days and share the plum `--chart-mixed`. The first saved shape
-  (`{plans: [{..., dayType, week: A/B}]}`, stage 11b, still on AWS) is read as two week types.
+  (`{plans: [{..., dayType, week: A/B}]}`, stage 11b, still on AWS) is read as two week types. Days
+  can be `optional` (in the plan, not in the goal). Every save also writes **`PLANS#<savedAt µs>`**
+  `{weeks, anchor?, savedAt, start}` (the history; `start` = the Monday it's in force from).
+- **The weekly goal follows the plan** (stage 12b): from the first saved version on, each week's goal
+  is its week type's non-optional days (strength = every kind but Cardio), from the version in force
+  that week (`plans.goals`, sent in `/api/progress`). Weeks before keep the fixed goal (`lib/progress.ts`
+  `GOAL`/`OLD_GOAL`), so the streak's past never changes. A planned week of only optional days is a
+  rest week and counts as met. The streak card's slots are that week's days (filled by kind first,
+  then any strength day for a strength slot).
 - **`BODY#<date>`** `{date, weightLb, source}` (Progress, `/api/body`) · **`ROUTINE#<from>#<id>`** `{name, from, to, days[], notes,
   photos}` (the routine eras, for the evolution timeline) · later `ACTIVE` (workout in progress,
   server-side `startedAt`) and `SETTINGS`.
@@ -365,9 +373,9 @@ frontend/
 | Feedback | `POST /feedback {text, page, photos?}` (owner or guest; 10/hour per IP, 200/day; up to 3 screenshots, copied to `feedback/<id>-<n>`, readable by the owner only) · `GET /feedback` (owner) · `PATCH /feedback/{id} {status?, text?}` (status: owner; text: the owner or whoever wrote it). Stored in `SPACE#feedback`, outside every sandbox, no TTL |
 | Session | `GET /session` · `POST /session/guest` · `POST /session/guest/reset[?sample=true]` · `POST /session/owner {passcode}` · `DELETE /session`. Everything else needs a session (401). Demos: 20/hour per IP (1000 locally), 500/hour total; 3 wrong passcodes pause owner login on that network for an hour (10/hour globally); guests upload at most 40 photos a day; the cue check and Peloton reads: 20 a day per demo each, 300 a day across all demos (429 past that) |
 | Peloton | `POST /peloton/read {key}` (an uploaded photo -> `{discipline?, title?, instructor?, minutes?, outputKj?, distanceMi?, calories?, avgWatts?, avgCadence?, avgResistance?, avgSpeedMph?}`; capped in demos, 503 without `GROQ_API_KEY`, 502 + "Peloton read failed" log line when Groq fails) |
-| Progress | `GET /progress` (days with day type and `cardio`; the main lifts' progression ladders; routine eras newest first with their workouts) · `GET /exercises/{id}/progress` (one exercise's ladder: `steps` of `{scheme, sessions, times}`, oldest first) |
+| Progress | `GET /progress?today=` (days with day type and `cardio`; `goals`: each week's goal from the plans, `{monday, week, strength, cardio, days}`, from the first saved version on; the main lifts' progression ladders; routine eras newest first with their workouts) · `GET /exercises/{id}/progress` (one exercise's ladder: `steps` of `{scheme, sessions, times}`, oldest first) |
 | Day types | `GET /session-types` (label, usual exercises in order, last date, sessions) |
-| Plans | `GET /plans?today=` (`{weeks: [{id, name, days: [{id, name, kind, exercises}]}], current, saved}`: week types in rotation order, this week's id; read off the log until saved) · `PUT /plans?today= {weeks, current?}` (`current` = "this week is ...": anchors the rotation at this week) |
+| Plans | `GET /plans/history` (every saved version newest first: `{savedAt, start, weeks}`) · `GET /plans?today=` (`{weeks: [{id, name, days: [{id, name, kind, exercises}]}], current, saved}`: week types in rotation order, this week's id; read off the log until saved) · `PUT /plans?today= {weeks, current?}` (`current` = "this week is ...": anchors the rotation at this week) |
 | Exercise page | `GET /exercises/{id}/history` (sessions newest first, each with `role`: the day's first lift or `later`; all photos, best set) · `PATCH /exercises/{id} {name?, group?, stepLb?}` (old name stays an alias; `stepLb` 2.5 or 5 is the weight stepper's step) · `POST /exercises/{id}/merge {into}` (sessions and cues move; the duplicate is hidden) |
 | Exercises | `GET /exercises` (catalog + custom, with `lastDone`, `timesDone`) · `POST /exercises` · `GET /exercises/{id}/summary[?exclude=workoutId&role=first|later]` (cues, last, streak = target game, photos, bestDrop; `role` = today's first lift or a later one) |
 | Cues | `POST /exercises/{id}/notes {text, date, section?}` · `PATCH /exercises/{id}/notes/{noteId} {text?, hidden?, section?, rank?}` · `DELETE` (same path) · `POST /exercises/{id}/cue-check {note}` (suggestion `{action: add|update|none, noteId?, text?, section?}`; 503 without `GROQ_API_KEY`) |

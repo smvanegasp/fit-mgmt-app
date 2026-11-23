@@ -1,4 +1,4 @@
-import { GOAL, GOAL_FROM, OLD_GOAL, addDays, streaks, weekCounts } from "./progress";
+import { GOAL, GOAL_FROM, OLD_GOAL, addDays, streaks, weekCounts, type Goals, type PlanGoal } from "./progress";
 import { weekStart } from "./weeks";
 
 type Day = { date: string; type?: string; cardio?: boolean };
@@ -39,7 +39,7 @@ export function milestoneCrossed(from: number, to: number): number | null {
 
 /** What this week still needs to keep the streak, and how many days are left to get it.
  * Sunday is the last day: `daysLeft` counts the days after today. */
-export function weekRemaining(days: Day[], today: string): {
+export function weekRemaining(days: Day[], today: string, goal?: PlanGoal): {
   met: boolean; strength: number; cardio: number; daysLeft: number; text: string;
 } {
   const monday = weekStart(today);
@@ -48,12 +48,13 @@ export function weekRemaining(days: Day[], today: string): {
   const daysLeft = Math.max(0, 6 - index);
   const plural = (n: number, word: string) => `${n} ${word}${n === 1 ? "" : "s"}`;
 
-  if (monday < GOAL_FROM) {
+  if (!goal && monday < GOAL_FROM) {
     const need = Math.max(0, OLD_GOAL - (c?.workouts ?? 0));
     return { met: need === 0, strength: 0, cardio: 0, daysLeft, text: need === 0 ? "Week's goal reached" : plural(need, "workout") };
   }
-  const strength = Math.max(0, GOAL.strength - (c?.strength ?? 0));
-  const cardio = Math.max(0, GOAL.cardio - (c?.cardio ?? 0));
+  const g = goal ?? GOAL;
+  const strength = Math.max(0, g.strength - (c?.strength ?? 0));
+  const cardio = Math.max(0, g.cardio - (c?.cardio ?? 0));
   const parts = [strength ? plural(strength, "strength day") : "", cardio ? plural(cardio, "cardio day") : ""].filter(Boolean);
   return {
     met: parts.length === 0,
@@ -71,8 +72,8 @@ export function daysLeftText(daysLeft: number): string {
 }
 
 /** Whether the streak is in real danger: this week's goal isn't met and there's little left to fix it. */
-export function streakAtRisk(days: Day[], today: string): boolean {
-  const r = weekRemaining(days, today);
+export function streakAtRisk(days: Day[], today: string, goal?: PlanGoal): boolean {
+  const r = weekRemaining(days, today, goal);
   return !r.met && r.daysLeft <= 2;
 }
 
@@ -81,6 +82,8 @@ const ROTATION = ["Push", "Legs", "Pull"] as const;
 export interface WeekSlot {
   /** "Push", "Legs", "Pull" or "Cardio": the day done, or the one still to do. */
   type: string;
+  /** The planned day's name ("Heavy push"), when the plans set the week's goal. */
+  name?: string;
   done: boolean;
 }
 
@@ -89,10 +92,11 @@ export interface WeekSlot {
  * text read as days done, not days left): three strength slots and one cardio slot. Done days
  * fill them in the order they were trained; the empty ones show the rotation's days not done yet.
  */
-export function weekSlots(days: Day[], today: string): WeekSlot[] {
+export function weekSlots(days: Day[], today: string, goal?: PlanGoal): WeekSlot[] {
   const monday = weekStart(today);
   const sunday = addDays(monday, 6);
   const week = days.filter((d) => d.date >= monday && d.date <= sunday).sort((a, b) => a.date.localeCompare(b.date));
+  if (goal?.days) return planSlots(week, goal.days);
   const strength = week.filter((d) => d.type && (ROTATION as readonly string[]).includes(d.type)).map((d) => d.type!);
   const missing = ROTATION.filter((t) => !strength.includes(t));
   const slots: WeekSlot[] = strength.slice(0, GOAL.strength).map((type) => ({ type, done: true }));
@@ -103,10 +107,33 @@ export function weekSlots(days: Day[], today: string): WeekSlot[] {
   return slots;
 }
 
+/**
+ * This week's slots from its plan (Sergio, 2026-11-23: the goal follows the plan): one per day that
+ * counts, named by the day. A trained day fills the slot of its own kind first; any other strength
+ * day fills a strength slot still open (the goal counts strength days of any kind), cardio a cardio one.
+ */
+function planSlots(week: Day[], planned: { name: string; kind: string }[]): WeekSlot[] {
+  const slots: WeekSlot[] = planned.map((d) => ({ type: d.kind, name: d.name, done: false }));
+  const leftover: Day[] = [];
+  const trained = week.flatMap((d) => [{ ...d, type: d.type }, ...(d.cardio && d.type !== "Cardio" ? [{ ...d, type: "Cardio" }] : [])]);
+  for (const d of trained) {
+    const slot = slots.find((s) => !s.done && s.type === d.type);
+    if (slot) slot.done = true;
+    else leftover.push(d);
+  }
+  for (const d of leftover) {
+    const cardio = d.type === "Cardio";
+    const slot = slots.find((s) => !s.done && (s.type === "Cardio") === cardio);
+    if (slot) slot.done = true;
+  }
+  return slots;
+}
+
 /** The streak, the band, shields and this week's slots in one call, for the Train screen. */
-export function streakStatus(days: Day[], today: string) {
-  const run = streaks(days, today);
-  const week = weekRemaining(days, today);
+export function streakStatus(days: Day[], today: string, goals?: Goals) {
+  const goal = goals?.get(weekStart(today));
+  const run = streaks(days, today, goals);
+  const week = weekRemaining(days, today, goal);
   // The week that just reached a milestone shows that band full until the week ends, instead of
   // the next band empty (Sergio, 2026-11-22: an empty ladder on a good day read as a broken streak).
   const onMilestone = week.met && run.current > 0 && milestoneAt(run.current) === run.current;
@@ -115,8 +142,10 @@ export function streakStatus(days: Day[], today: string) {
     band: milestoneBand(run.current),
     onMilestone,
     week,
-    slots: weekSlots(days, today),
-    atRisk: streakAtRisk(days, today),
+    slots: weekSlots(days, today, goal),
+    atRisk: streakAtRisk(days, today, goal),
+    /** This week's week type, when the plans set its goal. */
+    weekName: goal?.week,
   };
 }
 

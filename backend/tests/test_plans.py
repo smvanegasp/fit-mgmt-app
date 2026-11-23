@@ -99,3 +99,33 @@ def test_a_mixed_day_keeps_its_kind_as_the_name() -> None:
     assert session_label(entries, {}) == "Pull"
     assert session_label(entries, {}, kind="Upper") == "Upper"
     assert session_label([*entries, ("peloton-ride", 0)], {}, kind="Full body") == "Full body + Cardio"
+
+
+def test_the_goal_follows_the_plan_from_its_first_save(client: TestClient) -> None:
+    two_weeks()
+    assert client.get("/api/progress?today=2026-11-23").json().get("goals", []) == []  # nothing saved yet
+    upper_lower = {"id": "U", "name": "Upper/lower week", "days": [
+        {"id": "u1", "name": "Upper 1", "kind": "Upper", "exercises": []},
+        {"id": "l1", "name": "Lower 1", "kind": "Lower", "exercises": []},
+        {"id": "u2", "name": "Upper 2", "kind": "Upper", "exercises": []},
+        {"id": "l2", "name": "Lower 2", "kind": "Lower", "exercises": []},
+        {"id": "ride", "name": "Ride", "kind": "Cardio", "exercises": []},
+        {"id": "run", "name": "Extra run", "kind": "Cardio", "exercises": [], "optional": True}]}
+    client.put("/api/plans?today=2026-11-23", json={"weeks": [upper_lower], "current": "U"})
+    goals = client.get("/api/progress?today=2026-11-30").json()["goals"]
+    assert [g["monday"] for g in goals] == ["2026-11-23", "2026-11-30"]
+    assert goals[0] | {"days": None} == {"monday": "2026-11-23", "week": "Upper/lower week", "strength": 4, "cardio": 1, "days": None}
+    assert [d["name"] for d in goals[0]["days"]] == ["Upper 1", "Lower 1", "Upper 2", "Lower 2", "Ride"]  # the optional run left out
+
+
+def test_every_save_is_kept_and_past_weeks_keep_their_version(client: TestClient) -> None:
+    two_weeks()
+    weeks = client.get("/api/plans?today=2026-11-23").json()["weeks"]
+    client.put("/api/plans?today=2026-11-23", json={"weeks": weeks, "current": "B"})
+    short = [{**w, "days": w["days"][:2]} for w in weeks]
+    client.put("/api/plans?today=2026-11-30", json={"weeks": short})
+    history = client.get("/api/plans/history").json()
+    assert [h["start"] for h in history] == ["2026-11-30", "2026-11-23"]
+    goals = {g["monday"]: g for g in client.get("/api/progress?today=2026-11-30").json()["goals"]}
+    assert goals["2026-11-23"]["strength"] == 3 and goals["2026-11-23"]["cardio"] == 1  # the first version
+    assert goals["2026-11-30"]["strength"] == 2 and goals["2026-11-30"]["cardio"] == 0  # the second one

@@ -2,7 +2,7 @@ import { CaretRight, Check, Fire, ShieldCheck } from "@phosphor-icons/react";
 import { useEffect, useRef } from "react";
 import { createPortal } from "react-dom";
 
-import { GOAL, SHIELD_EVERY } from "../lib/progress";
+import { GOAL, SHIELD_EVERY, type Goals } from "../lib/progress";
 import { daysLeftText, milestoneAt, milestoneBand, streakStatus, type WeekSlot } from "../lib/streak";
 import { InfoTip } from "./InfoTip";
 import { useGoTo } from "./Nav";
@@ -52,18 +52,19 @@ export function StreakLadder({ weeks, className = "", spread = false, label = tr
 /** This week's goal as slots: three strength days and the cardio day, filled as they're trained. */
 function WeekSlots({ slots }: { slots: WeekSlot[] }) {
   return (
-    <ol className="grid grid-cols-4 gap-1.5" aria-label="This week's goal">
+    // Four slots for the usual week; a plan with more days wraps them (Sergio, 2026-11-23).
+    <ol className={`grid gap-1.5 ${slots.length === 4 ? "grid-cols-4" : "grid-cols-[repeat(auto-fit,minmax(4.5rem,1fr))]"}`} aria-label="This week's goal">
       {slots.map((slot, i) => (
         <li key={i}
-          aria-label={`${slot.type}${slot.done ? ", done" : ", to do"}`}
+          aria-label={`${slot.name ?? slot.type}${slot.done ? ", done" : ", to do"}`}
           style={slot.done ? { borderColor: typeColor(slot.type) } : undefined}
           className={`relative flex h-12 flex-col items-center justify-center overflow-hidden rounded-[3px] border ${slot.done ? "bg-stone-100" : "border-dashed border-stone-300"}`}>
           {slot.done && <span aria-hidden className="absolute inset-x-0 top-0 h-1" style={{ background: typeColor(slot.type) }} />}
           {slot.done
             ? <Check size={16} weight="bold" style={{ color: typeColor(slot.type) }} aria-hidden />
             : <span aria-hidden className="h-4" />}
-          <span className={`text-[0.65rem] font-semibold tracking-[0.12em] uppercase ${slot.done ? "text-stone-800" : "text-stone-400"}`}>
-            {slot.type}
+          <span className={`max-w-full truncate px-1 text-[0.65rem] font-semibold tracking-[0.12em] uppercase ${slot.done ? "text-stone-800" : "text-stone-400"}`}>
+            {slot.name ?? slot.type}
           </span>
         </li>
       ))}
@@ -87,9 +88,9 @@ function Shields({ shields, toShield }: { shields: number; toShield: number }) {
  * going is what gets them started). The run and its shields, this week as the goal's slots (the
  * week runs Monday to Sunday), then the next milestone. Opens Progress, where every week is.
  */
-export function StreakCard({ days, today }: { days: Day[]; today: string }) {
+export function StreakCard({ days, today, goals }: { days: Day[]; today: string; goals?: Goals }) {
   const goTo = useGoTo();
-  const s = streakStatus(days, today);
+  const s = streakStatus(days, today, goals);
   const toGo = s.band.to - s.current;
   return (
     <section aria-label="Streak" className={`rounded-2xl border bg-white p-4 ${s.atRisk ? "border-amber-400" : "border-stone-200"}`}>
@@ -99,8 +100,8 @@ export function StreakCard({ days, today }: { days: Day[]; today: string }) {
           <span className="flex items-center gap-1.5 text-sm font-semibold tracking-wide text-stone-700 uppercase">
             <Fire size={14} weight="fill" className="shrink-0 text-blue-600" aria-hidden /> week streak
             <InfoTip title="Streak">
-              Weeks in a row (Monday to Sunday) that reached the goal: {GOAL.strength} strength days and {GOAL.cardio} cardio
-              day. This week adds one as soon as its goal is reached, and can't break the streak until Sunday is over. Every{" "}
+              Weeks in a row (Monday to Sunday) that reached the goal: the days of that week's plan (optional days don't
+              count; before plans, {GOAL.strength} strength days and {GOAL.cardio} cardio day). This week adds one as soon as its goal is reached, and can't break the streak until Sunday is over. Every{" "}
               {SHIELD_EVERY} weeks of the streak earn a shield: a week that misses the goal uses one up instead of ending the
               streak. The squares are the weeks toward the next milestone.
             </InfoTip>

@@ -25,7 +25,7 @@ import {
 import { formatDuration } from "../lib/duration";
 import { abandonedAt, currentLap, lapRows } from "../lib/laps";
 import { isLogged, lastCardio, nextWeek, planEntries, startingEntries, weekOptions, type DayOption } from "../lib/plan";
-import { streaks } from "../lib/progress";
+import { goalsByWeek, streaks } from "../lib/progress";
 import { dayType, heavyNext, nextUp, setCount } from "../lib/sets";
 import { streakNews } from "../lib/streak";
 import { clockTime, friendlyDate, localIso, secondsBetween } from "../lib/time";
@@ -43,7 +43,7 @@ export function TrainPage() {
   useEffect(() => {
     const days = progress.data?.days;
     if (!days) return;
-    const now = streaks(days, localIso().slice(0, 10));
+    const now = streaks(days, localIso().slice(0, 10), goalsByWeek(progress.data?.goals));
     const was = seen.current;
     seen.current = now;
     if (!was) return;
@@ -183,7 +183,7 @@ function Idle({ onOpen }: { onOpen: (w: Workout) => void }) {
     <div className="pb-28">
       {progress.data && (
         <div className="mt-6">
-          <StreakCard days={progress.data.days} today={today} />
+          <StreakCard days={progress.data.days} today={today} goals={goalsByWeek(progress.data.goals)} />
         </div>
       )}
       <section className="mt-6">
@@ -210,7 +210,10 @@ function Idle({ onOpen }: { onOpen: (w: Workout) => void }) {
                     className={`relative flex w-full items-center gap-3 px-4 py-3.5 text-left ${on ? "bg-blue-50" : ""}`}>
                     {on && <span aria-hidden className="absolute inset-y-0 left-0 w-1 bg-blue-600" />}
                     {/* Just the name (Sergio, 2026-11-23: they know what each day holds). */}
-                    <span className={`min-w-0 flex-1 text-lg font-semibold ${o.done ? "text-stone-500" : ""}`}>{o.label}</span>
+                    <span className={`min-w-0 flex-1 text-lg font-semibold ${o.done ? "text-stone-500" : ""}`}>
+                      {o.label}
+                      {o.optional && <span className="ml-2 text-xs font-medium text-stone-500">optional</span>}
+                    </span>
                     {o.done ? (
                       <span className="flex shrink-0 items-center gap-1 text-xs font-semibold text-stone-500"><Check size={14} weight="bold" aria-hidden /> Done</span>
                     ) : next === o.key ? (

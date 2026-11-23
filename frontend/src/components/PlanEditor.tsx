@@ -2,7 +2,8 @@ import { ArrowDown, ArrowLeft, ArrowRight, ArrowUp, Check, CopySimple, Plus, Tra
 import { useState } from "react";
 
 import type { DayKind, DayPlan, TrainingPlans, WeekPlan } from "../api";
-import { useExercises, useSavePlans } from "../hooks";
+import { useExercises, usePlanHistory, useSavePlans } from "../hooks";
+import { friendlyDate } from "../lib/time";
 import { KINDS } from "../lib/progress";
 import { ExercisePicker } from "./ExercisePicker";
 import { InfoTip } from "./InfoTip";
@@ -31,6 +32,8 @@ export function PlanEditor({ plans, today, onClose }: { plans: TrainingPlans; to
   const [shownId, setShown] = useState(plans.current ?? plans.weeks[0]?.id ?? null);
   const [adding, setAdding] = useState<string | null>(null);
   const [confirmDelete, setConfirmDelete] = useState(false);
+  const [showHistory, setShowHistory] = useState(false);
+  const history = usePlanHistory(showHistory);
 
   const wi = Math.max(0, weeks.findIndex((w) => w.id === shownId));
   const week = weeks[wi] as WeekPlan | undefined;
@@ -168,6 +171,11 @@ export function PlanEditor({ plans, today, onClose }: { plans: TrainingPlans; to
                     </li>
                   ))}
                 </ol>
+                <label className="mt-2 flex items-center gap-2 text-sm text-stone-600">
+                  <input type="checkbox" checked={Boolean(day.optional)} onChange={(e) => setDay(day.id, { optional: e.target.checked })}
+                    className="size-4 accent-[var(--color-blue-600)]" />
+                  Optional: doesn't count toward the week's goal
+                </label>
                 {day.kind === "Cardio" && day.exercises.length === 0 && (
                   <p className="mt-1 text-sm text-stone-500">Asks for the ride or the treadmill when it starts.</p>
                 )}
@@ -185,6 +193,37 @@ export function PlanEditor({ plans, today, onClose }: { plans: TrainingPlans; to
           </div>
         </>
       )}
+
+      {/* Every saved version (Sergio, 2026-11-23): look back, or bring one back and save it. */}
+      <section className="mt-6 border-t border-stone-200 pt-4">
+        <button type="button" onClick={() => setShowHistory(!showHistory)} aria-expanded={showHistory}
+          className="text-sm font-semibold tracking-wide text-stone-500 uppercase">
+          {showHistory ? "Hide earlier versions" : "Earlier versions"}
+        </button>
+        {showHistory && (
+          history.isLoading ? <p className="mt-2 text-sm text-stone-500">Loading…</p>
+            : (history.data ?? []).length === 0 ? <p className="mt-2 text-sm text-stone-500">Nothing saved yet: each save is kept here.</p>
+              : (
+                <ul className="mt-2 divide-y divide-stone-200">
+                  {history.data!.map((v) => (
+                    <li key={v.savedAt + v.start} className="flex items-center gap-2 py-2.5">
+                      <div className="min-w-0 flex-1">
+                        <div className="text-sm font-medium">From the week of {friendlyDate(v.start)}</div>
+                        <div className="truncate text-xs text-stone-500">
+                          {v.weeks.map((w) => `${w.name} (${w.days.length} days)`).join(" · ")}
+                        </div>
+                      </div>
+                      <button type="button" onClick={() => { setWeeks(v.weeks); setShown(v.weeks[0]?.id ?? null); }}
+                        className="shrink-0 rounded-lg px-2.5 py-1.5 text-sm font-medium text-blue-700 ring-1 ring-stone-300">
+                        Restore
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              )
+        )}
+        {showHistory && <p className="mt-2 text-xs text-stone-500">Restore loads a version here; Save makes it the plan from this week.</p>}
+      </section>
 
       {addingTo && (
         <ExercisePicker title={`Add to ${addingTo.name}`} plan={addingTo.kind} inWorkout={addingTo.exercises}

@@ -1,6 +1,6 @@
 import { useLayoutEffect, useMemo, useRef, useState } from "react";
 
-import { goalText, shortDate, weekCounts, weekMet, weekRows } from "../lib/progress";
+import { goalText, shortDate, weekCounts, weekMet, weekRows, type Goals } from "../lib/progress";
 import { longDate } from "../lib/weeks";
 import { typeColor } from "./Progression";
 
@@ -11,12 +11,14 @@ const WEEKDAYS = ["M", "T", "W", "T", "F", "S", "S"];
  * reached the goal (explained in Progress's caption; `goalMarks={false}` hides it, as on the welcome
  * page, Sergio 2026-11-17: confusing there). Shared by
  * the desktop Progress dashboard and the welcome page. Days with a workoutId open it when tapped. */
-export function Heatmap({ days, today, onOpen, goalMarks = true }: {
+export function Heatmap({ days, today, onOpen, goalMarks = true, goals }: {
   days: { date: string; type: string; cardio?: boolean; workoutId?: string; label?: string }[];
   today: string;
   onOpen?: (workoutId: string) => void;
   /** The mark under weeks that reached the goal. */
   goalMarks?: boolean;
+  /** Weeks whose goal comes from the plans. */
+  goals?: Goals;
 }) {
   const byDate = useMemo(() => new Map(days.map((d) => [d.date, d])), [days]);
   const counts = useMemo(() => weekCounts(days), [days]);
@@ -62,7 +64,7 @@ export function Heatmap({ days, today, onOpen, goalMarks = true }: {
               return <span key={day} className={`h-3.5 rounded-[3px] ${day > today || day < first ? "" : "bg-stone-100"}`} />;
             })}
             {/* The week reached the goal. */}
-            {goalMarks && <span className={`mt-1 h-1 rounded-full ${weekMet(week.monday, count) ? "bg-blue-600" : ""}`} title={goalText(week.monday, count)} />}
+            {goalMarks && <span className={`mt-1 h-1 rounded-full ${weekMet(week.monday, count, goals?.get(week.monday)) ? "bg-blue-600" : ""}`} title={goalText(week.monday, count, goals?.get(week.monday))} />}
           </div>
         );
       })}

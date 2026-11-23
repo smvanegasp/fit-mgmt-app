@@ -9,15 +9,16 @@ the anchor Sergio set ("this week is ..."), or else from the newest workout that
 exactly one week type, moving one week type along the rotation per calendar week.
 """
 
-from datetime import date, timedelta
+from datetime import date, datetime, timedelta, timezone
 from typing import Any
 
 from app import db
 from app.history import workouts
 from app.labels import day_type
-from app.models import DayPlan, Exercise, TrainingPlans, WeekPlan
+from app.models import DayPlan, Exercise, GoalDay, PlanVersion, TrainingPlans, WeekGoal, WeekPlan
 
 ROW = "SETTINGS#plans"
+VERSION = "PLANS#"  # + savedAt: every saved version, for the history and past weeks' goals
 ROTATION = ("Push", "Legs", "Pull")
 SKIP = {"warm-up"}
 RECENT = 3  # sessions of a day that decide its exercises
@@ -138,7 +139,8 @@ def _from_row(row: dict[str, Any]) -> list[WeekPlan]:
     return _named(weeks)
 
 
-def current_week(space: str, weeks: list[WeekPlan], anchor: dict[str, str] | None, today: str) -> str | None:
+def current_week(space: str, weeks: list[WeekPlan], anchor: dict[str, str] | None, today: str,
+                 log: list[dict[str, Any]] | None = None) -> str | None:
     """This week's type: counted from the anchor, else from the newest workout whose kind and first
     lift match a day of exactly one week type. One step along the rotation per week."""
     if not weeks:
@@ -151,7 +153,7 @@ def current_week(space: str, weeks: list[WeekPlan], anchor: dict[str, str] | Non
         for d in w.days:
             if d.exercises:
                 keys.setdefault((d.kind, d.exercises[0]), set()).add(w.id)
-    for workout in reversed(workouts(space)):
+    for workout in reversed(log if log is not None else workouts(space)):
         found = keys.get((day_type(workout.get("label") or "Workout"), first_lift(workout) or ""))
         if found and len(found) == 1:
             start = ids.index(next(iter(found)))
@@ -175,3 +177,40 @@ def save_plans(space: str, weeks: list[WeekPlan], current: str | None, today: st
     if anchor and anchor["week"] in {w.id for w in weeks}:
         row["anchor"] = anchor
     db.put(space, ROW, row)
+    # Every version is kept: the history, and the goal of the weeks it was in force.
+    saved_at = datetime.now(timezone.utc).isoformat(timespec="seconds")
+    key = datetime.now(timezone.utc).isoformat(timespec="microseconds")  # ordered, even two saves a second apart
+    db.put(space, f"{VERSION}{key}", {**row, "savedAt": saved_at, "start": monday(today)})
+
+
+def history(space: str) -> list[PlanVersion]:
+    """Every saved version, newest first."""
+    return [PlanVersion(savedAt=r["savedAt"], start=r["start"], weeks=r["weeks"]) for r in reversed(db.query(space, VERSION))]
+
+
+def goal_of(week: WeekPlan, start: str) -> WeekGoal:
+    counted = [d for d in week.days if not d.optional]
+    return WeekGoal(monday=start, week=week.name, strength=sum(d.kind != "Cardio" for d in counted),
+                    cardio=sum(d.kind == "Cardio" for d in counted), days=[GoalDay(name=d.name, kind=d.kind) for d in counted])
+
+
+def goals(space: str, today: str) -> list[WeekGoal]:
+    """Each week's goal from the first saved version on (Sergio, 2026-11-23: the goal follows the
+    plan): the week type that week had under the version in force then. Weeks before any saved
+    version keep the fixed goal (lib/progress.ts), so the streak's past doesn't change."""
+    versions = db.query(space, VERSION)  # oldest first
+    if not versions:
+        return []
+    log = workouts(space)
+    out = []
+    start, end = date.fromisoformat(min(v["start"] for v in versions)), date.fromisoformat(monday(today))
+    while start <= end:
+        day = start.isoformat()
+        version = [v for v in versions if v["start"] <= day][-1]
+        weeks = [WeekPlan(**w) for w in version["weeks"]]
+        wid = current_week(space, weeks, version.get("anchor"), day, log)
+        week = next((w for w in weeks if w.id == wid), None)
+        if week:
+            out.append(goal_of(week, day))
+        start += timedelta(days=7)
+    return out
