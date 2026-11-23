@@ -1,9 +1,10 @@
-import { CaretDown, CheckCircle, Flag, Play, Timer, X } from "@phosphor-icons/react";
+import { CaretDown, Check, CheckCircle, Flag, PencilSimple, Play, Timer, X } from "@phosphor-icons/react";
 import { useEffect, useRef, useState } from "react";
 
 import { api, type Workout, type WorkoutBody } from "../api";
 import { BottomSheet } from "../components/BottomSheet";
 import { InfoTip } from "../components/InfoTip";
+import { PlanEditor } from "../components/PlanEditor";
 import { StreakCard, StreakCelebration } from "../components/Streak";
 import { WorkoutCard } from "../components/WorkoutCard";
 import { useScreens } from "../components/Screens";
@@ -14,6 +15,7 @@ import {
   useDiscardWorkout,
   useExercises,
   useFinishWorkout,
+  usePlans,
   useProgress,
   useSaveActive,
   useSessionTypes,
@@ -22,11 +24,12 @@ import {
 } from "../hooks";
 import { formatDuration } from "../lib/duration";
 import { abandonedAt, currentLap, lapRows } from "../lib/laps";
-import { cardioOptions, isLogged, lastCardio, startingEntries } from "../lib/plan";
+import { cardioOptions, isLogged, lastCardio, planEntries, startingEntries, weekName, weekOptions, type DayOption } from "../lib/plan";
 import { streaks } from "../lib/progress";
 import { dayType, heavyNext, nextUp, setCount } from "../lib/sets";
 import { streakNews } from "../lib/streak";
 import { clockTime, friendlyDate, localIso, secondsBetween } from "../lib/time";
+import { weekStart } from "../lib/weeks";
 
 export function TrainPage() {
   const active = useActive();
@@ -136,9 +139,27 @@ function Idle({ onOpen }: { onOpen: (w: Workout) => void }) {
   const progress = useProgress();
   const dayTypes = useDayTypes();
   const today = localIso().slice(0, 10);
+  const plans = usePlans(today);
+  const [editing, setEditing] = useState(false);
+  // The week shown: this week's type, or the other one when Sergio swaps.
+  const [weekPicked, setWeek] = useState<"A" | "B" | null>(null);
+  const planList = plans.data?.plans ?? [];
+  const week = weekPicked ?? plans.data?.weekType ?? "A";
+  const other = week === "A" ? "B" : "A";
+  // This week's day types already trained.
+  const monday = weekStart(today);
+  const doneTypes = new Set((progress.data?.days ?? []).filter((d) => d.date >= monday && d.date <= today)
+    .flatMap((d) => [d.type, ...(d.cardio ? ["Cardio"] : [])]));
+
+  // The choices: the week's planned days (Sergio, 2026-11-21), or the day types when there's no plan yet.
   const suggestion = workouts.data ? nextUp(workouts.data, today) : null;
+  const planned = planList.length > 0 ? weekOptions(planList, week, doneTypes) : null;
+  const options: DayOption[] = planned?.options
+    ?? dayTypes.map((label) => ({ key: label, label, dayType: label, done: false }));
+  const next = planned ? planned.next : suggestion?.label ?? null;
   const [picked, setPicked] = useState<string | null>(null);
-  const plan = picked ?? suggestion?.label ?? null;
+  const chosen = options.find((o) => o.key === (picked ?? next)) ?? null;
+  const plan = chosen?.dayType ?? null;
   const heavy = workouts.data ? heavyNext(workouts.data) : null;
   // A Cardio day is one activity (Sergio, 2026-11-17): pick it, last time's preselected.
   const byId = new Map((exercises.data ?? []).map((e) => [e.id, e]));
@@ -151,6 +172,11 @@ function Idle({ onOpen }: { onOpen: (w: Workout) => void }) {
   const all = workouts.data ?? [];
   const ofType = plan ? all.filter((w) => dayType(w.label) === plan) : [];
   const last = (ofType.length > 0 ? ofType : all).slice(0, 2);
+  const known = new Set(byId.keys());
+
+  const entries = chosen?.exercises && plan !== "Cardio"
+    ? planEntries(chosen.exercises, known)
+    : startingEntries(plan ?? undefined, types.data ?? [], workouts.data ?? [], known, cardio);
 
   return (
     <div className="pb-28">
@@ -161,31 +187,76 @@ function Idle({ onOpen }: { onOpen: (w: Workout) => void }) {
       )}
       <section className="mt-6">
         <h2 className="font-display text-3xl font-bold">Ready to train</h2>
-        <p className="mt-1 flex items-center gap-1 text-stone-600">
-          What are you training today?
-          <InfoTip title="Day type">
-            Preselected: the day you've gone longest without in the last three weeks, following your rotation. It
-            decides which exercises the app suggests first.
-          </InfoTip>
-        </p>
-        {dayTypes.length > 0 && (
-          <div className="mt-3 flex flex-wrap gap-2" role="radiogroup" aria-label="Day type">
-            {dayTypes.map((label) => (
-              <button
-                key={label}
-                type="button"
-                role="radio"
-                aria-checked={plan === label}
-                onClick={() => setPicked(label)}
-                className={`rounded-full px-4 py-2 font-medium ${plan === label ? "bg-blue-600 text-white" : "bg-white text-stone-700 ring-1 ring-stone-200"}`}
-              >
-                {label}
-                {suggestion?.label === label && <span className="ml-1.5 text-xs opacity-80">next up</span>}
+        {planned ? (
+          // The week's plan up front (Sergio, 2026-11-23: make the plans obvious): one row per day.
+          <div className="mt-3 overflow-hidden rounded-2xl border border-stone-200 bg-white">
+            <div className="flex items-center gap-1 border-b border-stone-200 px-4 py-3">
+              <div className="min-w-0 flex-1">
+                <div className="text-xs font-semibold tracking-wide text-stone-500 uppercase">This week's plan</div>
+                <div className="font-display text-xl font-bold">{weekName(planList, week)}</div>
+              </div>
+              <InfoTip title="Training plans">
+                Your two week types alternate: heavy push, squat and light pull one week, then light push, deadlift and heavy
+                pull, with a cardio day in each. The first day not trained yet this week is picked; tap another to change it.
+                Edit plans changes each day's exercises and their order.
+              </InfoTip>
+            </div>
+            <div role="radiogroup" aria-label="Day" className="divide-y divide-stone-200">
+              {options.map((o) => {
+                const on = chosen?.key === o.key;
+                return (
+                  <button key={o.key} type="button" role="radio" aria-checked={on} onClick={() => setPicked(o.key)}
+                    className={`relative flex w-full items-start gap-3 px-4 py-3 text-left ${on ? "bg-blue-50" : ""}`}>
+                    {on && <span aria-hidden className="absolute inset-y-0 left-0 w-1 bg-blue-600" />}
+                    <span className="min-w-0 flex-1">
+                      <span className={`block font-semibold ${o.done ? "text-stone-500" : ""}`}>{o.label}</span>
+                      <span className="block text-sm text-stone-500">
+                        {o.exercises?.length ? o.exercises.map((id) => byId.get(id)?.name ?? id).join(" · ") : "A ride, run or walk"}
+                      </span>
+                    </span>
+                    {o.done ? (
+                      <span className="flex shrink-0 items-center gap-1 text-xs font-semibold text-stone-500"><Check size={14} weight="bold" aria-hidden /> Done</span>
+                    ) : next === o.key ? (
+                      <span className="shrink-0 rounded-[3px] bg-blue-600 px-1.5 py-0.5 text-xs font-semibold text-white">Next</span>
+                    ) : null}
+                  </button>
+                );
+              })}
+            </div>
+            <div className="flex items-center border-t border-stone-200 px-2 py-1">
+              <button type="button" onClick={() => setEditing(true)}
+                className="flex items-center gap-1.5 rounded-lg px-2 py-2 text-sm font-medium text-stone-600">
+                <PencilSimple size={16} weight="fill" aria-hidden /> Edit plans
               </button>
-            ))}
+              <button type="button" onClick={() => { setWeek(other); setPicked(null); }}
+                className="ml-auto rounded-lg px-2 py-2 text-sm font-medium text-blue-700">
+                {weekName(planList, other)} instead
+              </button>
+            </div>
           </div>
+        ) : (
+          <>
+            <p className="mt-1 flex items-center gap-1 text-stone-600">
+              What are you training today?
+              <InfoTip title="Day type">
+                Preselected: the day you've gone longest without in the last three weeks, following your rotation. It
+                decides which exercises the app suggests first.
+              </InfoTip>
+            </p>
+            {options.length > 0 && (
+              <div className="mt-3 flex flex-wrap gap-2" role="radiogroup" aria-label="Day">
+                {options.map((o) => (
+                  <button key={o.key} type="button" role="radio" aria-checked={chosen?.key === o.key} onClick={() => setPicked(o.key)}
+                    className={`rounded-full px-4 py-2 font-medium ${chosen?.key === o.key ? "bg-blue-600 text-white" : "bg-white text-stone-700 ring-1 ring-stone-200"}`}>
+                    {o.label}
+                    {next === o.key && <span className="ml-1.5 text-xs opacity-80">next up</span>}
+                  </button>
+                ))}
+              </div>
+            )}
+          </>
         )}
-        {plan === "Legs" && heavy && (
+        {!planned && plan === "Legs" && heavy && (
           <p className="mt-3 flex items-center gap-1 text-sm text-stone-700">
             <span className="font-semibold">Heavy {heavy} today</span>
             <span className="text-stone-500">· {heavy === "squat" ? "deadlift" : "squats"} lighter</span>
@@ -207,15 +278,11 @@ function Idle({ onOpen }: { onOpen: (w: Workout) => void }) {
         )}
         <button
           type="button"
-          onClick={() => start.mutate({
-            startedAt: localIso(),
-            plan: plan ?? undefined,
-            entries: startingEntries(plan ?? undefined, types.data ?? [], workouts.data ?? [], new Set(byId.keys()), cardio),
-          })}
+          onClick={() => start.mutate({ startedAt: localIso(), plan: plan ?? undefined, entries })}
           disabled={start.isPending}
           className="mt-5 inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-blue-600 py-5 text-xl font-semibold text-white shadow-sm active:bg-blue-700"
         >
-          <Play size={26} weight="fill" aria-hidden /> {plan ? `Start ${plan} workout` : "Start workout"}
+          <Play size={26} weight="fill" aria-hidden /> {chosen ? `Start ${chosen.label}` : "Start workout"}
         </button>
         <p className="mt-2 text-center text-sm text-stone-500">The stopwatch starts now and keeps running if you lock the phone.</p>
         {start.error && <p className="mt-2 text-sm text-red-600">{start.error.message}</p>}
@@ -227,6 +294,7 @@ function Idle({ onOpen }: { onOpen: (w: Workout) => void }) {
           {last.map((w) => <WorkoutCard key={w.id} workout={w} onClick={() => onOpen(w)} />)}
         </section>
       )}
+      {editing && <PlanEditor plans={planList} week={week} today={today} onClose={() => setEditing(false)} />}
     </div>
   );
 }
@@ -250,17 +318,20 @@ function Stopwatch({ body, onLap, lapsOpen, onToggleLaps }: {
   return (
     <>
       <div className="min-w-0 flex-1">
-        <div className="ember-text font-display text-5xl tabular-nums" aria-label="Elapsed time">
+        {/* The total stays first and biggest; the lap is read often too, so it's big enough to
+            catch at a glance (Sergio, 2026-11-20). */}
+        <div className="ember-text font-display text-[2.6rem] leading-none tabular-nums" aria-label="Elapsed time">
           {formatDuration(secondsBetween(body.startedAt))}
         </div>
         <button
           type="button"
           onClick={onToggleLaps}
           aria-expanded={lapsOpen}
-          className="-ml-1 flex items-center gap-1 rounded-md px-1 text-sm font-medium text-stone-700 tabular-nums"
+          className="-ml-1 mt-1 flex items-baseline gap-1.5 rounded-md px-1 text-stone-700 tabular-nums"
         >
-          Lap {laps.length + 1} · {formatDuration(currentLap(body.startedAt, laps))}
-          <CaretDown size={14} weight="bold" className={lapsOpen ? "rotate-180" : ""} aria-hidden />
+          <span className="text-sm font-medium">Lap {laps.length + 1}</span>
+          <span className="font-display text-2xl leading-none text-stone-900">{formatDuration(currentLap(body.startedAt, laps))}</span>
+          <CaretDown size={14} weight="bold" className={`self-center ${lapsOpen ? "rotate-180" : ""}`} aria-hidden />
         </button>
       </div>
       <button type="button" onClick={onLap} className="flex items-center gap-1.5 rounded-xl bg-white px-4 py-3 font-semibold text-stone-800 ring-1 ring-stone-300">

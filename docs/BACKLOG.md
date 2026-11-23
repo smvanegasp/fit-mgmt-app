@@ -47,13 +47,37 @@ Checked: backend and frontend tests (new ones for shields, slots, ladder, congra
 exercise's target replayed on the real log before and after (read-only), screenshots in a sample demo.
 Not tested: the shield congrats and "Went up" in a browser (unit tests only), Sergio's phone.
 
-### 11b: the rest (`stage-11b-train`)
+### 11b: the rest (`stage-11b-train`, stacked on 11a)
 
-Planned: training plans (Heavy/Light Push and Pull, Legs Squat/Deadlift, two alternating week types,
-editable); bigger stepper numbers; 2.5 lb steps per exercise; a bigger lap and a smaller total;
-scroll memory per tab; no overscroll past the top and bottom; a steady exercise picker while
-searching; close a finished exercise; edit feedback and attach screenshots; Peloton workouts timed
-from the class length.
+| Feedback | Done |
+|---|---|
+| The day's exercises came out wrong: make day plans (heavy and light push and pull, legs with squat or deadlift) in two alternating week types (push, legs, pull, cardio each week), inferred from the log and editable. | **Training plans** (`app/plans.py`, `GET/PUT /api/plans`, one `SETTINGS#plans` row once saved). Until saved they're read off the log: the last two weeks with strength days are the two week types; a weighted first lift names a day Heavy, the other Light; Legs by its first lift. On the real log: "Squat week" (Heavy push: dips...; Legs · Squat; Light pull: front lever...) and "Deadlift week" (Light push: bench, OHP; Legs · Deadlift; Heavy pull: chin-ups...). This week's type comes from the newest workout matching a plan, flipping weekly: Nov 23 is a Deadlift week. Train shows the week's days in order with done ones checked, the first not done as next up, the exercises it starts with, "<other> week instead", and **Edit plans** (rename, reorder, add, remove). Cardio is still one activity picked at the start. |
+| Make the numbers between + and - bigger. | Stepper numbers a size up (6xl, 5xl for long weights like 112.5). |
+| 2.5 lb increments for some exercises. | Per exercise (`stepLb` on the exercise, `PATCH /exercises/{id}`): "Steps of 5 lb · use 2.5" under the weight stepper; kept for next time. Dumbbells still default to 2.5. |
+| Lap timer a bit bigger, total a bit smaller (total still more important). | Total 2.6rem (was 3rem), lap time in the display font at 1.5rem next to its label. |
+| Scroll memory when changing tabs. | Each tab comes back where it was left (`App.tsx`). |
+| Don't scroll past the top (the stopwatch) or the bottom. | `overscroll-behavior: none` on the page. Needs Sergio's phone to confirm (iOS rubber-band). |
+| The exercise search jumps as results filter. | The picker sheet has a fixed height (85% of the screen). |
+| A finished exercise opened again needs a way to close it. | "Close <exercise>" under it folds it back. |
+| Edit feedback. | Whoever wrote it can fix the text right after sending (Edit on the thanks screen); the owner can edit any note in the Settings inbox. `PATCH /feedback/{id} {text}`; edited ones say so. |
+| Attach screenshots to feedback. | Up to 3, copied to `feedback/<id>-<n>` in the photos bucket (outliving demo photos), shown to the owner in the inbox; `scripts/feedback.py` saves them to `private/feedback/` to look at. |
+| A Peloton workout logged from its screenshot should take the class's time. | On finishing (and saving an edited app workout), a workout shorter than its Peloton classes starts that many minutes before it ended. The Nov 22 ride on AWS was corrected by hand with Sergio's OK (2026-11-23): 20:15:59 to 20:45:59 (was 22 seconds). |
+
+#### Feedback round 1 on 11 (Sergio, 2026-11-23)
+
+| Item | Done |
+|---|---|
+| The plans should be more obvious on Train. | A "This week's plan" card replaces the chips: the week's name, one row per day with its exercises, Done or Next on the right, the chosen one marked in red; Edit plans and the other week at the bottom. |
+| Some inferred plans were wrong; infer them from the last workouts. | Each day's exercises now come from its last 3 sessions (kept if done in 2 of them, or new in the latest; usual order), not the single latest one, which had dropped close-grip pull-ups from heavy push. Variants are each day type's two latest first lifts; the newest full week is week A. On the real log every plan matches it (heavy push: dips, bar dips, skull crushers, close-grip pull-ups, triceps extension, lateral raise). The ngrok copy runs on the older local log, so it can still differ there. |
+| The numbers between + and - are still small. | Up to 3 characters (115, reps) at 7xl, 4 (22.5) at 6xl, 5 (112.5) at 5xl so it fits; the +/- buttons are a little smaller (52 px) to make room. |
+| Fix the Nov 22 ride on AWS. | Done (see above); only its `startedAt` changed, with a condition on the old value. |
+
+Checked: backend 116 and frontend 97 tests, build, plans inferred from the real log (read-only),
+screenshots in a sample demo (Train, plan editor, a workout in progress, discarded). Not tested: the
+plan editor's save, feedback screenshots and scroll memory in a browser (API tests only), the iPhone
+overscroll, Sergio's phone. Note for the agent: run vitest from `C:` (PowerShell `Set-Location
+C:/Users/...`); from the harness's lowercase `c:` working directory it loads two copies of vitest
+and every suite fails with "reading 'config'".
 
 ## Stage 10a: the Lovable redesign (2026-11-17)
 

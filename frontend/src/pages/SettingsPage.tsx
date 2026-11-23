@@ -1,8 +1,10 @@
 import { ChatCircleText, Check, Desktop, Moon, SignOut, Sun, type Icon } from "@phosphor-icons/react";
 import { useState } from "react";
 
+import type { Feedback } from "../api";
 import { FeedbackSheet } from "../components/FeedbackSheet";
-import { useFeedback, useLogout, useMarkFeedback, useSession } from "../hooks";
+import { PhotoStrip } from "../components/Photos";
+import { useEditFeedback, useFeedback, useLogout, useMarkFeedback, useSession } from "../hooks";
 import { friendlyDate } from "../lib/time";
 import { useTheme, type Theme } from "../lib/theme";
 
@@ -68,6 +70,34 @@ function Account() {
   );
 }
 
+/** A note in the inbox; tap Edit to fix its text (Sergio, 2026-11-21). */
+function InboxText({ feedback }: { feedback: Feedback }) {
+  const edit = useEditFeedback();
+  const [text, setText] = useState<string | null>(null);
+  if (text === null) {
+    return (
+      <p className="text-sm whitespace-pre-wrap">
+        {feedback.text}{" "}
+        <button type="button" onClick={() => setText(feedback.text)} className="text-xs font-medium text-blue-700">Edit</button>
+      </p>
+    );
+  }
+  return (
+    <form onSubmit={async (e) => {
+      e.preventDefault();
+      if (text.trim()) await edit.mutateAsync({ id: feedback.id, text: text.trim() });
+      setText(null);
+    }}>
+      <textarea aria-label="Edit feedback" rows={4} maxLength={2000} value={text} onChange={(e) => setText(e.target.value)}
+        className="w-full rounded-lg border border-stone-200 bg-white px-2 py-1.5 text-sm" />
+      <div className="flex gap-2">
+        <button type="submit" disabled={edit.isPending || !text.trim()} className="rounded-lg bg-blue-600 px-3 py-1 text-xs font-semibold text-white">Save</button>
+        <button type="button" onClick={() => setText(null)} className="rounded-lg px-3 py-1 text-xs font-medium text-stone-600">Cancel</button>
+      </div>
+    </form>
+  );
+}
+
 /** Send feedback (everyone); the owner also sees the inbox, newest first. */
 function FeedbackSettings() {
   const session = useSession().data;
@@ -94,9 +124,11 @@ function FeedbackSettings() {
           {inbox.data!.map((f) => (
             <li key={f.id} className={`flex items-start gap-2 py-2.5 ${f.status === "done" ? "opacity-50" : ""}`}>
               <div className="min-w-0 flex-1">
-                <p className="text-sm whitespace-pre-wrap">{f.text}</p>
+                <InboxText feedback={f} />
+                <PhotoStrip photos={(f.photos ?? []).map((key) => ({ key }))} />
                 <p className="text-xs text-stone-500">
                   {friendlyDate(f.createdAt.slice(0, 10))} · {f.role === "guest" ? "a guest" : "you"}{f.page ? ` · ${f.page}` : ""}
+                  {f.editedAt ? " · edited" : ""}
                 </p>
               </div>
               <button type="button" onClick={() => mark.mutate({ id: f.id, status: f.status === "new" ? "done" : "new" })}

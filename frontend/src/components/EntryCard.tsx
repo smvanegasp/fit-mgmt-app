@@ -3,7 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { useEffect, useRef, useState } from "react";
 
 import { api, type CueSection, type Entry, type Exercise, type Note, type Photo, type Problem, type Role, type Scheme, type SetData, type Streak } from "../api";
-import { useAddNote, useExerciseSummary, useUpdateNote } from "../hooks";
+import { useAddNote, useExerciseSummary, useUpdateExercise, useUpdateNote } from "../hooks";
 import { congratsFor, ladderWeights, nextRung, nextSet, reachesTarget, schemeText, summarizeSets, weightText, type Congrats } from "../lib/sets";
 import { clearDraft, loadDraft, saveDraft } from "../lib/drafts";
 import { pelotonStats } from "../lib/kinds";
@@ -228,6 +228,27 @@ export function TargetGame({ streak, load, today }: { streak: Streak; load: Exer
 // ------------------------------------------------------------------ lifting
 
 
+/** The weight stepper's step: the exercise's own, else 2.5 for dumbbells and 5 for the rest. */
+export function weightStep(exercise: Pick<Exercise, "load" | "stepLb">): number {
+  return exercise.stepLb ?? (exercise.load === "dumbbell" ? 2.5 : 5);
+}
+
+/** Switch an exercise between 5 and 2.5 lb steps (Sergio, 2026-11-19); kept for next time. */
+function StepToggle({ exercise }: { exercise: Exercise }) {
+  const update = useUpdateExercise();
+  const step = weightStep(exercise);
+  const other = step === 5 ? 2.5 : 5;
+  return (
+    <div className="flex justify-end">
+      <button type="button" disabled={update.isPending}
+        onClick={() => update.mutate({ id: exercise.id, patch: { stepLb: other } })}
+        className="-my-1 rounded px-1 py-1 text-xs font-medium text-stone-500">
+        Steps of {step} lb · <span className="text-blue-700">use {other}</span>
+      </button>
+    </div>
+  );
+}
+
 function SetLog({ entry, exercise, draftKey, lastSets, bestDrop, target, onChange, onSetLogged, onLogged }: {
   entry: Entry; exercise: Exercise; draftKey: string; lastSets?: SetData[]; bestDrop?: { date: string; sets: SetData[] }; target?: Scheme;
   onChange: (e: Entry) => void; onSetLogged: (label: string) => void;
@@ -320,11 +341,12 @@ function SetLog({ entry, exercise, draftKey, lastSets, bestDrop, target, onChang
               label="Weight"
               value={draft.weightLb ?? 0}
               onChange={(weightLb) => dial({ ...draft, weightLb })}
-              step={exercise.load === "dumbbell" ? 2.5 : 5}
+              step={weightStep(exercise)}
               unit={weightUnit}
               decimals
             />
           )}
+          {hasWeight && <StepToggle exercise={exercise} />}
           <Stepper
             layout="row"
             label={seconds ? "Seconds" : "Reps"}

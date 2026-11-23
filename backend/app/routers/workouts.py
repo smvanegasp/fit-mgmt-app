@@ -6,7 +6,7 @@ Finishing turns it into a WORKOUT row.
 """
 
 import uuid
-from datetime import datetime
+from datetime import datetime, timedelta
 from typing import Any
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
@@ -35,6 +35,19 @@ def _label(space: str, body: WorkoutBody, legs_day: bool = True) -> str:
     """legs_day=False keeps the old Squat / Deadlift names, for imported workouts being edited."""
     names = {e.id: e.name for e in all_exercises(space).values()}
     return body.label or session_label([(e.exerciseId, len(e.sets)) for e in body.entries], names, legs_day)
+
+
+def class_timed(body: WorkoutBody, ended: str | None) -> str:
+    """The start time, moved back so the workout lasts at least its Peloton classes (Sergio,
+    2026-11-22: a ride logged from its screenshot right after riding lasted 22 seconds). A
+    stopwatch that ran longer than the classes is kept as it was."""
+    minutes = sum((e.peloton.minutes or e.minutes or 0) for e in body.entries if e.peloton)
+    if not minutes or not ended:
+        return body.startedAt
+    end = datetime.fromisoformat(ended)
+    if (end - datetime.fromisoformat(body.startedAt)).total_seconds() >= minutes * 60:
+        return body.startedAt
+    return (end - timedelta(minutes=minutes)).isoformat(timespec="seconds")
 
 
 def _sk(workout_id: str) -> str:
@@ -69,6 +82,8 @@ def get_workout(workout_id: str, space: str = Depends(current_space)) -> Workout
 def update_workout(workout_id: str, body: WorkoutBody, space: str = Depends(current_space)) -> Workout:
     old = _get(space, workout_id)
     label = _label(space, body, legs_day=old.source == "app")
+    if old.source == "app":
+        body = body.model_copy(update={"startedAt": class_timed(body, body.endedAt or old.endedAt)})
     workout = Workout(**{**body.model_dump(), "label": label}, id=old.id, date=old.date,
                       durationEstimated=old.durationEstimated, source=old.source)
     db.put(space, _sk(workout_id), _clean(workout.model_dump()))
@@ -122,6 +137,7 @@ def finish_workout(body: FinishBody, space: str = Depends(current_space)) -> Wor
     if not active.entries:
         raise HTTPException(status.HTTP_400_BAD_REQUEST, "Log at least one set before finishing")
     date = active.startedAt[:10]
+    active.startedAt = class_timed(active, body.endedAt)
     same_day = db.query(space, f"WORKOUT#{date}#")
     if same_day:
         # One workout per day: a second session joins the first one.

@@ -88,7 +88,7 @@ def _save(space: str, exercise: Exercise) -> None:
 
 @router.patch("/{exercise_id}")
 def update_exercise(exercise_id: str, body: ExerciseUpdate, space: str = Depends(current_space)) -> Exercise:
-    """Rename or recategorize. The old name stays searchable."""
+    """Rename, recategorize or set the weight step. The old name stays searchable."""
     exercise = get_exercise(space, exercise_id)
     if body.name is not None:
         name = " ".join(body.name.split())
@@ -100,6 +100,8 @@ def update_exercise(exercise_id: str, body: ExerciseUpdate, space: str = Depends
             exercise.name = name
     if body.group is not None:
         exercise.group = body.group
+    if body.stepLb is not None:
+        exercise.stepLb = body.stepLb
     exercise.source = "app"
     _save(space, exercise)
     return exercise

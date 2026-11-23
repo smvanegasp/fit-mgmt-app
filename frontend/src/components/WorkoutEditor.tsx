@@ -1,4 +1,4 @@
-import { CaretRight, CheckCircle, Plus } from "@phosphor-icons/react";
+import { CaretRight, CaretUp, CheckCircle, Plus } from "@phosphor-icons/react";
 import { useState } from "react";
 
 import type { Entry, Exercise, WorkoutBody } from "../api";
@@ -96,6 +96,13 @@ export function WorkoutEditor({ body, onChange, workoutId, onSetLogged, focus = 
             }}
             onSetLogged={(label) => onSetLogged?.(label)}
           />
+          {/* A finished exercise opened again folds back with one tap (Sergio, 2026-11-21). */}
+          {focus && entry.done && (
+            <button type="button" onClick={() => { setPicked(null); showCurrent(); }}
+              className="mt-2 flex w-full items-center justify-center gap-2 rounded-xl border border-stone-300 py-3 font-semibold text-stone-700">
+              <CaretUp size={18} weight="bold" aria-hidden /> Close {exercise.name}
+            </button>
+          )}
           </div>
         );
       })}
