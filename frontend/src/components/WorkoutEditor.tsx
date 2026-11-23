@@ -49,8 +49,9 @@ export function WorkoutEditor({ body, onChange, workoutId, onSetLogged, focus = 
       setPicked(entries.length); // picked to do now
       showCurrent();
     } else {
-      // Bring the new card into view once it renders.
-      requestAnimationFrame(() => window.scrollTo({ top: document.body.scrollHeight, behavior: "smooth" }));
+      // Bring the new card into view once it renders (in a page's own scroll area too).
+      requestAnimationFrame(() => requestAnimationFrame(() =>
+        [...document.querySelectorAll("[data-entry]")].at(-1)?.scrollIntoView({ behavior: "smooth", block: "start" })));
     }
   }
 
@@ -80,7 +81,7 @@ export function WorkoutEditor({ body, onChange, workoutId, onSetLogged, focus = 
           return entry.done ? <DoneRow key={`${entry.exerciseId}-${i}`} entry={entry} exercise={exercise} onOpen={() => { setPicked(i); showCurrent(); }} /> : null;
         }
         return (
-          <div key={`${entry.exerciseId}-${i}`} data-current={focus || undefined} className="scroll-mt-28">
+          <div key={`${entry.exerciseId}-${i}`} data-entry data-current={focus || undefined} className="scroll-mt-28">
           <EntryCard
             entry={entry}
             exercise={exercise}

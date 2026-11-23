@@ -98,6 +98,8 @@ function InboxText({ feedback }: { feedback: Feedback }) {
   );
 }
 
+const PAGE = 5;
+
 /** Send feedback (everyone); the owner also sees the inbox, newest first. */
 function FeedbackSettings() {
   const session = useSession().data;
@@ -106,6 +108,11 @@ function FeedbackSettings() {
   const mark = useMarkFeedback();
   const [writing, setWriting] = useState(false);
   const fresh = (inbox.data ?? []).filter((f) => f.status === "new").length;
+  // New and done apart, a few at a time (Sergio, 2026-11-23: the whole list at once was too much).
+  const [tab, setTab] = useState<"new" | "done">("new");
+  const [shown, setShown] = useState(PAGE);
+  const listed = (inbox.data ?? []).filter((f) => f.status === tab);
+  const count = { new: fresh, done: (inbox.data ?? []).length - fresh };
   return (
     <section className="rounded-xl border border-stone-200 bg-white p-4">
       <h2 className="flex items-center gap-2 text-lg font-semibold">
@@ -120,9 +127,22 @@ function FeedbackSettings() {
         <ChatCircleText size={18} weight="fill" aria-hidden /> Send feedback
       </button>
       {owner && (inbox.data ?? []).length > 0 && (
-        <ul className="mt-4 divide-y divide-stone-100">
-          {inbox.data!.map((f) => (
-            <li key={f.id} className={`flex items-start gap-2 py-2.5 ${f.status === "done" ? "opacity-50" : ""}`}>
+        <div className="mt-4 grid grid-cols-2 gap-1 rounded-xl bg-stone-100 p-1" role="tablist" aria-label="Feedback">
+          {(["new", "done"] as const).map((t) => (
+            <button key={t} type="button" role="tab" aria-selected={tab === t} onClick={() => { setTab(t); setShown(PAGE); }}
+              className={`rounded-lg py-2 text-sm font-semibold ${tab === t ? "bg-blue-600 text-white" : "text-stone-600"}`}>
+              {t === "new" ? "New" : "Done"} <span className="font-normal opacity-80">{count[t]}</span>
+            </button>
+          ))}
+        </div>
+      )}
+      {owner && listed.length === 0 && (inbox.data ?? []).length > 0 && (
+        <p className="py-4 text-center text-sm text-stone-500">{tab === "new" ? "Nothing new." : "Nothing marked done yet."}</p>
+      )}
+      {owner && listed.length > 0 && (
+        <ul className="mt-2 divide-y divide-stone-100">
+          {listed.slice(0, shown).map((f) => (
+            <li key={f.id} className="flex items-start gap-2 py-2.5">
               <div className="min-w-0 flex-1">
                 <InboxText feedback={f} />
                 <PhotoStrip photos={(f.photos ?? []).map((key) => ({ key }))} />
@@ -139,6 +159,11 @@ function FeedbackSettings() {
             </li>
           ))}
         </ul>
+      )}
+      {owner && listed.length > shown && (
+        <button type="button" onClick={() => setShown(shown + PAGE)} className="mt-1 w-full py-2 text-sm font-medium text-blue-700">
+          Show {Math.min(PAGE, listed.length - shown)} more
+        </button>
       )}
       {writing && <FeedbackSheet onClose={() => setWriting(false)} />}
     </section>

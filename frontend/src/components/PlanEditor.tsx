@@ -4,12 +4,13 @@ import { useState } from "react";
 import type { DayPlan } from "../api";
 import { useExercises, useSavePlans } from "../hooks";
 import { weekName } from "../lib/plan";
-import { BottomSheet } from "./BottomSheet";
 import { ExercisePicker } from "./ExercisePicker";
+import { Screen } from "./Screen";
 
 /**
  * Edit the training plans (Sergio, 2026-11-21): each week type's days, their names and exercises
- * in order. What a planned workout starts with comes from here.
+ * in order. What a planned workout starts with comes from here. A page of its own with Save fixed
+ * at the bottom (Sergio, 2026-11-23: as a sheet over Train it scrolled past Save).
  */
 export function PlanEditor({ plans, week: initialWeek, today, onClose }: {
   plans: DayPlan[]; week: "A" | "B"; today: string; onClose: () => void;
@@ -32,14 +33,25 @@ export function PlanEditor({ plans, week: initialWeek, today, onClose }: {
   const addingTo = draft.find((p) => p.id === adding);
 
   return (
-    <BottomSheet title="Training plans" onClose={onClose} tall>
+    <Screen title="Training plans" onBack={onClose}
+      footer={
+        <>
+          {save.error && <p className="mb-2 text-sm text-red-600">{save.error.message}</p>}
+          <button type="button" disabled={save.isPending || draft.some((p) => !p.name.trim())}
+            onClick={async () => { await save.mutateAsync(draft.map((p) => ({ ...p, name: p.name.trim() }))); onClose(); }}
+            className="w-full rounded-xl bg-blue-600 py-3.5 text-lg font-semibold text-white disabled:opacity-50">
+            {save.isPending ? "Saving…" : "Save plans"}
+          </button>
+        </>
+      }>
       <p className="text-sm text-stone-600">
         Two week types that alternate. A workout of the day starts with these exercises, in this order.
       </p>
-      <div className="mt-3 grid grid-cols-2 gap-1 rounded-xl bg-stone-100 p-1" role="tablist" aria-label="Week type">
+      {/* The week tabs in the accent red (Sergio, 2026-11-23: make them obvious). */}
+      <div className="mt-3 grid grid-cols-2 gap-1 rounded-xl border border-blue-600 p-1" role="tablist" aria-label="Week type">
         {(["A", "B"] as const).map((w) => (
           <button key={w} type="button" role="tab" aria-selected={week === w} onClick={() => setWeek(w)}
-            className={`rounded-lg py-2 text-sm font-semibold ${week === w ? "bg-white text-stone-900 shadow-sm" : "text-stone-500"}`}>
+            className={`rounded-lg px-2 py-2.5 text-sm font-semibold ${week === w ? "bg-blue-600 text-white" : "text-blue-700"}`}>
             {weekName(draft, w)}
           </button>
         ))}
@@ -76,12 +88,6 @@ export function PlanEditor({ plans, week: initialWeek, today, onClose }: {
         ))}
       </div>
 
-      {save.error && <p className="mt-3 text-sm text-red-600">{save.error.message}</p>}
-      <button type="button" disabled={save.isPending || draft.some((p) => !p.name.trim())}
-        onClick={async () => { await save.mutateAsync(draft.map((p) => ({ ...p, name: p.name.trim() }))); onClose(); }}
-        className="mt-4 w-full rounded-xl bg-blue-600 py-3 font-semibold text-white disabled:opacity-50">
-        {save.isPending ? "Saving…" : "Save plans"}
-      </button>
 
       {addingTo && (
         <ExercisePicker title={`Add to ${addingTo.name}`} plan={addingTo.dayType} inWorkout={addingTo.exercises}
@@ -91,6 +97,6 @@ export function PlanEditor({ plans, week: initialWeek, today, onClose }: {
             setAdding(null);
           }} />
       )}
-    </BottomSheet>
+    </Screen>
   );
 }
