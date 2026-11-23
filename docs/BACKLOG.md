@@ -155,14 +155,22 @@ sandbox (five named slots, the goal of 4 strength days). Not tested: Restore in 
 Checked: backend 121 and frontend 92 tests, the welcome page logged out at 390x844 (dark and light) and
 1440x900 on the local log (older than production: its streak reads 0 there). Not tested: the live numbers.
 
-### Open: carrying a week's unfinished days into the next (Sergio, 2026-11-23, asked for a recommendation)
+## Stage 14a: the plan as a cycle of days (`stage-14a-day-cycle`, Sergio 2026-11-23)
 
-Week types are tied to calendar weeks, so a week that trained only light push and deadlift legs moves
-on to the next week type, while Sergio carries on with heavy pull and cardio. Proposal: treat the week
-types as one **cycle of days** (here 8: both weeks' days in order). Train shows the first day not yet
-done in the current pass ("Up next"), whatever the calendar week; when every day of the pass is done, the
-next pass starts. Picking another day still works, and counts as done for the pass. The streak doesn't
-change (it counts days per calendar week). Waiting for Sergio's go-ahead.
+Week types were tied to calendar weeks, so a short week (light push and deadlift legs only) jumped to
+the other week type on Monday while Sergio carries on with heavy pull and cardio. Agreed: the week
+types' days form **one cycle**, and the next day is the one after the last workout, whatever the week.
+Sergio: keep it simple, "always the next 4 trainings and the last two".
+
+| Item | Done |
+|---|---|
+| Where Sergio is | `cyclePlace` / `cycleView` in `lib/plan.ts`: workouts replayed oldest first; one started from a plan day is that day (new `planDays` on the workout, joined when a second session merges into the day); older ones match by day type, then the day's exercises they have, then the nearest such day after the last one (tells the two Cardio days apart). A ride after lifting also takes the Cardio day right after. On the real log (read-only) the last 8 workouts land on the right days; next is light push, deadlift legs, heavy pull, cardio. |
+| Train | "Your plan": the last two workouts (done, with the day they were and the date; tap opens it), then the next four days numbered, the first marked Next and preselected. Tap another to switch, again for none; "Other days" shows the rest of the cycle. Starting saves the day in `planDays`. |
+| Plan page | "Current week" and the "This week" tag are gone (the place comes from the workouts); the list is "Your days, in order". The server's anchor and `current` stay but aren't used by Train. |
+
+Checked: backend 122 and frontend 98 tests (the cycle: carry-over, wrap, two Cardio days, a ride after
+lifting), the real replay above, a sample demo at 390x844 and 1440x900 (dark and light), starting from a
+picked day (it saved `planDays`; the demo workout was discarded). Not tested: Sergio's phone.
 
 ## Stage 13a: the streak counts training days, tiers (`stage-13a-streak-tiers`, Sergio 2026-11-23)
 

@@ -204,6 +204,20 @@ def test_a_second_session_on_the_same_day_joins_the_first(client: TestClient) ->
     assert len([w for w in client.get("/api/workouts").json() if w["date"] == "2026-10-31"]) == 1
 
 
+def test_the_plan_days_a_workout_was_started_from_are_kept_and_joined(client: TestClient) -> None:
+    lift = {"exerciseId": "chin-ups", "sets": [{"reps": 4, "weightLb": 90}] * 4}
+    client.post("/api/active", json={"startedAt": "2026-11-24T09:00:00", "planDays": ["heavy-pull"]})
+    client.put("/api/active", json={"startedAt": "2026-11-24T09:00:00", "planDays": ["heavy-pull"], "entries": [lift]})
+    first = client.post("/api/active/finish", json={"endedAt": "2026-11-24T10:00:00"}).json()
+    assert first["planDays"] == ["heavy-pull"]
+
+    ride = {"exerciseId": "peloton-ride", "minutes": 20}
+    client.post("/api/active", json={"startedAt": "2026-11-24T18:00:00", "planDays": ["ride-b"]})
+    client.put("/api/active", json={"startedAt": "2026-11-24T18:00:00", "planDays": ["ride-b"], "entries": [ride]})
+    second = client.post("/api/active/finish", json={"endedAt": "2026-11-24T18:20:00"}).json()
+    assert second["planDays"] == ["heavy-pull", "ride-b"]
+
+
 def test_a_peloton_ride_logged_afterwards_lasts_its_class(client: TestClient) -> None:
     ride = {"exerciseId": "peloton-ride", "minutes": 30, "peloton": {"minutes": 30, "outputKj": 161}}
     client.post("/api/active", json={"startedAt": "2026-11-22T20:45:37", "plan": "Cardio"})

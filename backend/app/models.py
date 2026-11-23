@@ -124,6 +124,9 @@ class WorkoutBody(BaseModel):
     label: str | None = Field(None, max_length=80)
     # The day type chosen at the start ("Squat"); suggests the usual exercises.
     plan: str | None = Field(None, max_length=40)
+    # The plan days it was started from (stage 14a: where Sergio is in the cycle of days); a ride
+    # merged into a lifting day adds its own.
+    planDays: list[str] = Field(default_factory=list, max_length=4)
     laps: list[Lap] = Field(default_factory=list, max_length=500)
     notes: list[str] = Field(default_factory=list, max_length=20)
     photos: list[Photo] = Field(default_factory=list, max_length=20)

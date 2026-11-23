@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 
-import type { SessionType } from "../api";
-import { cardioOptions, currentIndex, isLogged, lastCardio, nextWeek, planEntries, startingEntries, usualFor, weekOptions } from "./plan";
+import type { DayPlan, SessionType, WeekPlan } from "../api";
+import { cardioOptions, currentIndex, cycleView, isLogged, lastCardio, nextWeek, planEntries, startingEntries, usualFor, weekOptions } from "./plan";
 
 const types: SessionType[] = [
   { label: "Push", exercises: ["dips", "bench-press", "warm-up"], lastDate: "2026-11-09", sessions: 20 },
@@ -83,5 +83,55 @@ describe("optional days", () => {
     ] };
     expect(weekOptions(week, []).next).toBe("push");
     expect(weekOptions(week, ["Push"]).next).toBe("ride");
+  });
+});
+
+describe("the cycle of days", () => {
+  const day = (id: string, kind: DayPlan["kind"], exercises: string[] = []): DayPlan => ({ id, name: id, kind, exercises });
+  // Sergio's two week types: heavy push, squat legs, light pull, ride; light push, deadlift legs, heavy pull, ride.
+  const weeks: WeekPlan[] = [
+    { id: "a", name: "A", days: [day("heavy-push", "Push", ["dips", "bench-press"]), day("legs-squat", "Legs", ["squat", "deadlift"]), day("light-pull", "Pull", ["front-lever"]), day("ride-a", "Cardio")] },
+    { id: "b", name: "B", days: [day("light-push", "Push", ["bench-press", "ohp"]), day("legs-deadlift", "Legs", ["deadlift", "squat"]), day("heavy-pull", "Pull", ["chin-ups"]), day("ride-b", "Cardio")] },
+  ];
+  const cardio = new Set(["peloton-ride"]);
+  let n = 0;
+  const w = (date: string, label: string, ids: string[], planDays?: string[]) =>
+    ({ id: `w${n++}`, date, label, entries: ids.map((exerciseId) => ({ exerciseId })), planDays });
+  const keys = (days: { key: string }[]) => days.map((d) => d.key);
+
+  it("starts at the first day without workouts", () => {
+    expect(keys(cycleView(weeks, [], cardio).next)).toEqual(["heavy-push", "legs-squat", "light-pull", "ride-a"]);
+  });
+
+  it("carries a short week over: the next day follows the last workout, not the calendar", () => {
+    // Week of Nov 9: light push and deadlift legs only. The next week starts with heavy pull.
+    const log = [w("2026-11-10", "Push", ["bench-press", "ohp"]), w("2026-11-12", "Legs", ["deadlift", "squat"])];
+    const view = cycleView(weeks, log, cardio);
+    expect(keys(view.next)).toEqual(["heavy-pull", "ride-b", "heavy-push", "legs-squat"]);
+    expect(view.last.map((l) => keys(l.days))).toEqual([["light-push"], ["legs-deadlift"]]);
+  });
+
+  it("uses the day a workout was started from, and wraps around", () => {
+    const log = [w("2026-11-20", "Cardio", ["peloton-ride"], ["ride-b"])];
+    expect(keys(cycleView(weeks, log, cardio).next)[0]).toBe("heavy-push");
+  });
+
+  it("tells the two Cardio days apart by which comes next", () => {
+    const log = [w("2026-11-17", "Pull", ["front-lever"]), w("2026-11-18", "Cardio", ["peloton-ride"])];
+    const view = cycleView(weeks, log, cardio);
+    expect(view.last.map((l) => keys(l.days))).toEqual([["light-pull"], ["ride-a"]]);
+    expect(keys(view.next)[0]).toBe("light-push");
+  });
+
+  it("a ride after lifting also takes the Cardio day right after", () => {
+    const log = [w("2026-11-17", "Pull", ["chin-ups", "peloton-ride"])];
+    const view = cycleView(weeks, log, cardio);
+    expect(view.last.map((l) => keys(l.days))).toEqual([["heavy-pull", "ride-b"]]);
+    expect(keys(view.next)[0]).toBe("heavy-push");
+  });
+
+  it("shows the last two workouts, oldest first", () => {
+    const log = [w("2026-11-01", "Push", ["dips"]), w("2026-11-03", "Legs", ["squat"]), w("2026-11-05", "Pull", ["front-lever"])];
+    expect(cycleView(weeks, log, cardio).last.map((l) => l.workout.date)).toEqual(["2026-11-03", "2026-11-05"]);
   });
 });
