@@ -23,7 +23,7 @@ export const GROUP_NAMES: Record<Group, string> = {
 };
 
 const LOAD_NAMES: Record<Load, string> = {
-  barbell: "Barbell (plates + 45 lb bar)",
+  barbell: "Barbell (plates + 45 lbs bar)",
   dumbbell: "Dumbbells (per hand)",
   machine: "Machine or cable",
   added: "Body weight + added weight",

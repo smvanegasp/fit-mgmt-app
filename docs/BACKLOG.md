@@ -155,6 +155,19 @@ sandbox (five named slots, the goal of 4 strength days). Not tested: Restore in 
 Checked: backend 121 and frontend 92 tests, the welcome page logged out at 390x844 (dark and light) and
 1440x900 on the local log (older than production: its streak reads 0 there). Not tested: the live numbers.
 
+## Stage 15c: lbs everywhere, a red step (`stage-15c-lbs`, Sergio 2026-11-23)
+
+| Feedback | Done |
+|---|---|
+| In dark mode the step switch didn't show which of 2.5 / 5 was picked. | The picked one is the red accent with bone text, in both modes. |
+| "4x4 @ 115" needs "lbs", everywhere, especially on the welcome page. | `weightText` adds it, so every target, set summary, best set, celebration and the welcome page's "In training now" read "4×4 @ 115 lbs" ("30 lbs each", drop ladders "90-70-0 lbs"; Anton shows it in caps). The hand-written units (body weight, the stepper's "lbs plates + 45 bar", the chart, the barbell option) say "lbs" too. The small weight labels under the ladder columns stay bare numbers (no room). |
+
+| The numbers between − and + still looked small: long weights like 147.5 shrank to fit next to the label column (to ~42 px). | Steppers put their label (and unit) on a line above, with the Step switch at the right of the Weight line ("STEP 2.5 / 5", bigger taps), so the number has the full width: every value is 72 px now (measured 45 to 147.5 at phone width, nothing clipped); the shrink-to-fit stays as a safety net. Applies to every stepper (sets, warm-up, run, drop sets, body weight). |
+
+Checked: frontend 99 tests (expectations updated) and type-check; a demo workout (discarded): the step
+switch in dark and light, the target "5×5 @ 145 lbs", the new stepper layout; the welcome page logged
+out. Not tested: Sergio's phone.
+
 ## Stage 15b: cues folded, a clearer weight step (`stage-15b-cues-step`, Sergio 2026-11-23)
 
 | Feedback | Done |

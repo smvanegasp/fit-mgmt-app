@@ -61,7 +61,7 @@ export function topSeries(sessions: { date: string; workoutId: string; entry: En
   }
   if (points.length === 0) return null;
   if (weighted) {
-    const unit = exercise.load === "barbell" ? `lb plates (+${exercise.barLb} bar)` : exercise.load === "added" ? "lb added" : exercise.load === "dumbbell" ? "lb each" : "lb";
+    const unit = exercise.load === "barbell" ? `lbs plates (+${exercise.barLb} bar)` : exercise.load === "added" ? "lbs added" : exercise.load === "dumbbell" ? "lbs each" : "lbs";
     return { title: "Top weight", format: (v) => `${v} ${unit}`, points };
   }
   return seconds

@@ -1,11 +1,12 @@
 import type { Entry, Exercise, Load, Scheme, SetData, Workout } from "../api";
 
-/** Weight as Sergio writes it: "170" (plates, for barbells), "25 each", "BW" for none. */
+/** Weight with its unit (Sergio, 2026-11-23: "lbs" is essential): "170 lbs" (plates, for barbells),
+ * "25 lbs each", "BW" for none. */
 export function weightText(set: SetData, load: Load): string {
   if (load === "bodyweight" || load === "none") return "";
   if (set.weightLb === undefined) return "";
   if (load === "added" && set.weightLb === 0) return "BW";
-  return `${set.weightLb}${set.each ? " each" : ""}`;
+  return `${set.weightLb} lbs${set.each ? " each" : ""}`;
 }
 
 function amount(set: SetData): string {
@@ -21,7 +22,7 @@ export function summarizeSets(sets: SetData[], load: Load): string {
     if (set.drop) {
       const ladder: SetData[] = [];
       while (i < sets.length && sets[i].drop) ladder.push(sets[i++]);
-      parts.push(`drop ${ladder.map((s) => s.weightLb ?? 0).join("-")}: ${ladder.map(amount).join("-")}`);
+      parts.push(`drop ${ladder.map((s) => s.weightLb ?? 0).join("-")} lbs: ${ladder.map(amount).join("-")}`);
       continue;
     }
     let n = 1;

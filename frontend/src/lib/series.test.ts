@@ -12,7 +12,7 @@ describe("topSeries", () => {
     ], { load: "barbell", measure: "reps", barLb: 45 })!;
     expect(s.points.map((p) => [p.date, p.value])).toEqual([["2026-10-01", 170], ["2026-11-05", 180]]);
     expect(s.title).toBe("Top weight");
-    expect(s.format(180)).toBe("180 lb plates (+45 bar)");
+    expect(s.format(180)).toBe("180 lbs plates (+45 bar)");
   });
 
   it("leaves out drop sets and body-weight days of a weighted lift", () => {

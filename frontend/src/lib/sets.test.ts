@@ -9,7 +9,7 @@ const dumbbell = { load: "dumbbell" as const, measure: "reps" as const, barLb: 0
 describe("summarizeSets", () => {
   it("groups identical sets", () => {
     const sets = [...Array(5).fill({ reps: 5, weightLb: 170 }), ...Array(3).fill({ reps: 8, weightLb: 150 }), { reps: 6, weightLb: 150 }];
-    expect(summarizeSets(sets, "barbell")).toBe("5×5 @ 170, 3×8 @ 150, 1×6 @ 150");
+    expect(summarizeSets(sets, "barbell")).toBe("5×5 @ 170 lbs, 3×8 @ 150 lbs, 1×6 @ 150 lbs");
   });
 
   it("shows drop ladders, body weight, holds and per-hand weights", () => {
@@ -18,9 +18,9 @@ describe("summarizeSets", () => {
       { reps: 4, weightLb: 90, drop: true }, { reps: 3, weightLb: 70, drop: true }, { reps: 6, weightLb: 0, drop: true },
       { reps: 8, weightLb: 0 },
     ];
-    expect(summarizeSets(dips, "added")).toBe("2×4 @ 115, drop 90-70-0: 4-3-6, 1×8 @ BW");
+    expect(summarizeSets(dips, "added")).toBe("2×4 @ 115 lbs, drop 90-70-0 lbs: 4-3-6, 1×8 @ BW");
     expect(summarizeSets([{ seconds: 7 }, { seconds: 7 }], "bodyweight")).toBe("2×7s");
-    expect(summarizeSets([{ reps: 8, weightLb: 30, each: true }], "dumbbell")).toBe("1×8 @ 30 each");
+    expect(summarizeSets([{ reps: 8, weightLb: 30, each: true }], "dumbbell")).toBe("1×8 @ 30 lbs each");
   });
 
   it("writes complexes with their detail", () => {
@@ -30,11 +30,11 @@ describe("summarizeSets", () => {
 
 describe("weightText and schemeText", () => {
   it("formats by load type", () => {
-    expect(weightText({ weightLb: 170 }, "barbell")).toBe("170");
+    expect(weightText({ weightLb: 170 }, "barbell")).toBe("170 lbs");
     expect(weightText({ weightLb: 0 }, "added")).toBe("BW");
     expect(weightText({ weightLb: 10 }, "bodyweight")).toBe("");
-    expect(schemeText({ sets: [5, 5, 5, 5, 5], weightLb: 170, each: false, seconds: false }, "barbell")).toBe("5×5 @ 170");
-    expect(schemeText({ sets: [4, 4, 4, 3], weightLb: 90, each: false, seconds: false }, "added")).toBe("3×4, 1×3 @ 90");
+    expect(schemeText({ sets: [5, 5, 5, 5, 5], weightLb: 170, each: false, seconds: false }, "barbell")).toBe("5×5 @ 170 lbs");
+    expect(schemeText({ sets: [4, 4, 4, 3], weightLb: 90, each: false, seconds: false }, "added")).toBe("3×4, 1×3 @ 90 lbs");
     expect(schemeText({ sets: [7, 7], each: false, seconds: true }, "bodyweight")).toBe("2×7s");
   });
 });
