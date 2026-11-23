@@ -155,6 +155,15 @@ sandbox (five named slots, the goal of 4 strength days). Not tested: Restore in 
 Checked: backend 121 and frontend 92 tests, the welcome page logged out at 390x844 (dark and light) and
 1440x900 on the local log (older than production: its streak reads 0 there). Not tested: the live numbers.
 
+## Stage 14d: Progress lifts in order, climbing hidden (`stage-14d-progress-order`, Sergio 2026-11-23)
+
+| Feedback | Done |
+|---|---|
+| Strength on Progress was out of order: push, then pull, then legs. | `MAIN_LIFTS`: weighted dips, bench press, weighted chin-ups, weighted pull-ups, deadlift, back squat. The welcome page keeps its own four (dips, chin-ups, deadlift, squat). |
+| Hide climbing on Progress for now (keep the record). | The Climbing card is off (`SHOW_CLIMBING` in `ProgressPage.tsx`); the log, History and the bouldering page keep everything. |
+
+Checked: backend progress tests, the order and no Climbing card in a sample demo. Not tested: Sergio's phone.
+
 ## Stage 14c: Start in the row, a plain list of days (`stage-14c-day-list`, Sergio 2026-11-23)
 
 | Feedback | Done |

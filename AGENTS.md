@@ -164,7 +164,8 @@ A mobile-first web app where Sergio logs their gym workouts and sees their progr
 | 13b | Tier icons on the welcome stats; the four focus lifts (weighted dips, weighted chin-ups, deadlift, back squat) on the welcome page and first on Progress, then weighted pull-ups and bench | #52 |
 | 14a | The plan as one cycle of days: next is the day after the last workout, whatever the calendar week; Train shows the last two workouts and the next four days; workouts store the plan days they were started from (`planDays`) | #53 (shipped with #52) |
 | 14b | Feedback: Start inside the plan card, no "Last workouts" on Train, the plan page lists the days (numbered through the cycle, grouped by week type), the warm-up is its own group (not cardio) and left out of exercise lists, History drops "Show every exercise", Progress drops the routine timeline | #54 |
-| 14c | Start inside the selected day's row; "View more days" numbered through the cycle; the plan page is one list of days (add, reorder, a page per day), saved as a single week type | (open) |
+| 14c | Start inside the selected day's row; "View more days" numbered through the cycle; the plan page is one list of days (add, reorder, a page per day), saved as a single week type | #55 |
+| 14d | Progress lifts push, pull, legs (dips, bench, chin-ups, pull-ups, deadlift, squat); the Climbing card hidden (`SHOW_CLIMBING`) | (open) |
 
 **Where things stand (2026-11-23):** PRs up to #48 are merged and live; stage 12c (the in-app feedback
 of 2026-11-23) is the open PR. The notes below on stage 10a are kept for context.
