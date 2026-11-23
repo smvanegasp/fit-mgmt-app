@@ -83,9 +83,8 @@ export function ExercisePicker({ onPick, onClose, inWorkout, plan, title = "Add 
   }
 
   return (
-    <BottomSheet title={title} onClose={onClose} tall>
-      {/* The search and categories stay at the top while the list scrolls (Sergio, 2026-11-23). */}
-      <div className="sticky -top-4 z-10 -mx-4 -mt-4 border-b border-stone-200 bg-white px-4 pt-4 pb-2">
+    // The search and categories are fixed at the top; only the list scrolls (Sergio, 2026-11-23).
+    <BottomSheet title={title} onClose={onClose} tall top={<>
       <div className="relative">
         <MagnifyingGlass size={18} className="absolute top-1/2 left-3 -translate-y-1/2 text-stone-400" aria-hidden />
         <input
@@ -99,7 +98,7 @@ export function ExercisePicker({ onPick, onClose, inWorkout, plan, title = "Add 
       </div>
 
       {!query.trim() && (
-        <div className="-mx-4 mt-2 flex gap-2 overflow-x-auto px-4 py-1.5" role="tablist" aria-label="Categories">
+        <div className="-mx-4 mt-2 flex gap-2 overflow-x-auto overscroll-none px-4 py-1" role="tablist" aria-label="Categories">
           {tabs.map((t) => (
             <button
               key={t.id}
@@ -116,8 +115,7 @@ export function ExercisePicker({ onPick, onClose, inWorkout, plan, title = "Add 
           ))}
         </div>
       )}
-      </div>
-
+    </>}>
       {exercises.isLoading && <p className="py-6 text-center text-stone-500">Loading...</p>}
       {tab === "usual" && !query.trim() && usualLeft.length === 0 && (
         <p className="py-4 text-center text-sm text-stone-500">All your usual {plan} exercises are in. Pick from another tab.</p>

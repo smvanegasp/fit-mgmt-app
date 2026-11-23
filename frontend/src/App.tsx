@@ -93,6 +93,10 @@ function MainApp({ session }: { session: SessionInfo }) {
             <Page />
           </main>
 
+          {/* The strip behind the clock in the Home Screen app: the page scrolls under it and out of
+              sight, like under the tabs at the bottom (Sergio, 2026-11-23). Zero tall elsewhere. */}
+          <div aria-hidden className="fixed inset-x-0 top-0 z-[26] h-[env(safe-area-inset-top)] bg-stone-50" />
+
           {/* Bottom tabs on phones and tablets; a rail on a phone turned sideways; a sidebar on computers. */}
           <nav className="fixed inset-x-0 bottom-0 z-30 border-t border-stone-200 bg-stone-50/90 backdrop-blur pb-[env(safe-area-inset-bottom)] land:inset-y-0 land:right-auto land:w-[calc(4.5rem+env(safe-area-inset-left)*0.75)] land:border-t-0 land:border-r land:pb-0 land:pl-[calc(env(safe-area-inset-left)*0.75)] lg:inset-y-0 lg:right-auto lg:w-56 lg:border-t-0 lg:border-r lg:pb-0">
             <div className="hidden px-5 pt-8 pb-6 lg:block">

@@ -27,7 +27,7 @@ Sergio merges.
 ## Now
 
 Stage 11: the second round of in-app feedback (18 notes from Sergio, 2026-11-19 to 11-22): 11a (#42)
-and 11b (#43) are merged; 11c (Sergio's follow-ups from the phone, 2026-11-23) is open.
+and 11b (#43) are merged, 11c (#44) too; 11d (scrolling everywhere, plans as a page) is open.
 
 ## Stage 11: feedback round 2 (2026-11-22)
 
@@ -97,6 +97,31 @@ and every suite fails with "reading 'config'".
 Checked: backend 116 and frontend 97 tests, build, screenshots in a sample demo (the plan card,
 deselecting, a workout scrolled with the bar in place, the picker scrolled; the workout discarded).
 Not tested: the iPhone's pull-down and the sheets' scroll lock on the phone itself.
+
+### 11d: scrolling everywhere, plans as a page (`stage-11d-scrolling`, Sergio 2026-11-23)
+
+| Item | Done |
+|---|---|
+| Scrolling off on pages opened from History or Progress (exercise, workout); make it consistent everywhere, fixed at the top and the bottom. | Every full-screen page (`Screen`) and sheet (`BottomSheet`) is now a fixed header (and footer) with only the middle scrolling, without the iPhone's rubber band (`overscroll-behavior: none`); before, the whole page scrolled with a sticky header and bounced, header included. The page behind is pinned while one is open (`lib/scrollLock.ts`, counted so stacked ones unlock once) and comes back where it was. On the tabs, a fixed strip behind the clock in the Home Screen app, so the page scrolls out of sight at the top like it does under the tabs. |
+| The exercise search still scrolled. | It's fixed above the list (the sheet's new `top` slot), not sticky inside it. |
+| Editing plans scrolled past Save and above the intro; make it a page of its own. | The plan editor is a full page: fixed header, Save fixed at the bottom, only the days scroll. |
+| Make the week tabs in the plans obvious with the red. | Red outline, the chosen week filled red. |
+| The feedback inbox showed everything at once. | Tabs New / Done with counts, 5 at a time with "Show more". |
+| Generalize the week structure (more week types, custom names, mixed days like upper body). | Proposal below; not built yet, waiting for Sergio's OK. |
+
+**Proposal: flexible weeks.** Today the plans are exactly two week types (A/B) of Push, Legs and Pull
+days plus a cardio day. Generalized: a **rotation** of any number of week types (each with a name and
+an order: A, B, C... repeating), each week a list of days, each day a name, its exercises and a
+**kind**: Push, Legs, Pull, Upper, Lower, Full body or Cardio. The streak stays "3 strength days + 1
+cardio", with every kind but Cardio counting as strength, so nothing about the goal changes. New kinds
+need their own color on the charts and a place in History's filters (Upper with Push, Lower with
+Legs, Full body its own). Storage stays the one `SETTINGS#plans` row (`{weeks: [{id, name, days}]}`),
+migrated from today's A/B shape; this week's type comes from the newest workout matching a day, as now.
+The editor gets "Add week type", "Add day" and a kind picker per day.
+
+Checked: frontend 97 and backend 116 tests, build, screenshots in a sample demo (the plan page at the
+top and scrolled to the end, an exercise page scrolled, the page behind kept at its place). Not tested:
+the owner's feedback inbox (owner only; the demo has none), the iPhone itself.
 
 ## Stage 10a: the Lovable redesign (2026-11-17)
 
