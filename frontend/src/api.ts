@@ -252,19 +252,29 @@ export interface Progress {
   routines: Routine[];
 }
 
-/** One day of the routine (Sergio, 2026-11-21): "Heavy push", its week type and exercises in order. */
+/** What a planned day is (Sergio, 2026-11-23: mixed days too, like an upper-body day). */
+export type DayKind = "Push" | "Legs" | "Pull" | "Upper" | "Lower" | "Full body" | "Cardio";
+
+/** One day of a week type: "Heavy push", its kind and exercises in order (a Cardio day with none
+ * picks its activity at the start). */
 export interface DayPlan {
   id: string;
   name: string;
-  dayType: "Push" | "Legs" | "Pull";
-  week: "A" | "B";
+  kind: DayKind;
   exercises: string[];
 }
 
+/** A week type ("Squat & heavy push week"); week types repeat in their order. */
+export interface WeekPlan {
+  id: string;
+  name: string;
+  days: DayPlan[];
+}
+
 export interface TrainingPlans {
-  plans: DayPlan[];
-  /** This week's type, from the log. */
-  weekType: "A" | "B";
+  weeks: WeekPlan[];
+  /** This week's type (a week id). */
+  current: string | null;
   /** False while the plans are read off the log. */
   saved: boolean;
 }
@@ -364,7 +374,9 @@ export const api = {
 
   sessionTypes: () => request<SessionType[]>("/session-types"),
   plans: (today: string) => request<TrainingPlans>(`/plans?today=${today}`),
-  savePlans: (plans: DayPlan[], today: string) => request<TrainingPlans>(`/plans?today=${today}`, json("PUT", { plans })),
+  /** `current`: "this week is ..." (the rotation counts on from this week). */
+  savePlans: (weeks: WeekPlan[], current: string | undefined, today: string) =>
+    request<TrainingPlans>(`/plans?today=${today}`, json("PUT", { weeks, current })),
 
   progress: () => request<Progress>("/progress"),
   bodyWeights: () => request<BodyWeight[]>("/body"),

@@ -27,7 +27,7 @@ Sergio merges.
 ## Now
 
 Stage 11: the second round of in-app feedback (18 notes from Sergio, 2026-11-19 to 11-22): 11a (#42)
-and 11b (#43) are merged, 11c (#44) too; 11d (scrolling everywhere, plans as a page) is open.
+11b (#43), 11c (#44) and 11d (#45) are merged. Open: 11e (#46, the search with the iPhone keyboard) and 12a (flexible weeks, loading screen).
 
 ## Stage 11: feedback round 2 (2026-11-22)
 
@@ -107,26 +107,31 @@ Not tested: the iPhone's pull-down and the sheets' scroll lock on the phone itse
 | Editing plans scrolled past Save and above the intro; make it a page of its own. | The plan editor is a full page: fixed header, Save fixed at the bottom, only the days scroll. |
 | Make the week tabs in the plans obvious with the red. | Red outline, the chosen week filled red. |
 | The feedback inbox showed everything at once. | Tabs New / Done with counts, 5 at a time with "Show more". |
-| Generalize the week structure (more week types, custom names, mixed days like upper body). | Proposal below; not built yet, waiting for Sergio's OK. |
+| Generalize the week structure (more week types, custom names, mixed days like upper body). | Built in stage 12a (below). |
 
 **11e (`stage-11e-search-keyboard`):** the exercise search still scrolled away on the iPhone. Cause: with the
 keyboard open, iOS pans the whole screen to keep the field in view, carrying the fixed sheet with it.
 Sheets now size and place themselves to the visible area above the keyboard (`useVisibleArea` in
 `lib/scrollLock.ts`, from `window.visualViewport`). Only testable on the phone.
 
-**Proposal: flexible weeks.** Today the plans are exactly two week types (A/B) of Push, Legs and Pull
-days plus a cardio day. Generalized: a **rotation** of any number of week types (each with a name and
-an order: A, B, C... repeating), each week a list of days, each day a name, its exercises and a
-**kind**: Push, Legs, Pull, Upper, Lower, Full body or Cardio. The streak stays "3 strength days + 1
-cardio", with every kind but Cardio counting as strength, so nothing about the goal changes. New kinds
-need their own color on the charts and a place in History's filters (Upper with Push, Lower with
-Legs, Full body its own). Storage stays the one `SETTINGS#plans` row (`{weeks: [{id, name, days}]}`),
-migrated from today's A/B shape; this week's type comes from the newest workout matching a day, as now.
-The editor gets "Add week type", "Add day" and a kind picker per day.
-
 Checked: frontend 97 and backend 116 tests, build, screenshots in a sample demo (the plan page at the
 top and scrolled to the end, an exercise page scrolled, the page behind kept at its place). Not tested:
 the owner's feedback inbox (owner only; the demo has none), the iPhone itself.
+
+## Stage 12a: flexible weeks and a loading screen (`stage-12a-flexible-weeks`, Sergio 2026-11-23)
+
+| Item | Done |
+|---|---|
+| "How can I add another type of week? Decide how to rotate weeks?" | **Week types** instead of A/B: any number (up to 8), each with its own name and days, repeating in their order one per calendar week. Each day: a name, a **kind** (Push, Legs, Pull, Upper, Lower, Full body or Cardio) and its exercises. The plan page has the week types as red tabs, "+ Week type", copy, delete, ← → to change the rotation order, and **Make this week** (anchors the rotation: it counts on from this week). Days: add, remove, reorder, rename, pick the kind. A Cardio day with no exercises still asks for the ride or the treadmill. |
+| Mixed days in the log. | A workout started from an Upper, Lower or Full body day is labeled with that kind (its exercises would read as Push or Pull), counts as a strength day for the streak and the week's slots, gets the plum chart color (#a0459a light, #a855a2 dark; dataviz validator, all pairs: CVD worst 8.9 / 8.6, the only failure the known gray-amber pair) and a History filter once one exists. |
+| Sergio's saved plans. | Production already holds plans saved in the first shape; they're read as two week types ("Squat & heavy push week", "Deadlift & heavy pull week") and saved in the new shape on the next save. Nothing was written on AWS. |
+| The first load looked broken (half-drawn page, odd tabs). | A splash (the mark and a running bar over a blurred page, tabs included) until the first data and the fonts are in, then it fades out. |
+| No plans yet. | "Set up a training plan" on Train opens the same page. |
+
+Checked: backend 119 and frontend 96 tests, build, screenshots in a sample demo (the splash with the
+API slowed, the plan card, the plan page with a third week type and an Upper day, not saved), the
+real plans read from AWS (read-only). Not tested: saving a new structure in a browser (API tests only),
+the iPhone.
 
 ## Stage 10a: the Lovable redesign (2026-11-17)
 

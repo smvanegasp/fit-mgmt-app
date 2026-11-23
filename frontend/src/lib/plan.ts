@@ -1,4 +1,4 @@
-import type { DayPlan, Entry, SessionType, Workout } from "../api";
+import type { Entry, SessionType, WeekPlan, Workout } from "../api";
 import { heavyNext } from "./sets";
 
 export const WARM_UP = "warm-up";
@@ -57,43 +57,37 @@ export function currentIndex(entries: Entry[]): number {
   return entries.findIndex((e) => !e.done);
 }
 
-/**
- * "Squat & heavy push week" / "Deadlift & heavy pull week" (Sergio, 2026-11-23): the week's Legs
- * lift and its heavy day. "Week A" when the plans can't tell the two weeks apart.
- */
-export function weekName(plans: Pick<DayPlan, "week" | "dayType" | "name">[], week: "A" | "B"): string {
-  const name = (w: "A" | "B") => {
-    const legs = plans.find((p) => p.week === w && p.dayType === "Legs");
-    const lift = legs?.name.replace(/^Legs\s*·\s*/, "");
-    const heavy = plans.find((p) => p.week === w && /^heavy /i.test(p.name));
-    const parts = [lift && lift !== legs?.name ? lift : null, heavy ? heavy.name.toLowerCase() : null].filter(Boolean);
-    return parts.length ? `${parts.join(" & ")} week` : null;
-  };
-  const mine = name(week);
-  return mine && mine !== name(week === "A" ? "B" : "A") ? mine.charAt(0).toUpperCase() + mine.slice(1) : `Week ${week}`;
-}
-
 export interface DayOption {
   key: string;
   label: string;
-  /** The workout's day type ("Push"...). */
+  /** The workout's day type ("Push", "Upper"...). */
   dayType: string;
-  /** The plan's exercises (none for Cardio: picked at the start). */
+  /** The plan's exercises (none for a Cardio day that picks its activity at the start). */
   exercises?: string[];
   /** Already trained this week. */
   done: boolean;
 }
 
-/** The week's days in Sergio's order (Push, Legs, Pull, then Cardio), marked done when that day
- * type was trained this week, and the first not done as next up. */
-export function weekOptions(plans: DayPlan[], week: "A" | "B", doneTypes: Set<string>): { options: DayOption[]; next: string | null } {
-  const order = ["Push", "Legs", "Pull"];
-  const options: DayOption[] = plans
-    .filter((p) => p.week === week)
-    .sort((a, b) => order.indexOf(a.dayType) - order.indexOf(b.dayType))
-    .map((p) => ({ key: p.id, label: p.name, dayType: p.dayType, exercises: p.exercises, done: doneTypes.has(p.dayType) }));
-  options.push({ key: "cardio", label: "Cardio", dayType: "Cardio", done: doneTypes.has("Cardio") });
+/**
+ * A week type's days in its order, each marked done when a day of its kind was trained this week
+ * (two Upper days need two Upper workouts), and the first not done as next up. `done` lists this
+ * week's trained kinds, one per day (a lifting day with a ride after it gives its kind and Cardio).
+ */
+export function weekOptions(week: Pick<WeekPlan, "days">, done: string[]): { options: DayOption[]; next: string | null } {
+  const left = new Map<string, number>();
+  for (const kind of done) left.set(kind, (left.get(kind) ?? 0) + 1);
+  const options = week.days.map((d) => {
+    const n = left.get(d.kind) ?? 0;
+    if (n > 0) left.set(d.kind, n - 1);
+    return { key: d.id, label: d.name, dayType: d.kind, exercises: d.exercises.length ? d.exercises : undefined, done: n > 0 };
+  });
   return { options, next: options.find((o) => !o.done)?.key ?? null };
+}
+
+/** The week type after this one in the rotation (they repeat in order). */
+export function nextWeek<T extends { id: string }>(weeks: T[], id: string | null): T | undefined {
+  const i = weeks.findIndex((w) => w.id === id);
+  return weeks.length > 1 ? weeks[(i + 1) % weeks.length] : undefined;
 }
 
 /** A planned day's starting entries: the warm-up, then the plan's exercises (the ones that exist). */

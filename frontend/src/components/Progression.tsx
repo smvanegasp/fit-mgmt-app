@@ -3,7 +3,7 @@ import { useState } from "react";
 
 import type { ExerciseSession, Group, Lift, Load, Scheme, Step } from "../api";
 import { climbing, dropLadders } from "../lib/kinds";
-import { DAY_TYPES, shortDate, stepDates, type DayType } from "../lib/progress";
+import { DAY_TYPES, MIXED, shortDate, stepDates, type DayType } from "../lib/progress";
 import { schemeText } from "../lib/sets";
 import { Ladder } from "./EntryCard";
 import { InfoTip } from "./InfoTip";
@@ -16,6 +16,7 @@ export const TYPE_COLOR: Record<DayType, string> = {
 };
 
 export function typeColor(type: string): string {
+  if ((MIXED as readonly string[]).includes(type)) return "var(--chart-mixed)";
   return TYPE_COLOR[type as DayType] ?? TYPE_COLOR.Push;
 }
 

@@ -34,7 +34,7 @@ def _clean(data: dict[str, Any]) -> dict[str, Any]:
 def _label(space: str, body: WorkoutBody, legs_day: bool = True) -> str:
     """legs_day=False keeps the old Squat / Deadlift names, for imported workouts being edited."""
     names = {e.id: e.name for e in all_exercises(space).values()}
-    return body.label or session_label([(e.exerciseId, len(e.sets)) for e in body.entries], names, legs_day)
+    return body.label or session_label([(e.exerciseId, len(e.sets)) for e in body.entries], names, legs_day, kind=body.plan)
 
 
 def class_timed(body: WorkoutBody, ended: str | None) -> str:

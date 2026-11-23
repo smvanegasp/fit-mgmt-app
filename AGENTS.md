@@ -325,8 +325,12 @@ frontend/
   Sergio's own cues, kept in the corrections' `cueOrder`). Imported cues are the ones written in 2+
   sessions plus hand-picked ones; per-session comments stay on the workout entry. Re-importing keeps
   `hidden`, `section` and `rank` set in the app.
-- **`SETTINGS#plans`** `{plans: [{id, name, dayType, week, exercises}]}`: the training plans once saved
-  (stage 11b, `app/plans.py`; inferred from the log until then).
+- **`SETTINGS#plans`** `{weeks: [{id, name, days: [{id, name, kind, exercises}]}], anchor?: {monday, week}}`:
+  the training plans once saved (stage 12a, `app/plans.py`; inferred from the log until then). Week
+  types repeat in list order, one per calendar week, counted from the anchor (or the log). Day kinds:
+  Push, Legs, Pull, Upper, Lower, Full body, Cardio; the mixed ones label their workouts with the kind
+  (`labels.MIXED`), count as strength days and share the plum `--chart-mixed`. The first saved shape
+  (`{plans: [{..., dayType, week: A/B}]}`, stage 11b, still on AWS) is read as two week types.
 - **`BODY#<date>`** `{date, weightLb, source}` (Progress, `/api/body`) · **`ROUTINE#<from>#<id>`** `{name, from, to, days[], notes,
   photos}` (the routine eras, for the evolution timeline) · later `ACTIVE` (workout in progress,
   server-side `startedAt`) and `SETTINGS`.
@@ -363,7 +367,7 @@ frontend/
 | Peloton | `POST /peloton/read {key}` (an uploaded photo -> `{discipline?, title?, instructor?, minutes?, outputKj?, distanceMi?, calories?, avgWatts?, avgCadence?, avgResistance?, avgSpeedMph?}`; capped in demos, 503 without `GROQ_API_KEY`, 502 + "Peloton read failed" log line when Groq fails) |
 | Progress | `GET /progress` (days with day type and `cardio`; the main lifts' progression ladders; routine eras newest first with their workouts) · `GET /exercises/{id}/progress` (one exercise's ladder: `steps` of `{scheme, sessions, times}`, oldest first) |
 | Day types | `GET /session-types` (label, usual exercises in order, last date, sessions) |
-| Plans | `GET /plans?today=` (day plans `{id, name, dayType, week: A/B, exercises}`, this week's `weekType`, `saved`; read off the log until saved) · `PUT /plans?today= {plans}` |
+| Plans | `GET /plans?today=` (`{weeks: [{id, name, days: [{id, name, kind, exercises}]}], current, saved}`: week types in rotation order, this week's id; read off the log until saved) · `PUT /plans?today= {weeks, current?}` (`current` = "this week is ...": anchors the rotation at this week) |
 | Exercise page | `GET /exercises/{id}/history` (sessions newest first, each with `role`: the day's first lift or `later`; all photos, best set) · `PATCH /exercises/{id} {name?, group?, stepLb?}` (old name stays an alias; `stepLb` 2.5 or 5 is the weight stepper's step) · `POST /exercises/{id}/merge {into}` (sessions and cues move; the duplicate is hidden) |
 | Exercises | `GET /exercises` (catalog + custom, with `lastDone`, `timesDone`) · `POST /exercises` · `GET /exercises/{id}/summary[?exclude=workoutId&role=first|later]` (cues, last, streak = target game, photos, bestDrop; `role` = today's first lift or a later one) |
 | Cues | `POST /exercises/{id}/notes {text, date, section?}` · `PATCH /exercises/{id}/notes/{noteId} {text?, hidden?, section?, rank?}` · `DELETE` (same path) · `POST /exercises/{id}/cue-check {note}` (suggestion `{action: add|update|none, noteId?, text?, section?}`; 503 without `GROQ_API_KEY`) |

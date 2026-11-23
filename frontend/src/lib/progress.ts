@@ -3,6 +3,10 @@ import { weekStart } from "./weeks";
 
 export const DAY_TYPES = ["Push", "Legs", "Pull", "Cardio"] as const;
 export type DayType = (typeof DAY_TYPES)[number];
+/** Mixed day kinds a plan can have (Sergio, 2026-11-23); they count as strength days. */
+export const MIXED = ["Upper", "Lower", "Full body"] as const;
+/** Every kind of day, in the order the plan editor offers them. */
+export const KINDS = ["Push", "Legs", "Pull", ...MIXED, "Cardio"] as const;
 
 /**
  * The weekly goal (Sergio, 2026-11-17): 3 strength days (Push, Legs, Pull) and 1 cardio day (a
@@ -13,7 +17,7 @@ export type DayType = (typeof DAY_TYPES)[number];
 export const GOAL = { strength: 3, cardio: 1 } as const;
 export const OLD_GOAL = 3;
 export const GOAL_FROM = "2026-10-26";
-const STRENGTH = new Set(["Push", "Legs", "Pull"]);
+const STRENGTH = new Set<string>(["Push", "Legs", "Pull", ...MIXED]);
 
 /** One week's training: days of any kind, strength days, cardio days. */
 export interface WeekCount {

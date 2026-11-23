@@ -3,10 +3,12 @@ import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react
 
 import { SESSION_EXPIRED, type SessionInfo } from "./api";
 import { DemoBanner } from "./components/DemoBanner";
+import { Splash } from "./components/Splash";
 import { Logo } from "./components/Logo";
 import { NavContext, type Tab } from "./components/Nav";
 import { ScreensProvider } from "./components/Screens";
-import { DESKTOP, useRefreshSession, useSession } from "./hooks";
+import { DESKTOP, useActive, useExercises, usePlans, useProgress, useRefreshSession, useSession, useWorkouts } from "./hooks";
+import { localIso } from "./lib/time";
 import { rememberPlace } from "./lib/place";
 import { HistoryPage } from "./pages/HistoryPage";
 import { ProgressPage } from "./pages/ProgressPage";
@@ -46,7 +48,7 @@ export function App() {
     return () => window.removeEventListener(SESSION_EXPIRED, refresh);
   }, [refresh]);
 
-  if (session.isLoading) return null;
+  if (session.isLoading) return <Splash ready={false} />;
   if (session.error) return <p className="p-6 text-center text-red-600">Couldn't reach the app: {session.error.message}</p>;
   if (!session.data?.role) return <WelcomePage />;
   return <MainApp session={session.data} />;
@@ -55,6 +57,16 @@ export function App() {
 function MainApp({ session }: { session: SessionInfo }) {
   // Phones open on Train (logging); computers on Progress (what visitors come to see).
   const [tab, showTab] = useState<Tab>(() => (window.matchMedia(DESKTOP).matches ? "progress" : "train"));
+  // The first screen waits behind the splash for what it shows, and for the fonts, so nothing
+  // half-drawn shows (Sergio, 2026-11-23). Errors count as loaded: the page says what failed.
+  const first = [useActive(), useProgress(), useExercises(), useWorkouts(30), usePlans(localIso().slice(0, 10))];
+  const [fonts, setFonts] = useState(() => !document.fonts);
+  useEffect(() => {
+    let live = true;
+    document.fonts?.ready.then(() => live && setFonts(true));
+    return () => { live = false; };
+  }, []);
+  const ready = fonts && first.every((q) => !q.isLoading);
   const current = TABS.find((t) => t.id === tab)!;
   // Each tab comes back where it was left (Sergio, 2026-11-20: back on Train mid-workout, at the
   // same exercise). The page re-renders from cached data, so the height may take a few frames.
@@ -119,6 +131,7 @@ function MainApp({ session }: { session: SessionInfo }) {
             </div>
           </nav>
         </div>
+        <Splash ready={ready} />
       </ScreensProvider>
     </NavContext.Provider>
   );

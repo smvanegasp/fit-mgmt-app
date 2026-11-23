@@ -24,7 +24,7 @@ import {
 } from "../hooks";
 import { formatDuration } from "../lib/duration";
 import { abandonedAt, currentLap, lapRows } from "../lib/laps";
-import { isLogged, lastCardio, planEntries, startingEntries, weekName, weekOptions, type DayOption } from "../lib/plan";
+import { isLogged, lastCardio, nextWeek, planEntries, startingEntries, weekOptions, type DayOption } from "../lib/plan";
 import { streaks } from "../lib/progress";
 import { dayType, heavyNext, nextUp, setCount } from "../lib/sets";
 import { streakNews } from "../lib/streak";
@@ -141,19 +141,19 @@ function Idle({ onOpen }: { onOpen: (w: Workout) => void }) {
   const today = localIso().slice(0, 10);
   const plans = usePlans(today);
   const [editing, setEditing] = useState(false);
-  // The week shown: this week's type, or the other one when Sergio swaps.
-  const [weekPicked, setWeek] = useState<"A" | "B" | null>(null);
-  const planList = plans.data?.plans ?? [];
-  const week = weekPicked ?? plans.data?.weekType ?? "A";
-  const other = week === "A" ? "B" : "A";
-  // This week's day types already trained.
+  // The week shown: this week's type, or another one when Sergio swaps (they rotate in order).
+  const [weekPicked, setWeek] = useState<string | null>(null);
+  const weeks = plans.data?.weeks ?? [];
+  const week = weeks.find((w) => w.id === (weekPicked ?? plans.data?.current)) ?? weeks[0];
+  const other = week ? nextWeek(weeks, week.id) : undefined;
+  // This week's trained days, one kind per day (plus Cardio for a ride after lifting).
   const monday = weekStart(today);
-  const doneTypes = new Set((progress.data?.days ?? []).filter((d) => d.date >= monday && d.date <= today)
-    .flatMap((d) => [d.type, ...(d.cardio ? ["Cardio"] : [])]));
+  const doneKinds = (progress.data?.days ?? []).filter((d) => d.date >= monday && d.date <= today)
+    .flatMap((d) => [d.type, ...(d.cardio && d.type !== "Cardio" ? ["Cardio"] : [])]);
 
   // The choices: the week's planned days (Sergio, 2026-11-21), or the day types when there's no plan yet.
   const suggestion = workouts.data ? nextUp(workouts.data, today) : null;
-  const planned = planList.length > 0 ? weekOptions(planList, week, doneTypes) : null;
+  const planned = week ? weekOptions(week, doneKinds) : null;
   const options: DayOption[] = planned?.options
     ?? dayTypes.map((label) => ({ key: label, label, dayType: label, done: false }));
   const next = planned ? planned.next : suggestion?.label ?? null;
@@ -175,7 +175,7 @@ function Idle({ onOpen }: { onOpen: (w: Workout) => void }) {
   const last = (ofType.length > 0 ? ofType : all).slice(0, 2);
   const known = new Set(byId.keys());
 
-  const entries = chosen?.exercises && plan !== "Cardio"
+  const entries = chosen?.exercises
     ? planEntries(chosen.exercises, known)
     : startingEntries(plan ?? undefined, types.data ?? [], workouts.data ?? [], known, cardio);
 
@@ -194,13 +194,12 @@ function Idle({ onOpen }: { onOpen: (w: Workout) => void }) {
             <div className="flex items-center gap-1 border-b border-stone-200 px-4 py-3">
               <div className="min-w-0 flex-1">
                 <div className="text-xs font-semibold tracking-wide text-stone-500 uppercase">This week's plan</div>
-                <div className="font-display text-xl font-bold">{weekName(planList, week)}</div>
+                <div className="font-display text-xl font-bold">{week!.name}</div>
               </div>
               <InfoTip title="Training plans">
-                Your two week types alternate: heavy push, squat and light pull one week, then light push, deadlift and heavy
-                pull, with a cardio day in each. The first day not trained yet this week is picked; tap another to change it, or
-                tap it again for none.
-                Edit plans changes each day's exercises and their order.
+                Your week types repeat in order, one per week. The first day not trained yet this week is picked; tap another
+                to change it, or tap it again for none. Edit plans adds week types and days, renames them, changes their
+                exercises and the order of the rotation, or sets which week this is.
               </InfoTip>
             </div>
             <div role="radiogroup" aria-label="Day" className="divide-y divide-stone-200">
@@ -226,10 +225,12 @@ function Idle({ onOpen }: { onOpen: (w: Workout) => void }) {
                 className="flex items-center gap-1.5 rounded-lg px-2 py-2 text-sm font-medium text-stone-600">
                 <PencilSimple size={16} weight="fill" aria-hidden /> Edit plans
               </button>
-              <button type="button" onClick={() => { setWeek(other); setPicked(undefined); }}
-                className="ml-auto rounded-lg px-2 py-2 text-sm font-medium text-blue-700">
-                {weekName(planList, other)} instead
-              </button>
+              {other && (
+                <button type="button" onClick={() => { setWeek(other.id); setPicked(undefined); }}
+                  className="ml-auto min-w-0 truncate rounded-lg px-2 py-2 text-sm font-medium text-blue-700">
+                  {other.name} instead
+                </button>
+              )}
             </div>
           </div>
         ) : (
@@ -252,6 +253,12 @@ function Idle({ onOpen }: { onOpen: (w: Workout) => void }) {
                 ))}
               </div>
             )}
+            {plans.data && (
+              <button type="button" onClick={() => setEditing(true)}
+                className="mt-3 flex items-center gap-1.5 rounded-lg px-2 py-2 text-sm font-medium text-blue-700">
+                <PencilSimple size={16} weight="fill" aria-hidden /> Set up a training plan
+              </button>
+            )}
           </>
         )}
         {!planned && plan === "Legs" && heavy && (
@@ -264,7 +271,7 @@ function Idle({ onOpen }: { onOpen: (w: Workout) => void }) {
             </InfoTip>
           </p>
         )}
-        {plan === "Cardio" && cardioChoices.length > 0 && (
+        {plan === "Cardio" && !chosen?.exercises && cardioChoices.length > 0 && (
           <div className="mt-3 flex flex-wrap gap-2" role="radiogroup" aria-label="Cardio">
             {cardioChoices.map((id) => (
               <button key={id} type="button" role="radio" aria-checked={cardio === id} onClick={() => setCardioPicked(id)}
@@ -292,7 +299,7 @@ function Idle({ onOpen }: { onOpen: (w: Workout) => void }) {
           {last.map((w) => <WorkoutCard key={w.id} workout={w} onClick={() => onOpen(w)} />)}
         </section>
       )}
-      {editing && <PlanEditor plans={planList} week={week} today={today} onClose={() => setEditing(false)} />}
+      {editing && <PlanEditor plans={plans.data!} today={today} onClose={() => setEditing(false)} />}
     </div>
   );
 }
