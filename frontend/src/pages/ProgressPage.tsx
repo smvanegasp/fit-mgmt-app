@@ -1,11 +1,10 @@
-import { CaretDown, CaretRight, ChartLineUp, Check, ShieldCheck } from "@phosphor-icons/react";
+import { CaretRight, ChartLineUp, Check, ShieldCheck } from "@phosphor-icons/react";
 import { useLayoutEffect, useMemo, useRef, useState } from "react";
 
-import type { ProgressDay, Routine } from "../api";
+import type { ProgressDay } from "../api";
 import { ComingSoon } from "../components/ComingSoon";
 import { Heatmap } from "../components/Heatmap";
 import { InfoTip } from "../components/InfoTip";
-import { PhotoStrip } from "../components/Photos";
 import { GradePyramid, LiftCard, TYPE_COLOR, TypeLegend, groupColor, typeColor } from "../components/Progression";
 import { useGoTo } from "../components/Nav";
 import { useScreens } from "../components/Screens";
@@ -62,17 +61,14 @@ export function ProgressPage() {
         </div>
       </section>
 
-      {/* Phones: body weight after the lifts. Computers: under the last workouts, next to the routine. */}
-      {!desktop && <BodyWeightCard />}
-      <div className="lg:grid lg:grid-cols-2 lg:items-start lg:gap-6">
-        {(progress.data?.routines ?? []).length > 0 && <Routines routines={progress.data!.routines} today={today} />}
-        {desktop && (
-          <div className="space-y-6">
-            <LastWorkouts />
-            <BodyWeightCard />
-          </div>
-        )}
-      </div>
+      {/* Phones: body weight after the lifts. Computers: the last workouts next to body weight. The
+          routine timeline is gone (Sergio, 2026-11-23: it didn't add value). */}
+      {desktop ? (
+        <div className="grid grid-cols-2 items-start gap-6">
+          <LastWorkouts />
+          <BodyWeightCard />
+        </div>
+      ) : <BodyWeightCard />}
     </div>
   );
 }
@@ -185,50 +181,6 @@ function PelotonCard() {
             onOpen={screens.openWorkout} />
         </div>
       )}
-    </section>
-  );
-}
-
-/** How the routine evolved: the eras newest first; the current one open, past ones on tap. */
-function Routines({ routines, today }: { routines: Routine[]; today: string }) {
-  const [open, setOpen] = useState<string | null>(routines[0]?.id ?? null);
-  return (
-    <section>
-      <h2 className="flex items-center gap-1 px-1 pt-3 pb-2 font-semibold">
-        Routine
-        <InfoTip title="Routine">Routines you followed, newest first. Tap one for its days.</InfoTip>
-      </h2>
-      <ol className="rounded-2xl border border-stone-200 bg-white px-4 py-2">
-        {routines.map((r, i) => {
-          const isOpen = open === r.id;
-          return (
-            <li key={r.id} className="relative pl-6">
-              {/* The timeline: a dot per era on a line. */}
-              <span className={`absolute top-4 left-[5px] size-2.5 rounded-full ${i === 0 ? "bg-blue-600" : "bg-stone-400"}`} aria-hidden />
-              {i < routines.length - 1 && <span className="absolute top-7 bottom-0 left-[9px] w-px bg-stone-200" aria-hidden />}
-              <button type="button" onClick={() => setOpen(isOpen ? null : r.id)} aria-expanded={isOpen}
-                className="flex w-full items-start gap-2 py-2.5 text-left">
-                <span className="min-w-0 flex-1">
-                  <span className="block font-medium">{r.name}</span>
-                  <span className="text-xs text-stone-500">
-                    {shortDate(r.from, today)} – {r.to ? shortDate(r.to, today) : "now"} · {r.sessions} {r.sessions === 1 ? "workout" : "workouts"}
-                  </span>
-                </span>
-                <CaretDown size={14} className={`mt-1 shrink-0 text-stone-400 ${isOpen ? "rotate-180" : ""}`} aria-hidden />
-              </button>
-              {isOpen && (
-                <div className="pb-3 text-sm">
-                  <ul className="list-disc space-y-0.5 pl-5 text-stone-700 marker:text-stone-400">
-                    {r.days.map((d) => <li key={d}>{d}</li>)}
-                  </ul>
-                  {r.notes && <p className="mt-2 text-stone-600">{r.notes}</p>}
-                  {r.photos.length > 0 && <PhotoStrip photos={r.photos} />}
-                </div>
-              )}
-            </li>
-          );
-        })}
-      </ol>
     </section>
   );
 }

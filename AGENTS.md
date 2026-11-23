@@ -162,7 +162,8 @@ A mobile-first web app where Sergio logs their gym workouts and sees their progr
 | 12c | Feedback: the plan editor as rotation list + week-type pages (quiet styling, confirm on duplicate/delete, reorder), every tab starts at the same height, delete from the workout page, the exercise picker as a full page, short InfoTips, the welcome note counts years from Aug 2014 | #49, #50 |
 | 13a | The streak counts training days (4 grow, 2-3 hold, 0-1 shield or end) over the whole history; streak and workout tiers with icons, a Tiers card on Progress and congrats; full-screen pages hide the app underneath on phones (the strip above the iPhone keyboard) | #51 |
 | 13b | Tier icons on the welcome stats; the four focus lifts (weighted dips, weighted chin-ups, deadlift, back squat) on the welcome page and first on Progress, then weighted pull-ups and bench | #52 |
-| 14a | The plan as one cycle of days: next is the day after the last workout, whatever the calendar week; Train shows the last two workouts and the next four days; workouts store the plan days they were started from (`planDays`) | (open) |
+| 14a | The plan as one cycle of days: next is the day after the last workout, whatever the calendar week; Train shows the last two workouts and the next four days; workouts store the plan days they were started from (`planDays`) | #53 (shipped with #52) |
+| 14b | Feedback: Start inside the plan card, no "Last workouts" on Train, the plan page lists the days (numbered through the cycle, grouped by week type), the warm-up is its own group (not cardio) and left out of exercise lists, History drops "Show every exercise", Progress drops the routine timeline | (open) |
 
 **Where things stand (2026-11-23):** PRs up to #48 are merged and live; stage 12c (the in-app feedback
 of 2026-11-23) is the open PR. The notes below on stage 10a are kept for context.
@@ -295,7 +296,7 @@ frontend/
   theirs (Squat, Deadlift, Front lever, Climb, Run) and map to today's types via `day_type`.
 - `pk = SPACE#main` is Sergio's log; `SPACE#sb-<unixExpiry>-<hex>` is a guest sandbox (stage 5a;
   rows carry `ttl`).
-- **`EXERCISE#<id>`**: `name` (English), `group` (push, pull, legs, core, cardio, climbing; the old
+- **`EXERCISE#<id>`**: `name` (English), `group` (push, pull, legs, core, cardio, climbing, warmup: the warm-up only, a stage of every workout, left out of exercise lists; the old
   `posterior` and `skill` values still exist in the type and display as Legs and Core), `load`, `measure` (reps, seconds, run, climb), `barLb`, `aliases`, `source`
   (`catalog` from `app/catalog.py`, later `app` for ones Sergio creates).
 - **`WORKOUT#<yyyy-mm-dd>#<id>`**: **one per day** (Sergio, 2026-10-30): a second session the same day
@@ -353,7 +354,7 @@ frontend/
   (`plans.goals`), but since stage 13a the frontend ignores it: the streak counts training days
   (section 1). Optional days only matter for which day is next up.
 - **`BODY#<date>`** `{date, weightLb, source}` (Progress, `/api/body`) · **`ROUTINE#<from>#<id>`** `{name, from, to, days[], notes,
-  photos}` (the routine eras, for the evolution timeline) · later `ACTIVE` (workout in progress,
+  photos}` (the routine eras; still in `/api/progress`, no longer shown since stage 14b) · later `ACTIVE` (workout in progress,
   server-side `startedAt`) and `SETTINGS`.
 - Photos (`{key, caption?, kind?}`; `kind: "screenshot"` = a record of the workout, like a Peloton
   summary, kept out of the setup photos shown while training) in S3 (S3Mock locally): `<space>/<id>.img` plus `<space>/<id>-thumb.img` (1600 and

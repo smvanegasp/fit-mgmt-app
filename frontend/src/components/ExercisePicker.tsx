@@ -3,7 +3,7 @@ import { useMemo, useState } from "react";
 
 import type { Exercise, Group, Load } from "../api";
 import { useCreateExercise, useExercises, useSessionTypes, useWorkouts } from "../hooks";
-import { usualFor } from "../lib/plan";
+import { WARM_UP, usualFor } from "../lib/plan";
 import { fuzzyMatch } from "../lib/search";
 import { friendlyDate } from "../lib/time";
 import { Screen } from "./Screen";
@@ -19,7 +19,7 @@ const CATEGORIES: { id: string; label: string; groups: Group[] }[] = [
 
 export const GROUP_NAMES: Record<Group, string> = {
   push: "Push", pull: "Pull", legs: "Legs", posterior: "Legs", core: "Core",
-  skill: "Core", cardio: "Cardio", climbing: "Pull",
+  skill: "Core", cardio: "Cardio", climbing: "Pull", warmup: "Warm-up",
 };
 
 const LOAD_NAMES: Record<Load, string> = {
@@ -49,7 +49,8 @@ export function ExercisePicker({ onPick, onClose, inWorkout, plan, title = "Add 
   const [query, setQuery] = useState("");
   const [creating, setCreating] = useState(false);
 
-  const all = exercises.data ?? [];
+  // Not the warm-up: every workout starts with it; it isn't an exercise to add (Sergio, 2026-11-23).
+  const all = useMemo(() => (exercises.data ?? []).filter((e) => e.id !== WARM_UP), [exercises.data]);
   const byId = useMemo(() => new Map(all.map((e) => [e.id, e])), [all]);
   const workouts = useWorkouts(30);
   const usual = usualFor(plan, types.data ?? [], workouts.data ?? []);

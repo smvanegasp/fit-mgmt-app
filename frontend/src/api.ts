@@ -1,6 +1,6 @@
 import { localIso } from "./lib/time";
 
-export type Group = "push" | "pull" | "legs" | "posterior" | "core" | "skill" | "cardio" | "climbing";
+export type Group = "push" | "pull" | "legs" | "posterior" | "core" | "skill" | "cardio" | "climbing" | "warmup";
 /** How a set's weight reads: barbell = plates (bar added for totals), dumbbell = per hand with
  * `each`, added = on top of body weight, bodyweight / none = no weight. */
 export type Load = "barbell" | "dumbbell" | "machine" | "added" | "bodyweight" | "none";
