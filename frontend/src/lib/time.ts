@@ -39,6 +39,13 @@ export function minutesText(minutes: number): string {
   return `${Math.floor(m / 60)} h${m % 60 ? ` ${m % 60} min` : ""}`;
 }
 
+/** Whole years since a month ("2014-08"), always rounded up: 12 years and 3 months is 13. */
+export function yearsSince(month: string, today = localIso().slice(0, 10)): number {
+  const [y, m] = month.split("-").map(Number);
+  const [ty, tm] = today.split("-").map(Number);
+  return Math.max(1, Math.ceil(((ty - y) * 12 + (tm - m)) / 12));
+}
+
 /** How long a workout was: its training minutes, or start to end; null while unknown. */
 export function workoutMinutes(w: { startedAt: string; endedAt?: string; durationMin?: number }): number | null {
   if (w.durationMin !== undefined) return w.durationMin;

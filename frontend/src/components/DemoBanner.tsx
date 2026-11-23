@@ -29,9 +29,7 @@ export function DemoBanner({ expiresAt, ownerLoginEnabled }: { expiresAt: number
       <span className="flex min-w-0 flex-1 items-center gap-1">
         <span className="truncate">Demo · {timeLeft(expiresAt)}</span>
         <InfoTip title="Demo mode">
-          You're looking at a private copy of Sergio's real training log. Log a workout, edit
-          anything you like: nobody else sees it, and it's deleted after 24 hours. Reset starts over
-          from a fresh copy.
+          A private copy of Sergio's real log. Change anything: only you see it, and it's gone in 24 hours.
         </InfoTip>
       </span>
       <button

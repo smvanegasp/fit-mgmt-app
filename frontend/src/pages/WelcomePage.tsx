@@ -11,7 +11,10 @@ import { TutorialStrip, type Tutorial } from "../components/TutorialStrip";
 import { useDesktop, usePublicSummary, useSession, useStartGuest } from "../hooks";
 import { streaks } from "../lib/progress";
 import { schemeText } from "../lib/sets";
-import { localIso } from "../lib/time";
+import { localIso, yearsSince } from "../lib/time";
+
+/** When Sergio started training. */
+const TRAINING_SINCE = "2014-08";
 
 const TUTORIALS: Tutorial[] = [
   {
@@ -63,7 +66,8 @@ export function WelcomePage() {
     <div className="flex items-start gap-3 rounded-2xl border border-stone-200 bg-white p-3">
       <img src="/sergio.jpg" alt="Sergio" width={48} height={48} className="h-12 w-12 shrink-0 rounded-full object-cover ring-1 ring-stone-400 grayscale contrast-125" />
       <p className="text-sm text-stone-700">
-        <b>Hi, I'm Sergio!</b> For 12 years, calisthenics and weightlifting have been one of the big rocks in my life.
+        {/* Counted from August 2014, rounded up, so it never goes stale (Sergio, 2026-11-23). */}
+        <b>Hi, I'm Sergio!</b> For {yearsSince(TRAINING_SINCE)} years, calisthenics and weightlifting have been one of the big rocks in my life.
         I use this app to log every workout and see my progress. Take a look!
       </p>
     </div>

@@ -6,7 +6,7 @@ import { useCreateExercise, useExercises, useSessionTypes, useWorkouts } from ".
 import { usualFor } from "../lib/plan";
 import { fuzzyMatch } from "../lib/search";
 import { friendlyDate } from "../lib/time";
-import { BottomSheet } from "./BottomSheet";
+import { Screen } from "./Screen";
 
 /** Categories as chips. Front lever and climbing are pull (Sergio, 2026-10-30). */
 const CATEGORIES: { id: string; label: string; groups: Group[] }[] = [
@@ -76,15 +76,16 @@ export function ExercisePicker({ onPick, onClose, inWorkout, plan, title = "Add 
 
   if (creating) {
     return (
-      <BottomSheet title="New exercise" onClose={onClose}>
+      <Screen title="New exercise" onBack={onClose}>
         <CreateExercise name={query} onCreated={onPick} onCancel={() => setCreating(false)} />
-      </BottomSheet>
+      </Screen>
     );
   }
 
   return (
-    // The search and categories are fixed at the top; only the list scrolls (Sergio, 2026-11-23).
-    <BottomSheet title={title} onClose={onClose} tall top={<>
+    // A page of its own, not a sheet over the workout (Sergio, 2026-11-23: the overlap felt odd and moved
+    // when typing). The search and categories are fixed at the top; only the list scrolls.
+    <Screen title={title} onBack={onClose} fitKeyboard top={<>
       <div className="relative">
         <MagnifyingGlass size={18} className="absolute top-1/2 left-3 -translate-y-1/2 text-stone-400" aria-hidden />
         <input
@@ -152,7 +153,7 @@ export function ExercisePicker({ onPick, onClose, inWorkout, plan, title = "Add 
         <Plus size={18} weight="bold" aria-hidden />
         {query.trim() ? `Create "${query.trim()}"` : "Create an exercise"}
       </button>}
-    </BottomSheet>
+    </Screen>
   );
 }
 

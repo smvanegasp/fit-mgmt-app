@@ -19,7 +19,7 @@ export function HistoryPage() {
   const [view, setView] = useState<View>("workouts");
   return (
     <div className="pb-28 lg:pb-12">
-      <div className="mt-2 grid grid-cols-2 gap-1 rounded-xl bg-stone-100 p-1 lg:mt-0 lg:max-w-sm" role="tablist" aria-label="History">
+      <div className="grid grid-cols-2 gap-1 rounded-xl bg-stone-100 p-1 lg:max-w-sm" role="tablist" aria-label="History">
         {(["workouts", "exercises"] as const).map((v) => (
           <button key={v} type="button" role="tab" aria-selected={view === v} onClick={() => setView(v)}
             className={`rounded-lg py-2 font-medium capitalize ${view === v ? "bg-white shadow-sm" : "text-stone-500"}`}>

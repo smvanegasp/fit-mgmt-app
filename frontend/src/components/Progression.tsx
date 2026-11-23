@@ -124,9 +124,7 @@ export function ProgressionLadder({ lift, color, load, today, onOpenWorkout }: {
       <h2 className="flex items-center gap-1 font-semibold">
         Progression
         <InfoTip title="Progression">
-          Each row is a target you worked on, newest first. Columns are sets and squares are reps, so you can see the sets
-          and reps grow before the weight goes up. Dots are sessions: filled reached it, a ring missed it; tap one to open
-          it. Reach a target 3 times in a row, then go up. Light days aren't listed.
+          Each row is a target, newest first: columns are sets, squares are reps. Dots are sessions: filled hit it, a ring missed.
         </InfoTip>
       </h2>
       <ol className="mt-2 space-y-1">
@@ -223,7 +221,7 @@ export function DropSets({ sessions, color, today, onOpenWorkout }: {
     <section className="rounded-2xl border border-stone-200 bg-white p-4">
       <h2 className="flex items-center gap-1 font-semibold">
         Drop sets
-        <InfoTip title="Drop sets">Total reps of each drop-set ladder, newest first. The longer the bar, the more reps.</InfoTip>
+        <InfoTip title="Drop sets">Total reps per drop set, newest first.</InfoTip>
       </h2>
       <div className="mt-2 text-sm">
         <span className="text-stone-500">Best · {shortDate(best.date, today)} · </span>
@@ -288,7 +286,7 @@ export function Climbing({ sessions, color, today }: { sessions: ExerciseSession
     <section className="rounded-2xl border border-stone-200 bg-white p-4">
       <h2 className="flex items-center gap-1 font-semibold">
         Grades
-        <InfoTip title="Grades">Problems per grade, hardest on top: solid is sent, light is tried and not sent yet.</InfoTip>
+        <InfoTip title="Grades">Problems per grade, hardest on top. Solid: sent. Light: tried.</InfoTip>
       </h2>
       {hardest && (
         <p className="mt-1 text-sm text-stone-600">

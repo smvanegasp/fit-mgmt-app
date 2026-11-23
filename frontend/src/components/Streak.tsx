@@ -2,7 +2,7 @@ import { CaretRight, Check, Fire, ShieldCheck } from "@phosphor-icons/react";
 import { useEffect, useRef } from "react";
 import { createPortal } from "react-dom";
 
-import { GOAL, SHIELD_EVERY, type Goals } from "../lib/progress";
+import { SHIELD_EVERY, type Goals } from "../lib/progress";
 import { daysLeftText, milestoneAt, milestoneBand, streakStatus, type WeekSlot } from "../lib/streak";
 import { InfoTip } from "./InfoTip";
 import { useGoTo } from "./Nav";
@@ -100,10 +100,8 @@ export function StreakCard({ days, today, goals }: { days: Day[]; today: string;
           <span className="flex items-center gap-1.5 text-sm font-semibold tracking-wide text-stone-700 uppercase">
             <Fire size={14} weight="fill" className="shrink-0 text-blue-600" aria-hidden /> week streak
             <InfoTip title="Streak">
-              Weeks in a row (Monday to Sunday) that reached the goal: the days of that week's plan (optional days don't
-              count; before plans, {GOAL.strength} strength days and {GOAL.cardio} cardio day). This week adds one as soon as its goal is reached, and can't break the streak until Sunday is over. Every{" "}
-              {SHIELD_EVERY} weeks of the streak earn a shield: a week that misses the goal uses one up instead of ending the
-              streak. The squares are the weeks toward the next milestone.
+              Weeks in a row (Mon–Sun) where you trained every planned day. Every {SHIELD_EVERY} weeks earn a shield,
+              which saves the streak from one missed week.
             </InfoTip>
           </span>
           <span className="text-xs text-stone-500 tabular-nums">longest {s.longest} weeks</span>
