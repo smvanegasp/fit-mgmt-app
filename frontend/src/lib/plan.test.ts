@@ -53,8 +53,10 @@ describe("training plans", () => {
   ];
 
   it("names the weeks by their Legs day", () => {
-    expect(weekName(plans, "A")).toBe("Squat week");
+    expect(weekName(plans, "A")).toBe("Squat & heavy push week");
     expect(weekName(plans, "B")).toBe("Deadlift week");
+    const both = [...plans, { id: "B-pull", name: "Heavy pull", dayType: "Pull" as const, week: "B" as const, exercises: [] }];
+    expect(weekName(both, "B")).toBe("Deadlift & heavy pull week");
     expect(weekName([], "A")).toBe("Week A");
   });
 

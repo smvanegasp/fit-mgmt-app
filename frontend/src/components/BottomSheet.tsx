@@ -15,12 +15,21 @@ export function BottomSheet({ title, onClose, children, tall = false }: Props) {
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => e.key === "Escape" && onClose();
     document.addEventListener("keydown", onKey);
-    document.body.style.overflow = "hidden";
-    return () => {
-      document.removeEventListener("keydown", onKey);
-      document.body.style.overflow = "";
-    };
+    return () => document.removeEventListener("keydown", onKey);
   }, [onClose]);
+
+  // The page behind stays put (Sergio, 2026-11-23: it scrolled behind Feedback). iOS ignores
+  // overflow: hidden on the body, so the body is pinned in place and put back on close.
+  useEffect(() => {
+    const y = window.scrollY;
+    const style = document.body.style;
+    const before = { position: style.position, top: style.top, width: style.width, overflow: style.overflow };
+    Object.assign(style, { position: "fixed", top: `-${y}px`, width: "100%", overflow: "hidden" });
+    return () => {
+      Object.assign(style, before);
+      window.scrollTo(0, y);
+    };
+  }, []);
 
   // Rendered at the end of <body> so sheets never inherit styles from where they're opened.
   return createPortal(
@@ -43,7 +52,7 @@ export function BottomSheet({ title, onClose, children, tall = false }: Props) {
             <X size={20} weight="bold" aria-hidden />
           </button>
         </div>
-        <div className="overflow-y-auto px-4 pt-4 pb-[max(1rem,env(safe-area-inset-bottom))]">
+        <div className="overflow-y-auto overscroll-contain px-4 pt-4 pb-[max(1rem,env(safe-area-inset-bottom))]">
           {children}
         </div>
       </div>

@@ -24,7 +24,7 @@ import {
 } from "../hooks";
 import { formatDuration } from "../lib/duration";
 import { abandonedAt, currentLap, lapRows } from "../lib/laps";
-import { cardioOptions, isLogged, lastCardio, planEntries, startingEntries, weekName, weekOptions, type DayOption } from "../lib/plan";
+import { isLogged, lastCardio, planEntries, startingEntries, weekName, weekOptions, type DayOption } from "../lib/plan";
 import { streaks } from "../lib/progress";
 import { dayType, heavyNext, nextUp, setCount } from "../lib/sets";
 import { streakNews } from "../lib/streak";
@@ -128,8 +128,8 @@ function useDayTypes() {
   return types.data && !labels.includes("Cardio") ? [...labels, "Cardio"] : labels;
 }
 
-/** Cardio choices when there's no Cardio history yet. */
-const CARDIO_FALLBACK = ["peloton-ride", "peloton-run", "walk", "treadmill"];
+/** The cardio that counts (Sergio, 2026-11-23: just the Peloton ride and the treadmill). */
+const CARDIO = ["peloton-ride", "treadmill"];
 
 function Idle({ onOpen }: { onOpen: (w: Workout) => void }) {
   const start = useStartWorkout();
@@ -157,15 +157,16 @@ function Idle({ onOpen }: { onOpen: (w: Workout) => void }) {
   const options: DayOption[] = planned?.options
     ?? dayTypes.map((label) => ({ key: label, label, dayType: label, done: false }));
   const next = planned ? planned.next : suggestion?.label ?? null;
-  const [picked, setPicked] = useState<string | null>(null);
-  const chosen = options.find((o) => o.key === (picked ?? next)) ?? null;
+  // undefined: the suggestion; null: nothing (tapping the chosen day again clears it, Sergio 2026-11-23).
+  const [picked, setPicked] = useState<string | null | undefined>(undefined);
+  const chosen = options.find((o) => o.key === (picked === undefined ? next : picked)) ?? null;
+  const toggle = (key: string) => setPicked(chosen?.key === key ? null : key);
   const plan = chosen?.dayType ?? null;
   const heavy = workouts.data ? heavyNext(workouts.data) : null;
   // A Cardio day is one activity (Sergio, 2026-11-17): pick it, last time's preselected.
   const byId = new Map((exercises.data ?? []).map((e) => [e.id, e]));
   const cardioIds = new Set((exercises.data ?? []).filter((e) => e.group === "cardio" && e.id !== "warm-up").map((e) => e.id));
-  const usualCardio = cardioOptions(types.data ?? [], cardioIds);
-  const cardioChoices = usualCardio.length > 0 ? usualCardio : CARDIO_FALLBACK.filter((id) => cardioIds.has(id));
+  const cardioChoices = CARDIO.filter((id) => cardioIds.has(id));
   const [cardioPicked, setCardioPicked] = useState<string | null>(null);
   const cardio = cardioPicked ?? lastCardio(workouts.data ?? [], cardioChoices);
   // The last two of the chosen day type (Sergio, 2026-11-03), else the last two of any.
@@ -197,7 +198,8 @@ function Idle({ onOpen }: { onOpen: (w: Workout) => void }) {
               </div>
               <InfoTip title="Training plans">
                 Your two week types alternate: heavy push, squat and light pull one week, then light push, deadlift and heavy
-                pull, with a cardio day in each. The first day not trained yet this week is picked; tap another to change it.
+                pull, with a cardio day in each. The first day not trained yet this week is picked; tap another to change it, or
+                tap it again for none.
                 Edit plans changes each day's exercises and their order.
               </InfoTip>
             </div>
@@ -205,15 +207,11 @@ function Idle({ onOpen }: { onOpen: (w: Workout) => void }) {
               {options.map((o) => {
                 const on = chosen?.key === o.key;
                 return (
-                  <button key={o.key} type="button" role="radio" aria-checked={on} onClick={() => setPicked(o.key)}
-                    className={`relative flex w-full items-start gap-3 px-4 py-3 text-left ${on ? "bg-blue-50" : ""}`}>
+                  <button key={o.key} type="button" role="radio" aria-checked={on} onClick={() => toggle(o.key)}
+                    className={`relative flex w-full items-center gap-3 px-4 py-3.5 text-left ${on ? "bg-blue-50" : ""}`}>
                     {on && <span aria-hidden className="absolute inset-y-0 left-0 w-1 bg-blue-600" />}
-                    <span className="min-w-0 flex-1">
-                      <span className={`block font-semibold ${o.done ? "text-stone-500" : ""}`}>{o.label}</span>
-                      <span className="block text-sm text-stone-500">
-                        {o.exercises?.length ? o.exercises.map((id) => byId.get(id)?.name ?? id).join(" · ") : "A ride, run or walk"}
-                      </span>
-                    </span>
+                    {/* Just the name (Sergio, 2026-11-23: they know what each day holds). */}
+                    <span className={`min-w-0 flex-1 text-lg font-semibold ${o.done ? "text-stone-500" : ""}`}>{o.label}</span>
                     {o.done ? (
                       <span className="flex shrink-0 items-center gap-1 text-xs font-semibold text-stone-500"><Check size={14} weight="bold" aria-hidden /> Done</span>
                     ) : next === o.key ? (
@@ -228,7 +226,7 @@ function Idle({ onOpen }: { onOpen: (w: Workout) => void }) {
                 className="flex items-center gap-1.5 rounded-lg px-2 py-2 text-sm font-medium text-stone-600">
                 <PencilSimple size={16} weight="fill" aria-hidden /> Edit plans
               </button>
-              <button type="button" onClick={() => { setWeek(other); setPicked(null); }}
+              <button type="button" onClick={() => { setWeek(other); setPicked(undefined); }}
                 className="ml-auto rounded-lg px-2 py-2 text-sm font-medium text-blue-700">
                 {weekName(planList, other)} instead
               </button>
@@ -246,7 +244,7 @@ function Idle({ onOpen }: { onOpen: (w: Workout) => void }) {
             {options.length > 0 && (
               <div className="mt-3 flex flex-wrap gap-2" role="radiogroup" aria-label="Day">
                 {options.map((o) => (
-                  <button key={o.key} type="button" role="radio" aria-checked={chosen?.key === o.key} onClick={() => setPicked(o.key)}
+                  <button key={o.key} type="button" role="radio" aria-checked={chosen?.key === o.key} onClick={() => toggle(o.key)}
                     className={`rounded-full px-4 py-2 font-medium ${chosen?.key === o.key ? "bg-blue-600 text-white" : "bg-white text-stone-700 ring-1 ring-stone-200"}`}>
                     {o.label}
                     {next === o.key && <span className="ml-1.5 text-xs opacity-80">next up</span>}
@@ -329,7 +327,7 @@ function Stopwatch({ body, onLap, lapsOpen, onToggleLaps }: {
           aria-expanded={lapsOpen}
           className="-ml-1 mt-1 flex items-baseline gap-1.5 rounded-md px-1 text-stone-700 tabular-nums"
         >
-          <span className="text-sm font-medium">Lap {laps.length + 1}</span>
+          <span className="font-display text-2xl leading-none text-stone-500">Lap {laps.length + 1}</span>
           <span className="font-display text-2xl leading-none text-stone-900">{formatDuration(currentLap(body.startedAt, laps))}</span>
           <CaretDown size={14} weight="bold" className={`self-center ${lapsOpen ? "rotate-180" : ""}`} aria-hidden />
         </button>
@@ -383,14 +381,30 @@ function ActiveWorkout({ initial }: { initial: WorkoutBody }) {
     autosave(next);
   };
 
+  // The fixed bar's height (it grows with the lap list), for the spacer under it.
+  const bar = useRef<HTMLElement>(null);
+  const [barHeight, setBarHeight] = useState(0);
+  useEffect(() => {
+    const el = bar.current;
+    if (!el) return;
+    const observer = new ResizeObserver(() => setBarHeight(el.offsetHeight));
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, []);
+
   const lap = (label?: string) => {
     const now = latest.current;
     change({ ...now, laps: [...(now.laps ?? []), { at: localIso(), ...(label ? { label } : {}) }] });
   };
 
   return (
-    <div className="pb-28">
-      <header className="sticky top-0 z-10 -mx-4 mb-3 border-b border-stone-200 bg-stone-50/95 px-4 pt-[calc(env(safe-area-inset-top)+0.75rem)] pb-3 backdrop-blur land:pt-2 land:pb-2">
+    // Starts at the top of the screen: the stopwatch bar is fixed there and the spacer takes its place.
+    <div className="-mt-[calc(env(safe-area-inset-top)+1rem)] pb-28 lg:-mt-8">
+      {/* Fixed, not sticky (Sergio, 2026-11-23): on the iPhone, pulling the page down dragged a
+          sticky bar with it. Above the grain (z-25) so iOS paints the clock strip from it. */}
+      <header ref={bar}
+        className="fixed inset-x-0 top-0 z-[26] border-b border-stone-200 bg-stone-50 pt-[calc(env(safe-area-inset-top)+0.75rem)] pb-3 land:pt-2 land:pb-2 land:pl-[calc(4.5rem+env(safe-area-inset-left)*0.75)] lg:pl-56">
+        <div className="mx-auto max-w-lg px-4 land:pr-[max(1rem,env(safe-area-inset-right))] lg:px-10">
         <div className="flex items-center gap-2">
           <Stopwatch body={body} onLap={() => lap()} lapsOpen={lapsOpen} onToggleLaps={() => setLapsOpen(!lapsOpen)} />
           <button
@@ -402,7 +416,9 @@ function ActiveWorkout({ initial }: { initial: WorkoutBody }) {
           </button>
         </div>
         {lapsOpen && <LapList body={body} />}
+        </div>
       </header>
+      <div aria-hidden style={{ height: barHeight }} className="mb-3" />
 
       {body.plan && <LastOfType plan={body.plan} />}
       <WorkoutEditor

@@ -125,27 +125,27 @@ describe("shields", () => {
   const weeks = (from: string, n: number) => Array.from({ length: n }, (_, i) => full(addDays(from, 7 * i))).flat();
   const START = "2026-10-26";
 
-  it("earns one every 10 weeks of the streak", () => {
-    const s = streaks(weeks(START, 9), addDays(START, 7 * 8 + 6));
-    expect(s).toMatchObject({ current: 9, shields: 0, toShield: 1 });
-    const t = streaks(weeks(START, 10), addDays(START, 7 * 9 + 6));
-    expect(t).toMatchObject({ current: 10, shields: 1, toShield: 10 });
+  it("earns one every 8 weeks of the streak", () => {
+    const s = streaks(weeks(START, 7), addDays(START, 7 * 6 + 6));
+    expect(s).toMatchObject({ current: 7, shields: 0, toShield: 1 });
+    const t = streaks(weeks(START, 8), addDays(START, 7 * 7 + 6));
+    expect(t).toMatchObject({ current: 8, shields: 1, toShield: 8 });
   });
 
   it("a missed week uses one up and keeps the streak", () => {
-    const days = [...weeks(START, 10), ...weeks(addDays(START, 7 * 11), 2)]; // week 11 missed
-    const s = streaks(days, addDays(START, 7 * 12 + 6));
-    expect(s).toMatchObject({ current: 12, longest: 12, shields: 0, shielded: [addDays(START, 70)] });
+    const days = [...weeks(START, 8), ...weeks(addDays(START, 7 * 9), 2)]; // week 9 missed
+    const s = streaks(days, addDays(START, 7 * 10 + 6));
+    expect(s).toMatchObject({ current: 10, longest: 10, shields: 0, shielded: [addDays(START, 56)] });
   });
 
   it("without a shield a missed week ends the streak", () => {
     const days = [...weeks(START, 5), ...weeks(addDays(START, 7 * 6), 1)];
-    expect(streaks(days, addDays(START, 7 * 6 + 6))).toMatchObject({ current: 1, shields: 0, toShield: 9 });
+    expect(streaks(days, addDays(START, 7 * 6 + 6))).toMatchObject({ current: 1, shields: 0, toShield: 7 });
   });
 
   it("this week can't use a shield before it ends", () => {
-    const s = streaks(weeks(START, 10), addDays(START, 7 * 10 + 2));
-    expect(s).toMatchObject({ current: 10, shields: 1, shielded: [] });
+    const s = streaks(weeks(START, 8), addDays(START, 7 * 8 + 2));
+    expect(s).toMatchObject({ current: 8, shields: 1, shielded: [] });
   });
 
   it("tells the congrats what happened", () => {
