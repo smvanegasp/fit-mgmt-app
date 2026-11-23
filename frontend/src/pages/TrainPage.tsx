@@ -152,7 +152,9 @@ function Idle({ onOpen }: { onOpen: (w: Workout) => void }) {
   const view = workouts.data ? cycleView(weeks, workouts.data, cardioIds) : null;
   const planned = view && view.cycle.length > 0 ? view : null;
   const [more, setMore] = useState(false);
-  const shown = planned ? [...planned.next, ...(more ? planned.cycle.filter((d) => !planned.next.includes(d)) : [])] : [];
+  // "View more days": the rest of the cycle in order, carrying on from the next four (5, 6, 7...).
+  const ahead = planned && planned.next.length ? Array.from({ length: planned.cycle.length }, (_, i) => planned.cycle[(planned.next[0].index + i) % planned.cycle.length]) : [];
+  const shown = planned ? (more ? ahead : planned.next) : [];
   const toOption = (d: CycleDay): DayOption => ({
     key: d.key, label: d.day.name, dayType: d.day.kind, done: false, optional: d.day.optional,
     exercises: d.day.exercises.length ? d.day.exercises : undefined,
@@ -183,25 +185,24 @@ function Idle({ onOpen }: { onOpen: (w: Workout) => void }) {
     ? planEntries(chosen.exercises, known)
     : startingEntries(plan ?? undefined, types.data ?? [], workouts.data ?? [], known, cardio);
 
-  // The ride or the treadmill for a Cardio day, then Start.
+  const startChosen = () => start.mutate({ startedAt: localIso(), plan: plan ?? undefined, entries, ...(planned && chosen ? { planDays: [chosen.key] } : {}) });
+  // The ride or the treadmill for a Cardio day.
+  const cardioPick = plan === "Cardio" && !chosen?.exercises && cardioChoices.length > 0 ? (
+    <div className="flex flex-wrap gap-2" role="radiogroup" aria-label="Cardio">
+      {cardioChoices.map((id) => (
+        <button key={id} type="button" role="radio" aria-checked={cardio === id} onClick={() => setCardioPicked(id)}
+          className={`rounded-full px-3.5 py-1.5 text-sm font-medium ${cardio === id ? "bg-stone-900 text-white" : "bg-white text-stone-700 ring-1 ring-stone-200"}`}>
+          {byId.get(id)?.name ?? id}
+        </button>
+      ))}
+    </div>
+  ) : null;
+  // Without a plan: the cardio choice, then a big Start under the day chips.
   const startBlock = (
     <>
-      {plan === "Cardio" && !chosen?.exercises && cardioChoices.length > 0 && (
-        <div className="mb-3 flex flex-wrap gap-2" role="radiogroup" aria-label="Cardio">
-          {cardioChoices.map((id) => (
-            <button key={id} type="button" role="radio" aria-checked={cardio === id} onClick={() => setCardioPicked(id)}
-              className={`rounded-full px-3.5 py-1.5 text-sm font-medium ${cardio === id ? "bg-stone-900 text-white" : "bg-white text-stone-700 ring-1 ring-stone-200"}`}>
-              {byId.get(id)?.name ?? id}
-            </button>
-          ))}
-        </div>
-      )}
-      <button
-        type="button"
-        onClick={() => start.mutate({ startedAt: localIso(), plan: plan ?? undefined, entries, ...(planned && chosen ? { planDays: [chosen.key] } : {}) })}
-        disabled={start.isPending}
-        className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-blue-600 py-4 text-xl font-semibold text-white shadow-sm active:bg-blue-700"
-      >
+      {cardioPick && <div className="mb-3">{cardioPick}</div>}
+      <button type="button" onClick={startChosen} disabled={start.isPending}
+        className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-blue-600 py-4 text-xl font-semibold text-white shadow-sm active:bg-blue-700">
         <Play size={24} weight="fill" aria-hidden /> {chosen ? `Start ${chosen.label}` : "Start workout"}
       </button>
       {start.error && <p className="mt-2 text-sm text-red-600">{start.error.message}</p>}
@@ -241,34 +242,47 @@ function Idle({ onOpen }: { onOpen: (w: Workout) => void }) {
                 </li>
               ))}
             </ol>
-            <div role="radiogroup" aria-label="Up next" className="divide-y divide-stone-200">
+            {/* The selected day starts from its own row (Sergio, 2026-11-23: a Start tag like Next,
+                not a big button). Days are numbered through the whole cycle from here. */}
+            <ol aria-label="Up next" className="divide-y divide-stone-200">
               {options.map((o, i) => {
                 const on = chosen?.key === o.key;
                 return (
-                  <button key={o.key} type="button" role="radio" aria-checked={on} onClick={() => toggle(o.key)}
-                    className={`relative flex w-full items-center gap-3 px-4 py-3.5 text-left ${on ? "bg-stone-100" : ""}`}>
+                  <li key={o.key} className={`relative ${on ? "bg-stone-100" : ""}`}>
                     {on && <span aria-hidden className="absolute inset-y-0 left-0 w-1 bg-blue-600" />}
-                    <span className="w-4 shrink-0 text-center text-sm text-stone-400 tabular-nums">{i < planned.next.length ? i + 1 : ""}</span>
-                    <span className="min-w-0 flex-1 text-lg font-semibold">
-                      {o.label}
-                      {o.optional && <span className="ml-2 text-xs font-medium text-stone-500">optional</span>}
-                    </span>
-                    {next === o.key && <span className="shrink-0 rounded-[3px] bg-blue-600 px-1.5 py-0.5 text-xs font-semibold text-white">Next</span>}
-                  </button>
+                    <div className="flex items-center gap-3 pr-3">
+                      <button type="button" aria-pressed={on} onClick={() => toggle(o.key)}
+                        className="flex min-w-0 flex-1 items-center gap-3 py-3.5 pl-4 text-left">
+                        <span className="w-5 shrink-0 text-center text-sm text-stone-400 tabular-nums">{i + 1}</span>
+                        <span className="min-w-0 flex-1 truncate text-lg font-semibold">
+                          {o.label}
+                          {o.optional && <span className="ml-2 text-xs font-medium text-stone-500">optional</span>}
+                        </span>
+                      </button>
+                      {on ? (
+                        <button type="button" onClick={startChosen} disabled={start.isPending}
+                          className="flex shrink-0 items-center gap-1.5 rounded-lg bg-blue-600 px-3.5 py-2 font-semibold text-white disabled:opacity-50">
+                          <Play size={16} weight="fill" aria-hidden /> Start
+                        </button>
+                      ) : next === o.key ? (
+                        <span className="shrink-0 rounded-[3px] border border-stone-300 px-1.5 py-0.5 text-xs font-semibold text-stone-600">Next</span>
+                      ) : null}
+                    </div>
+                    {on && cardioPick && <div className="pb-3 pl-12">{cardioPick}</div>}
+                  </li>
                 );
               })}
-            </div>
-            {/* Start inside the card, under the days it starts (Sergio, 2026-11-23: better use of the space). */}
-            <div className="border-t border-stone-200 p-3">{startBlock}</div>
+            </ol>
+            {start.error && <p className="border-t border-stone-200 px-4 py-2 text-sm text-red-600">{start.error.message}</p>}
             <div className="flex items-center border-t border-stone-200 px-2 py-1">
               <button type="button" onClick={() => setEditing(true)}
                 className="flex items-center gap-1.5 rounded-lg px-2 py-2 text-sm font-medium text-stone-600">
-                <PencilSimple size={16} weight="fill" aria-hidden /> Edit plans
+                <PencilSimple size={16} weight="fill" aria-hidden /> Edit plan
               </button>
               {planned.cycle.length > planned.next.length && (
                 <button type="button" onClick={() => setMore(!more)} aria-expanded={more}
                   className="ml-auto rounded-lg px-2 py-2 text-sm font-medium text-stone-600">
-                  {more ? "Fewer days" : "Other days"}
+                  {more ? "View fewer days" : "View more days"}
                 </button>
               )}
             </div>

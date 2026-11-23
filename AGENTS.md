@@ -163,7 +163,8 @@ A mobile-first web app where Sergio logs their gym workouts and sees their progr
 | 13a | The streak counts training days (4 grow, 2-3 hold, 0-1 shield or end) over the whole history; streak and workout tiers with icons, a Tiers card on Progress and congrats; full-screen pages hide the app underneath on phones (the strip above the iPhone keyboard) | #51 |
 | 13b | Tier icons on the welcome stats; the four focus lifts (weighted dips, weighted chin-ups, deadlift, back squat) on the welcome page and first on Progress, then weighted pull-ups and bench | #52 |
 | 14a | The plan as one cycle of days: next is the day after the last workout, whatever the calendar week; Train shows the last two workouts and the next four days; workouts store the plan days they were started from (`planDays`) | #53 (shipped with #52) |
-| 14b | Feedback: Start inside the plan card, no "Last workouts" on Train, the plan page lists the days (numbered through the cycle, grouped by week type), the warm-up is its own group (not cardio) and left out of exercise lists, History drops "Show every exercise", Progress drops the routine timeline | (open) |
+| 14b | Feedback: Start inside the plan card, no "Last workouts" on Train, the plan page lists the days (numbered through the cycle, grouped by week type), the warm-up is its own group (not cardio) and left out of exercise lists, History drops "Show every exercise", Progress drops the routine timeline | #54 |
+| 14c | Start inside the selected day's row; "View more days" numbered through the cycle; the plan page is one list of days (add, reorder, a page per day), saved as a single week type | (open) |
 
 **Where things stand (2026-11-23):** PRs up to #48 are merged and live; stage 12c (the in-app feedback
 of 2026-11-23) is the open PR. The notes below on stage 10a are kept for context.
@@ -342,7 +343,8 @@ frontend/
   sessions plus hand-picked ones; per-session comments stay on the workout entry. Re-importing keeps
   `hidden`, `section` and `rank` set in the app.
 - **`SETTINGS#plans`** `{weeks: [{id, name, days: [{id, name, kind, exercises}]}], anchor?: {monday, week}}`:
-  the training plans once saved (stage 12a, `app/plans.py`; inferred from the log until then). Week
+  the training plans once saved (stage 12a, `app/plans.py`; inferred from the log until then; since
+  stage 14c the plan page saves one week type holding the whole list of days, up to 20). Week
   types' days form one cycle in list order (stage 14a: Train continues from the last workout, `cycleView`
   in `lib/plan.ts`; the server's calendar anchor and `current` are no longer used by Train). Day kinds:
   Push, Legs, Pull, Upper, Lower, Full body, Cardio; the mixed ones label their workouts with the kind

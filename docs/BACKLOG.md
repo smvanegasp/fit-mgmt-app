@@ -155,6 +155,19 @@ sandbox (five named slots, the goal of 4 strength days). Not tested: Restore in 
 Checked: backend 121 and frontend 92 tests, the welcome page logged out at 390x844 (dark and light) and
 1440x900 on the local log (older than production: its streak reads 0 there). Not tested: the live numbers.
 
+## Stage 14c: Start in the row, a plain list of days (`stage-14c-day-list`, Sergio 2026-11-23)
+
+| Feedback | Done |
+|---|---|
+| Start should sit in the selected row, like the Next tag, not as a big button. | The selected day's row has a compact Start on the right (the ride/treadmill choice under it on a Cardio day); the next day, when not selected, keeps a quiet Next tag. Without a plan, the big button stays under the day chips. |
+| "Other days" should read "View more days", and the numbers stopped after 4. | "View more days" / "View fewer days"; the extra days carry on in cycle order from the next four, numbered 5, 6, 7... |
+| No week types: it's a day rotation. | The plan page ("Your plan") is one numbered list of days with up/down arrows and Add day; a day opens its own page (name, kind, exercises in order, optional, Duplicate and Delete with a confirm). Saved as a single week type (up to 20 days, was 10 per week type), so the day ids, `planDays` and Train's place carry over; Sergio's two saved week types flatten into one list on the next save. Earlier versions list their days. |
+
+Checked: backend 122 and frontend 98 tests; a sample demo at 390x844: two days added and saved in the
+demo, "View more days" numbered 1-6, a Cardio day picked (the choice under its row) and started from its
+row (`planDays` saved, the demo workout discarded). Not tested: Sergio's phone, saving his real plan
+(flattens two week types).
+
 ## Stage 14b: feedback after the cycle (`stage-14b-feedback`, Sergio 2026-11-23)
 
 | Feedback | Done |

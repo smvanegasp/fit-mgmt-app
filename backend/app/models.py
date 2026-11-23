@@ -478,7 +478,7 @@ class WeekPlan(BaseModel):
 
     id: str = Field(min_length=1, max_length=40)
     name: str = Field(min_length=1, max_length=60)
-    days: list[DayPlan] = Field(max_length=10)
+    days: list[DayPlan] = Field(max_length=20)  # since stage 14c the rotation is saved as one list of days
 
 
 class TrainingPlans(BaseModel):
