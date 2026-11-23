@@ -104,6 +104,8 @@ export interface WorkoutBody {
   label?: string;
   /** The day type chosen at the start ("Squat"). */
   plan?: string;
+  /** The plan days it was started from (the cycle of days). */
+  planDays?: string[];
   laps?: Lap[];
   notes?: string[];
   photos?: Photo[];
