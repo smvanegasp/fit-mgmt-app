@@ -61,9 +61,18 @@ Not tested: the shield congrats and "Went up" in a browser (unit tests only), Se
 | A finished exercise opened again needs a way to close it. | "Close <exercise>" under it folds it back. |
 | Edit feedback. | Whoever wrote it can fix the text right after sending (Edit on the thanks screen); the owner can edit any note in the Settings inbox. `PATCH /feedback/{id} {text}`; edited ones say so. |
 | Attach screenshots to feedback. | Up to 3, copied to `feedback/<id>-<n>` in the photos bucket (outliving demo photos), shown to the owner in the inbox; `scripts/feedback.py` saves them to `private/feedback/` to look at. |
-| A Peloton workout logged from its screenshot should take the class's time. | On finishing (and saving an edited app workout), a workout shorter than its Peloton classes starts that many minutes before it ended. The Nov 22 ride on AWS still says 22 seconds: re-saving it from History (edit, save) fixes it; nothing was changed on AWS. |
+| A Peloton workout logged from its screenshot should take the class's time. | On finishing (and saving an edited app workout), a workout shorter than its Peloton classes starts that many minutes before it ended. The Nov 22 ride on AWS was corrected by hand with Sergio's OK (2026-11-23): 20:15:59 to 20:45:59 (was 22 seconds). |
 
-Checked: backend 115 and frontend 97 tests, build, plans inferred from the real log (read-only),
+#### Feedback round 1 on 11 (Sergio, 2026-11-23)
+
+| Item | Done |
+|---|---|
+| The plans should be more obvious on Train. | A "This week's plan" card replaces the chips: the week's name, one row per day with its exercises, Done or Next on the right, the chosen one marked in red; Edit plans and the other week at the bottom. |
+| Some inferred plans were wrong; infer them from the last workouts. | Each day's exercises now come from its last 3 sessions (kept if done in 2 of them, or new in the latest; usual order), not the single latest one, which had dropped close-grip pull-ups from heavy push. Variants are each day type's two latest first lifts; the newest full week is week A. On the real log every plan matches it (heavy push: dips, bar dips, skull crushers, close-grip pull-ups, triceps extension, lateral raise). The ngrok copy runs on the older local log, so it can still differ there. |
+| The numbers between + and - are still small. | Up to 3 characters (115, reps) at 7xl, 4 (22.5) at 6xl, 5 (112.5) at 5xl so it fits; the +/- buttons are a little smaller (52 px) to make room. |
+| Fix the Nov 22 ride on AWS. | Done (see above); only its `startedAt` changed, with a condition on the old value. |
+
+Checked: backend 116 and frontend 97 tests, build, plans inferred from the real log (read-only),
 screenshots in a sample demo (Train, plan editor, a workout in progress, discarded). Not tested: the
 plan editor's save, feedback screenshots and scroll memory in a browser (API tests only), the iPhone
 overscroll, Sergio's phone. Note for the agent: run vitest from `C:` (PowerShell `Set-Location

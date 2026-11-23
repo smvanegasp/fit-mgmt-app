@@ -53,30 +53,51 @@ def _name(day: str, first: str, other_first: str | None, exercises: dict[str, Ex
     return f"{day} · {lift.name if lift else first}"
 
 
+RECENT = 3  # sessions of a day that decide its exercises
+
+
+def usual_exercises(sessions: list[dict[str, Any]], groups: dict[str, str]) -> list[str]:
+    """A day's exercises from its last sessions (oldest first): the ones done in most of them, plus
+    anything new in the latest (one skipped day doesn't drop an exercise, one try adds it), in
+    their usual order."""
+    recent = [_exercises(w, groups) for w in sessions[-RECENT:]]
+    positions: dict[str, list[float]] = {}
+    for ids in recent:
+        for i, x in enumerate(ids):
+            positions.setdefault(x, []).append(i / max(1, len(ids) - 1))
+    need = len(recent) // 2 + 1 if len(recent) > 1 else 1
+    keep = [x for x, p in positions.items() if len(p) >= need or x in recent[-1]]
+    first = recent[-1][0]
+    return [first, *sorted((x for x in keep if x != first), key=lambda x: sum(positions[x]) / len(positions[x]))]
+
+
 def infer(space: str, exercises: dict[str, Exercise]) -> list[DayPlan]:
-    """Two week types from the last two weeks with 2+ strength days (newest = week A)."""
+    """Two week types from the log. Each day type's variants are its two latest first lifts
+    (weighted dips or bench; squat or deadlift); the week of the newest week with 2+ strength
+    days is week A, its counterparts week B. A day type with one variant is in both weeks."""
     groups = {x.id: x.group for x in exercises.values()}
-    by_week: dict[str, list[dict[str, Any]]] = {}
-    for w in workouts(space):
-        if day_type(w.get("label") or "Workout") in STRENGTH and first_lift(w):
-            by_week.setdefault(monday(w["date"]), []).append(w)
-    weeks = [ws for _, ws in sorted(by_week.items(), reverse=True) if len({day_type(w["label"]) for w in ws}) >= 2][:2]
-    if not weeks:
+    every = [w for w in workouts(space) if day_type(w.get("label") or "Workout") in STRENGTH and first_lift(w)]
+    if not every:
         return []
-    picked: dict[str, dict[str, dict[str, Any]]] = {"A": {}, "B": {}}
-    for week, ws in zip("AB", weeks):
-        for w in ws:  # oldest first, so the week's last session of a type wins
-            picked[week][day_type(w["label"])] = w
+    variants: dict[str, dict[str, list[dict[str, Any]]]] = {}  # day type -> first lift -> sessions
+    for w in every:
+        variants.setdefault(day_type(w["label"]), {}).setdefault(first_lift(w), []).append(w)
+    by_week: dict[str, list[dict[str, Any]]] = {}
+    for w in every:
+        by_week.setdefault(monday(w["date"]), []).append(w)
+    newest = next((ws for _, ws in sorted(by_week.items(), reverse=True) if len({day_type(w["label"]) for w in ws}) >= 2),
+                  by_week[max(by_week)])
+    in_a = {(day_type(w["label"]), first_lift(w)) for w in newest}
     plans = []
-    for week in "AB":
-        for day in STRENGTH:
-            w = picked[week].get(day)
-            if not w:
-                continue
-            first = first_lift(w)
-            other = picked["B" if week == "A" else "A"].get(day)
-            plans.append(DayPlan(id=f"{week}-{day.lower()}", name=_name(day, first, other and first_lift(other), exercises),
-                                 dayType=day, week=week, exercises=_exercises(w, groups)))
+    for day in STRENGTH:
+        lifts = sorted(variants.get(day, {}), key=lambda x: variants[day][x][-1]["date"], reverse=True)[:2]
+        if not lifts:
+            continue
+        a = next((x for x in lifts if (day, x) in in_a), lifts[0])
+        b = next((x for x in lifts if x != a), a)
+        for week, lift, other in (("A", a, b), ("B", b, a)):
+            plans.append(DayPlan(id=f"{week}-{day.lower()}", name=_name(day, lift, other if other != lift else None, exercises),
+                                 dayType=day, week=week, exercises=usual_exercises(variants[day][lift], groups)))
     return plans
 
 

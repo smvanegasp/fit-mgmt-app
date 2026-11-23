@@ -55,3 +55,16 @@ def test_saved_plans_replace_the_inferred_ones(client: TestClient) -> None:
 
 def test_no_log_no_plans(client: TestClient) -> None:
     assert client.get("/api/plans").json() == {"plans": [], "weekType": "A", "saved": False}
+
+
+def test_a_day_keeps_what_it_usually_has() -> None:
+    from app.plans import usual_exercises
+
+    def w(*ids: str) -> dict:
+        return {"entries": [{"exerciseId": x, "sets": [{"reps": 5}]} for x in ids]}
+
+    groups = {"peloton-ride": "cardio"}
+    sessions = [w("dips", "bar-dips", "close-pull-ups", "pull-ups"), w("dips", "bar-dips", "close-pull-ups"),
+                w("dips", "bar-dips", "lateral-raise", "peloton-ride")]
+    # Skipped once: kept. Tried once long ago: dropped. New in the latest: added. Cardio: left out.
+    assert usual_exercises(sessions, groups) == ["dips", "bar-dips", "close-pull-ups", "lateral-raise"]
