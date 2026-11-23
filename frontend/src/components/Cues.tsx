@@ -8,48 +8,51 @@ import { SECTIONS, groupCues, orderCues } from "../lib/cues";
 import { BottomSheet } from "./BottomSheet";
 
 /**
- * The technique checklist on an exercise while training, quiet at the bottom of the card: the
- * most important cue of each section, the rest one tap away. Add a cue here; edit in the sheet.
+ * The technique checklist on an exercise while training, at the bottom of the card. Folded to one
+ * line until tapped (Sergio, 2026-11-23: fully collapsed keeps the workout focused); open, it lists
+ * every cue by section. Add a cue here; edit in the sheet.
  */
 export function CueList({ exerciseId, exerciseName, cues }: { exerciseId: string; exerciseName: string; cues: Note[] }) {
-  const [expanded, setExpanded] = useState(false);
+  const [open, setOpen] = useState(false);
   const [managing, setManaging] = useState(false);
   const [adding, setAdding] = useState(false);
   const groups = groupCues(cues.filter((c) => !c.hidden));
   const total = groups.reduce((n, g) => n + g.cues.length, 0);
-  const shown = expanded ? groups : groups.map((g) => ({ ...g, cues: g.cues.slice(0, 1) }));
 
   return (
-    <div className="mt-3 border-t border-stone-100 pt-2">
-      <div className="flex items-center gap-1.5 text-xs font-medium tracking-wide text-stone-400 uppercase">
-        <Lightbulb size={14} weight="fill" aria-hidden />
-        Keep in mind
-        <button type="button" onClick={() => setManaging(true)} className="ml-auto rounded p-1 text-stone-400" aria-label={`Edit cues for ${exerciseName}`}>
-          <PencilSimple size={16} weight="fill" aria-hidden />
+    <div className="mt-3 border-t border-stone-100 pt-1">
+      <div className="flex items-center">
+        <button type="button" onClick={() => setOpen(!open)} aria-expanded={open}
+          className="flex flex-1 items-center gap-1.5 py-1.5 text-left text-xs font-medium tracking-wide text-stone-400 uppercase">
+          <Lightbulb size={14} weight="fill" aria-hidden />
+          Keep in mind
+          <span className="font-normal tracking-normal normal-case">· {total ? `${total} cue${total === 1 ? "" : "s"}` : "none yet"}</span>
+          <CaretDown size={12} weight="bold" className={`ml-1 ${open ? "rotate-180" : ""}`} aria-hidden />
         </button>
-      </div>
-      {total === 0 && !adding && <p className="py-1 text-sm text-stone-500">No cues yet. Add what helps you lift better.</p>}
-      {shown.map((g) => (
-        <div key={g.label ?? "all"} className="mt-1">
-          {g.label && <div className="text-[11px] font-medium text-stone-400">{g.label}</div>}
-          <ul className="list-disc space-y-0.5 pl-5 marker:text-stone-300">
-            {g.cues.map((cue) => <li key={cue.id} className="text-sm leading-snug text-stone-600">{cue.text}</li>)}
-          </ul>
-        </div>
-      ))}
-      <div className="mt-1 flex items-center gap-3">
-        {total > shown.reduce((n, g) => n + g.cues.length, 0) || expanded ? (
-          <button type="button" onClick={() => setExpanded(!expanded)} className="flex items-center gap-1 py-1 text-xs font-medium text-stone-500">
-            <CaretDown size={12} weight="bold" className={expanded ? "rotate-180" : ""} aria-hidden />
-            {expanded ? "Only the key ones" : `All ${total}`}
-          </button>
-        ) : null}
-        {!adding && (
-          <button type="button" onClick={() => setAdding(true)} className="flex items-center gap-1 py-1 text-xs font-medium text-stone-500">
-            <Plus size={12} weight="bold" aria-hidden /> Add cue
+        {open && (
+          <button type="button" onClick={() => setManaging(true)} className="rounded p-1 text-stone-400" aria-label={`Edit cues for ${exerciseName}`}>
+            <PencilSimple size={16} weight="fill" aria-hidden />
           </button>
         )}
       </div>
+      {open && (
+        <>
+          {total === 0 && !adding && <p className="py-1 text-sm text-stone-500">No cues yet. Add what helps you lift better.</p>}
+          {groups.map((g) => (
+            <div key={g.label ?? "all"} className="mt-1">
+              {g.label && <div className="text-[11px] font-medium text-stone-400">{g.label}</div>}
+              <ul className="list-disc space-y-0.5 pl-5 marker:text-stone-300">
+                {g.cues.map((cue) => <li key={cue.id} className="text-sm leading-snug text-stone-600">{cue.text}</li>)}
+              </ul>
+            </div>
+          ))}
+          {!adding && (
+            <button type="button" onClick={() => setAdding(true)} className="mt-1 flex items-center gap-1 py-1 text-xs font-medium text-stone-500">
+              <Plus size={12} weight="bold" aria-hidden /> Add cue
+            </button>
+          )}
+        </>
+      )}
       {adding && <AddCue exerciseId={exerciseId} onDone={() => setAdding(false)} />}
       {managing && <CueSheet exerciseName={exerciseName} exerciseId={exerciseId} cues={cues} onClose={() => setManaging(false)} />}
     </div>
