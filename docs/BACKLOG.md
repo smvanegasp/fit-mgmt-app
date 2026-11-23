@@ -158,6 +158,11 @@ sandbox (five named slots, the goal of 4 strength days). Not tested: Restore in 
 | Adding an exercise felt odd: a sheet over the workout that moved once typing. | The picker is a full page (`Screen`, new `top` slot and `fitKeyboard`, sized to the area above the keyboard) with the search fixed at the top. |
 | (Found on the way) Saving plans didn't refresh the streak's goals. | `useSavePlans` invalidated a `["progress"]` key that doesn't exist; now `["workouts", "progress"]`. |
 
+**12d (`stage-12d-picker-cover`, Sergio 2026-11-23 from the phone):** with the keyboard open, the picker page
+ended above the keyboard too early, leaving a strip where the workout behind showed and scrolled. The page
+now always runs down behind the keyboard (it still follows iOS's pan at the top); the list gets the
+keyboard's height as bottom room instead. Only testable on the iPhone.
+
 Checked: frontend 101 tests, build, a sample demo at 390x844 (dark and light) and 1440x900: tab tops
 measured equal, the plan page and a week type's page, Duplicate's confirm, the picker page with a search,
 the delete sheet (Keep it; nothing deleted). Not tested: the picker with the iPhone keyboard, saving a

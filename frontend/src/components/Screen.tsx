@@ -30,7 +30,11 @@ interface Props {
 export function Screen({ title, subtitle, onBack, actions, footer, top, fitKeyboard = false, children }: Props) {
   useScrollLock();
   const area = useVisibleArea();
-  const fit = fitKeyboard && area ? { top: area.top, height: area.height, bottom: "auto" } : undefined;
+  // With the keyboard open, the page follows iOS's pan (top) but always runs down behind the
+  // keyboard, so nothing of the page below shows or scrolls in a gap (Sergio, 2026-11-23); the
+  // list gets the keyboard's height as extra room at the bottom instead.
+  const keyboard = fitKeyboard && area ? Math.max(0, window.innerHeight - area.top - area.height) : 0;
+  const fit = fitKeyboard && area ? { top: area.top, height: window.innerHeight, bottom: "auto" } : undefined;
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => e.key === "Escape" && onBack();
     document.addEventListener("keydown", onKey);
@@ -67,7 +71,8 @@ export function Screen({ title, subtitle, onBack, actions, footer, top, fitKeybo
           </div>
         )}
         <div data-screen-scroll className="min-h-0 flex-1 overflow-y-auto overscroll-none">
-          <div className={`mx-auto max-w-lg px-4 pt-3 lg:max-w-none lg:px-6 ${footer ? "pb-6" : "pb-[calc(env(safe-area-inset-bottom)+4rem)]"}`}>
+          <div className={`mx-auto max-w-lg px-4 pt-3 lg:max-w-none lg:px-6 ${footer ? "pb-6" : "pb-[calc(env(safe-area-inset-bottom)+4rem)]"}`}
+            style={keyboard ? { paddingBottom: keyboard + 24 } : undefined}>
             {children}
           </div>
         </div>
