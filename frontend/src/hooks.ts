@@ -1,7 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useCallback, useEffect, useRef, useState } from "react";
 
-import { api, type CueSection, type DayPlan, type Group, type Note, type NotePatch, type Role, type SessionInfo, type WorkoutBody } from "./api";
+import { api, type CueSection, type WeekPlan, type Group, type Note, type NotePatch, type Role, type SessionInfo, type WorkoutBody } from "./api";
 
 const SESSION = ["session"];
 
@@ -121,7 +121,7 @@ export function usePlans(today: string) {
 export function useSavePlans(today: string) {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (plans: DayPlan[]) => api.savePlans(plans, today),
+    mutationFn: (v: { weeks: WeekPlan[]; current?: string }) => api.savePlans(v.weeks, v.current, today),
     onSuccess: (data) => qc.setQueryData(["plans", today], data),
   });
 }

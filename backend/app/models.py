@@ -437,23 +437,36 @@ class PublicSummary(BaseModel):
     lifts: list[PublicLift]
 
 
+DayKind = Literal["Push", "Legs", "Pull", "Upper", "Lower", "Full body", "Cardio"]
+
+
 class DayPlan(BaseModel):
-    """One day of the routine (app/plans.py): its day type, name, week type and exercises in order."""
+    """One day of a week type (app/plans.py): its name, kind and exercises in order. A Cardio day
+    with no exercises picks its activity at the start."""
 
     id: str = Field(min_length=1, max_length=40)
     name: str = Field(min_length=1, max_length=40)
-    dayType: Literal["Push", "Legs", "Pull"]
-    week: Literal["A", "B"]
+    kind: DayKind
     exercises: list[str] = Field(default_factory=list, max_length=20)
 
 
+class WeekPlan(BaseModel):
+    """A week type ("Squat & heavy push week"); week types repeat in their order."""
+
+    id: str = Field(min_length=1, max_length=40)
+    name: str = Field(min_length=1, max_length=60)
+    days: list[DayPlan] = Field(max_length=10)
+
+
 class TrainingPlans(BaseModel):
-    plans: list[DayPlan]
-    # This week's type, from the log.
-    weekType: Literal["A", "B"] = "A"
+    weeks: list[WeekPlan]
+    # This week's type (a week id), from the anchor Sergio set or the log.
+    current: str | None = None
     # False while the plans are read off the log (nothing saved yet).
     saved: bool = False
 
 
 class PlansBody(BaseModel):
-    plans: list[DayPlan] = Field(max_length=12)
+    weeks: list[WeekPlan] = Field(min_length=1, max_length=8)
+    # Set "this week is <id>": the rotation counts from this Monday.
+    current: str | None = None

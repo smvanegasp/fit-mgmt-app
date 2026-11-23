@@ -35,9 +35,15 @@ def day_type(label: str) -> str:
     return DAY_TYPE.get(main, main)
 
 
-def session_label(entries: list[tuple[str, int]], names: dict[str, str], legs_day: bool = True) -> str:
+# Day kinds a plan can have beyond the three groups (Sergio, 2026-11-23): a workout started from
+# one keeps it as its name, since its exercises would read as Push or Pull.
+MIXED = ("Upper", "Lower", "Full body")
+
+
+def session_label(entries: list[tuple[str, int]], names: dict[str, str], legs_day: bool = True, kind: str | None = None) -> str:
     """entries: (exerciseId, number of sets) in order. The main lifting group (most sets, ties to
-    the first logged) plus " + Climb" / " + Run"; otherwise the first exercise's name.
+    the first logged) plus " + Climb" / " + Run"; otherwise the first exercise's name. A workout
+    planned as a mixed kind (Upper, Lower, Full body) takes that kind instead of the group.
     legs_day=False keeps the old Squat / Deadlift names (the WhatsApp import)."""
     groups = GROUPS if legs_day else {
         "Push": GROUPS["Push"], "Squat": SQUAT, "Deadlift": HINGE, "Pull": GROUPS["Pull"] - FRONT_LEVER,
@@ -49,7 +55,9 @@ def session_label(entries: list[tuple[str, int]], names: dict[str, str], legs_da
         group = next((g for g, ids in groups.items() if exercise_id in ids), None)
         if group:
             sets_per_group[group] = sets_per_group.get(group, 0) + sets
-    if sets_per_group:
+    if kind in MIXED and sets_per_group:
+        parts.append(kind)
+    elif sets_per_group:
         parts.append(max(sets_per_group, key=lambda g: sets_per_group[g]))
     ids = [exercise_id for exercise_id, _ in entries]
     if "bouldering" in ids:

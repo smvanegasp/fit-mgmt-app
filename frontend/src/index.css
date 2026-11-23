@@ -16,6 +16,7 @@
 
 /* The congrats on reaching a target or a streak milestone (Celebration.tsx, Streak.tsx). */
 @keyframes fade-in { from { opacity: 0; } }
+@keyframes splash-bar { from { transform: translateX(-100%); } to { transform: translateX(300%); } }
 @keyframes pop-in { from { opacity: 0; transform: scale(1.25); filter: blur(6px); } }
 @keyframes square-in { from { opacity: 0; transform: translateY(-14px) scale(1.6); } }
 /* The breakdown: the screen hits once, hard. */
@@ -132,6 +133,8 @@ body::after {
   --chart-legs: #b07d1e;
   --chart-pull: #2a6fc9;
   --chart-cardio: #8a847e;
+  /* Upper, Lower and Full body days (plum; dataviz validator, all pairs, 2026-11-23). */
+  --chart-mixed: #a0459a;
   /* Past targets in the progression ladders, behind the current one. */
   --glyph-faded: 0.6;
   --grain: 0.045;
@@ -176,6 +179,7 @@ body::after {
   --chart-legs: #bf8a2e;
   --chart-pull: #3a7fe6;
   --chart-cardio: #8a8a8a;
+  --chart-mixed: #a855a2;
   --glyph-faded: 0.4;
   --grain: 0.035;
   --ember: oklch(0.62 0.22 27);

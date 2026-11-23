@@ -13,6 +13,7 @@ import { groupByMonth, groupByWeek } from "../lib/weeks";
 
 type View = "workouts" | "exercises";
 const DAY_TYPES = ["Push", "Legs", "Pull", "Cardio"];
+const MIXED = ["Upper", "Lower", "Full body"];
 
 export function HistoryPage() {
   const [view, setView] = useState<View>("workouts");
@@ -40,6 +41,8 @@ function Workouts() {
   const today = localIso().slice(0, 10);
 
   const all = workouts.data ?? [];
+  // Mixed days (Upper, Lower, Full body) get a filter once there's one in the log.
+  const types = [...DAY_TYPES, ...MIXED.filter((k) => all.some((w) => dayType(w.label) === k))];
   const shown = all.filter((w) => !type || dayType(w.label) === type);
   const months = groupByMonth(groupByWeek(shown, today), today);
   const first = all.at(-1)?.date;
@@ -56,7 +59,7 @@ function Workouts() {
   return (
     <>
       <div className="-mx-4 mt-2 flex gap-2 overflow-x-auto px-4 py-1.5" role="radiogroup" aria-label="Day type">
-        {[null, ...DAY_TYPES].map((t) => (
+        {[null, ...types].map((t) => (
           <button key={t ?? "all"} type="button" role="radio" aria-checked={type === t} onClick={() => setType(t)}
             className={`shrink-0 rounded-full px-3.5 py-2 text-sm font-medium ${type === t ? "bg-blue-600 text-white" : "bg-white text-stone-700 ring-1 ring-stone-200"}`}>
             {t ?? "All"}

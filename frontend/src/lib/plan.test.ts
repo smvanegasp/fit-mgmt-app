@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import type { SessionType } from "../api";
-import { cardioOptions, currentIndex, isLogged, lastCardio, planEntries, startingEntries, usualFor, weekName, weekOptions } from "./plan";
+import { cardioOptions, currentIndex, isLogged, lastCardio, nextWeek, planEntries, startingEntries, usualFor, weekOptions } from "./plan";
 
 const types: SessionType[] = [
   { label: "Push", exercises: ["dips", "bench-press", "warm-up"], lastDate: "2026-11-09", sessions: 20 },
@@ -45,41 +45,32 @@ describe("plan", () => {
 });
 
 describe("training plans", () => {
-  const plans = [
-    { id: "A-pull", name: "Light pull", dayType: "Pull" as const, week: "A" as const, exercises: ["full-front-raise"] },
-    { id: "A-push", name: "Heavy push", dayType: "Push" as const, week: "A" as const, exercises: ["dips", "bar-dips"] },
-    { id: "A-legs", name: "Legs · Squat", dayType: "Legs" as const, week: "A" as const, exercises: ["squat"] },
-    { id: "B-legs", name: "Legs · Deadlift", dayType: "Legs" as const, week: "B" as const, exercises: ["deadlift"] },
-  ];
+  const week = {
+    days: [
+      { id: "push", name: "Heavy push", kind: "Push" as const, exercises: ["dips", "bar-dips"] },
+      { id: "u1", name: "Upper 1", kind: "Upper" as const, exercises: ["bench-press"] },
+      { id: "u2", name: "Upper 2", kind: "Upper" as const, exercises: ["chin-ups"] },
+      { id: "cardio", name: "Cardio", kind: "Cardio" as const, exercises: [] },
+    ],
+  };
 
-  it("names the weeks by their Legs day", () => {
-    expect(weekName(plans, "A")).toBe("Squat & heavy push week");
-    expect(weekName(plans, "B")).toBe("Deadlift week");
-    const both = [...plans, { id: "B-pull", name: "Heavy pull", dayType: "Pull" as const, week: "B" as const, exercises: [] }];
-    expect(weekName(both, "B")).toBe("Deadlift & heavy pull week");
-    expect(weekName([], "A")).toBe("Week A");
+  it("lists the week's days in order, done ones marked by kind, the first not done next", () => {
+    const { options, next } = weekOptions(week, ["Upper", "Cardio"]);
+    expect(options.map((o) => [o.label, o.done])).toEqual([
+      ["Heavy push", false], ["Upper 1", true], ["Upper 2", false], ["Cardio", true],
+    ]);
+    expect(next).toBe("push");
+    expect(options[3].exercises).toBeUndefined();
   });
 
-  it("lists the week's days in order, done ones marked, the first not done next", () => {
-    const { options, next } = weekOptions(plans, "A", new Set(["Push"]));
-    expect(options.map((o) => [o.label, o.done])).toEqual([
-      ["Heavy push", true], ["Legs · Squat", false], ["Light pull", false], ["Cardio", false],
-    ]);
-    expect(next).toBe("A-legs");
+  it("moves along the rotation", () => {
+    const weeks = [{ id: "A" }, { id: "B" }, { id: "C" }];
+    expect(nextWeek(weeks, "A")?.id).toBe("B");
+    expect(nextWeek(weeks, "C")?.id).toBe("A");
+    expect(nextWeek([{ id: "A" }], "A")).toBeUndefined();
   });
 
   it("starts with the warm-up and the plan's exercises", () => {
     expect(planEntries(["dips", "nope"], new Set(["warm-up", "dips"]))).toEqual([{ exerciseId: "warm-up" }, { exerciseId: "dips" }]);
-  });
-});
-
-describe("week names", () => {
-  it("falls back to letters when both weeks have the same Legs day", () => {
-    const same = [
-      { week: "A" as const, dayType: "Legs" as const, name: "Legs · Squat" },
-      { week: "B" as const, dayType: "Legs" as const, name: "Legs · Squat" },
-    ];
-    expect(weekName(same, "A")).toBe("Week A");
-    expect(weekName(same, "B")).toBe("Week B");
   });
 });
