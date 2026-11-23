@@ -9,11 +9,14 @@ const SHOW_MS = 3200;
 
 /**
  * The congrats when a set reaches the target (Sergio, 2026-11-03: mainly for the first, heavy
- * lift). The logo's ladder builds square by square, then the count. Closes by itself or on a tap;
+ * lift), or goes up past it. The logo's ladder builds square by square, then the count. Closes by itself or on a tap;
  * no motion with "reduce motion" on.
  */
-export function Celebration({ scheme, load, times, goal, onClose }: {
-  scheme: Scheme; load: Load; times: number; goal: number; onClose: () => void;
+export function Celebration({ scheme, load, times, goal, up = false, onClose }: {
+  scheme: Scheme; load: Load; times: number; goal: number;
+  /** Went up (a heavier set or a higher rung, Sergio 2026-11-19): `scheme` is the new target. */
+  up?: boolean;
+  onClose: () => void;
 }) {
   // Once per congrats, even if the card behind re-renders (onClose is a new function each time).
   const close = useRef(onClose);
@@ -48,11 +51,11 @@ export function Celebration({ scheme, load, times, goal, onClose }: {
             </div>
           ))}
         </div>
-        <p className="mt-5 font-display text-4xl font-bold">{done ? `${times} in a row` : "Target crushed"}</p>
-        <p className="mt-1 text-stone-600">{schemeText(scheme, load)}</p>
+        <p className="mt-5 font-display text-4xl font-bold">{up ? "Went up" : done ? `${times} in a row` : "Target crushed"}</p>
+        <p className="mt-1 text-stone-600">{up ? `New target ${schemeText(scheme, load)}` : schemeText(scheme, load)}</p>
         <div className="mt-3 flex items-center justify-center gap-2 text-sm text-stone-600">
           <GameDots times={times} goal={goal} />
-          {done ? "Time to go up next time" : `${times} of ${goal} in a row`}
+          {up ? `${times} of ${goal}: the climb starts again` : done ? "Time to go up next time" : `${times} of ${goal} in a row`}
         </div>
       </div>
     </div>,

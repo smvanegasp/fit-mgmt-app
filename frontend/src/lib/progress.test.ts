@@ -46,7 +46,7 @@ describe("the weekly goal", () => {
       strength("2026-10-19"), strength("2026-10-21"), strength("2026-10-23"),
       strength("2026-10-26"), strength("2026-10-28"), strength("2026-10-29"), ride("2026-11-01"),
     ];
-    expect(streaks(days, "2026-11-02")).toEqual({ current: 3, longest: 3 });
+    expect(streaks(days, "2026-11-02")).toMatchObject({ current: 3, longest: 3 });
   });
 });
 
@@ -55,19 +55,19 @@ describe("streaks", () => {
 
   it("counts weeks in a row that reach the goal", () => {
     const days = [...week("2026-09-07", 3), ...week("2026-09-14", 2), ...week("2026-09-21", 3), ...week("2026-09-28", 4), ...week("2026-10-05", 3)];
-    expect(streaks(days, "2026-10-11")).toEqual({ current: 3, longest: 3 });
+    expect(streaks(days, "2026-10-11")).toMatchObject({ current: 3, longest: 3 });
   });
 
   it("this week doesn't break the streak until it's over", () => {
     const days = [...week("2026-10-12", 3), ...week("2026-10-19", 3), ...week("2026-10-26", 1)];
-    expect(streaks(days, "2026-10-28")).toEqual({ current: 2, longest: 2 });
+    expect(streaks(days, "2026-10-28")).toMatchObject({ current: 2, longest: 2 });
     expect(streaks(days, "2026-11-03").current).toBe(0);
   });
 
   it("an empty week breaks it", () => {
     const days = [...week("2026-10-05", 3), ...week("2026-10-19", 3)];
-    expect(streaks(days, "2026-10-25")).toEqual({ current: 1, longest: 1 });
-    expect(streaks([], "2026-10-25")).toEqual({ current: 0, longest: 0 });
+    expect(streaks(days, "2026-10-25")).toMatchObject({ current: 1, longest: 1 });
+    expect(streaks([], "2026-10-25")).toMatchObject({ current: 0, longest: 0 });
   });
 });
 

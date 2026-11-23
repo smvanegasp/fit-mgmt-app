@@ -26,8 +26,34 @@ Sergio merges.
 
 ## Now
 
-Nothing open (2026-11-18): stage 10a and its follow-ups are merged and live (#32-#36). New requests
-come from Sergio or the in-app feedback (`scripts/feedback.py`, 0 new at handoff).
+Stage 11: the second round of in-app feedback (18 notes from Sergio, 2026-11-19 to 11-22), in two
+stacked PRs: 11a (streak and going up) and 11b (the rest).
+
+## Stage 11: feedback round 2 (2026-11-22)
+
+Sergio: "I'm really interested in gamifying the experience with streak. But implement all of the feedback."
+
+### 11a: streak and going up (`stage-11a-streak`)
+
+| Feedback | Done |
+|---|---|
+| Week progress showed 2 after one day (Nov 18); the streak "not complete" and "what do 4 bars signal"; do weeks start on Monday? | Weeks already ran Monday to Sunday. Both notes came from the milestone ladder (2 of 4 squares at a 10-week streak, 3 of 4 at 11) being read as this week's days, plus "2 strength days" meaning *still needed*. The card now shows **this week as four slots** (Push, Legs, Pull, Cardio; filled in the day type's color as they're trained), labeled "This week Mon–Sun" with the days left; the ladder below is labeled "Next: 12 weeks · 1 week to go"; a week that reaches a milestone keeps that band full until it ends. An InfoTip explains it all. |
+| Every ten weeks of streak, one week off: shields on the streak. | **Shields** (`lib/progress.ts` `streaks`, `SHIELD_EVERY = 10`): every 10 weeks of the run earn one; a missed week uses one up automatically when it ends (the run stays, without adding), and with none left the run and its shields end. No cap. Shown on the Train card (count, "n more weeks to a shield"), on Progress (phone and desktop), and covered weeks get a shield in the week rows. Earning one while the app is open gets its own congrats. Replayed over the history, so it's computed, never stored; Sergio's current run (11 weeks from Sep 7) doesn't change. |
+| 3x5 should be the progressive overload of 5x4 (one more rep); the ladder is 3x2, 4x2, 5x2, 3x3, ... 4x5, 5x5. | Going up follows the ladder (`rung` / `goes_up` in `app/history.py`, same in `lib/sets.ts`): the most reps reached by 3+ sets, then how many sets. A higher rung at the same weight is the new target; "more total reps" no longer is (4x4 after 3x5 is below it). Replayed on the real log: squat is now 3x5 @ 180 (Nov 20), bar dips and skull crushers keep their targets. Once a target is reached 3 times, the target line suggests the next rung ("try 3x5 @ 180 or more weight"). |
+| Going up said "4 in a row"; congratulate going up, not completing the sets once it's time to go up. | `congratsFor` in `lib/sets.ts`: a heavier working set or a higher rung gets **"Went up"** with the new target; reaching the target still gets "Target crushed", but not once it's time to go up. Each fires once per exercise. |
+| The wide pull-up target is wrong (no more drop sets there). | The target was a Dec 24, 2025 session of 8, 10, 12, 7 (most likely a drop set logged as straight sets), and a miss never reset it, so 11 months of sessions counted as misses. Now a target not reached in 60 days gives way to what's done now (reaching it after a long break still counts). Wide pull-ups: 3x9. Also changes two rarely done exercises (close chin-ups, leg raises). A separate drop-set category isn't needed for this: drop sets are already marked per set in the logger. |
+
+Checked: backend and frontend tests (new ones for shields, slots, ladder, congrats, stale targets), every
+exercise's target replayed on the real log before and after (read-only), screenshots in a sample demo.
+Not tested: the shield congrats and "Went up" in a browser (unit tests only), Sergio's phone.
+
+### 11b: the rest (`stage-11b-train`)
+
+Planned: training plans (Heavy/Light Push and Pull, Legs Squat/Deadlift, two alternating week types,
+editable); bigger stepper numbers; 2.5 lb steps per exercise; a bigger lap and a smaller total;
+scroll memory per tab; no overscroll past the top and bottom; a steady exercise picker while
+searching; close a finished exercise; edit feedback and attach screenshots; Peloton workouts timed
+from the class length.
 
 ## Stage 10a: the Lovable redesign (2026-11-17)
 

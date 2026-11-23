@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { addDays } from "./progress";
+import { addDays, streaks } from "./progress";
 import { weekStart } from "./weeks";
 import {
   daysLeftText,
@@ -10,6 +10,9 @@ import {
   nextMilestone,
   streakAtRisk,
   weekRemaining,
+  weekSlots,
+  streakNews,
+  streakStatus,
 } from "./streak";
 
 const MONDAY = weekStart("2026-11-18"); // the week of the demo's "today"
@@ -89,5 +92,70 @@ describe("what this week still needs", () => {
     expect(streakAtRisk(days, SUNDAY)).toBe(true);
     // The same week, goal met, is never at risk.
     expect(streakAtRisk([day(0, "Push"), day(1, "Legs"), day(2, "Pull"), day(3, "Cardio")], SUNDAY)).toBe(false);
+  });
+});
+
+describe("this week's slots", () => {
+  const day = (offset: number, type: string, cardio = false) => ({ date: addDays(MONDAY, offset), type, cardio });
+
+  it("starts as the rotation and a cardio day, all to do", () => {
+    expect(weekSlots([], MONDAY)).toEqual([
+      { type: "Push", done: false }, { type: "Legs", done: false }, { type: "Pull", done: false }, { type: "Cardio", done: false },
+    ]);
+  });
+
+  it("fills the days trained in order, the rest show what's missing", () => {
+    expect(weekSlots([day(1, "Legs")], MONDAY)).toEqual([
+      { type: "Legs", done: true }, { type: "Push", done: false }, { type: "Pull", done: false }, { type: "Cardio", done: false },
+    ]);
+    // Two Push days still count as two strength days.
+    expect(weekSlots([day(0, "Push"), day(2, "Push"), day(3, "Legs", true)], MONDAY)).toEqual([
+      { type: "Push", done: true }, { type: "Push", done: true }, { type: "Legs", done: true }, { type: "Cardio", done: true },
+    ]);
+  });
+
+  it("ignores last week", () => {
+    expect(weekSlots([{ date: addDays(MONDAY, -1), type: "Push" }], MONDAY).every((s) => !s.done)).toBe(true);
+  });
+});
+
+describe("shields", () => {
+  // Weeks of the new goal from GOAL_FROM: Push, Legs, Pull and a ride.
+  const full = (monday: string) => ["Push", "Legs", "Pull", "Cardio"].map((type, i) => ({ date: addDays(monday, i), type }));
+  const weeks = (from: string, n: number) => Array.from({ length: n }, (_, i) => full(addDays(from, 7 * i))).flat();
+  const START = "2026-10-26";
+
+  it("earns one every 10 weeks of the streak", () => {
+    const s = streaks(weeks(START, 9), addDays(START, 7 * 8 + 6));
+    expect(s).toMatchObject({ current: 9, shields: 0, toShield: 1 });
+    const t = streaks(weeks(START, 10), addDays(START, 7 * 9 + 6));
+    expect(t).toMatchObject({ current: 10, shields: 1, toShield: 10 });
+  });
+
+  it("a missed week uses one up and keeps the streak", () => {
+    const days = [...weeks(START, 10), ...weeks(addDays(START, 7 * 11), 2)]; // week 11 missed
+    const s = streaks(days, addDays(START, 7 * 12 + 6));
+    expect(s).toMatchObject({ current: 12, longest: 12, shields: 0, shielded: [addDays(START, 70)] });
+  });
+
+  it("without a shield a missed week ends the streak", () => {
+    const days = [...weeks(START, 5), ...weeks(addDays(START, 7 * 6), 1)];
+    expect(streaks(days, addDays(START, 7 * 6 + 6))).toMatchObject({ current: 1, shields: 0, toShield: 9 });
+  });
+
+  it("this week can't use a shield before it ends", () => {
+    const s = streaks(weeks(START, 10), addDays(START, 7 * 10 + 2));
+    expect(s).toMatchObject({ current: 10, shields: 1, shielded: [] });
+  });
+
+  it("tells the congrats what happened", () => {
+    expect(streakNews({ current: 11, shields: 1 }, { current: 12, shields: 1 })).toEqual({ milestone: 12, shield: false });
+    expect(streakNews({ current: 9, shields: 0 }, { current: 10, shields: 1 })).toEqual({ milestone: null, shield: true });
+    expect(streakNews({ current: 10, shields: 1 }, { current: 10, shields: 1 })).toEqual({ milestone: null, shield: false });
+  });
+
+  it("keeps a just-reached milestone's band full for the rest of the week", () => {
+    expect(streakStatus(weeks(START, 4), addDays(START, 7 * 3 + 4)).onMilestone).toBe(true);
+    expect(streakStatus(weeks(START, 4), addDays(START, 7 * 4 + 1)).onMilestone).toBe(false);
   });
 });

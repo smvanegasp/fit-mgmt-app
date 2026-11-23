@@ -1,6 +1,6 @@
 """The target game: +1 for a session that reaches the target, -1 for a miss, 3 means go up."""
 
-from app.history import best_drop, progression, written_target
+from app.history import best_drop, goes_up, progression, rung, written_target
 from app.models import Entry
 
 
@@ -28,7 +28,7 @@ def test_more_weight_or_a_deload_starts_a_new_target() -> None:
     assert game(lift([(3, 3, 190)]), lift([(4, 3, 185)])) == ([3] * 4, 185, 1)
 
 
-def test_more_reps_than_the_target_is_the_next_target() -> None:
+def test_a_higher_rung_is_the_next_target() -> None:
     base = lift([(5, 3, 180)])
     assert game(base, base, base, lift([(5, 4, 180)])) == ([4] * 5, 180, 1)
     # At any count (progressive overload, Sergio 2026-11-14).
@@ -83,3 +83,32 @@ def test_best_drop_set_is_the_most_total_reps() -> None:
                       ("2026-10-29", ladder(4, 4, 5, 6, 11))])
     assert best.date == "2026-10-22" and [s.reps for s in best.sets] == [4, 5, 8, 8, 18]
     assert best_drop([("2026-10-01", Entry(exerciseId="squat", sets=[{"reps": 5, "weightLb": 170}]))]) is None
+
+
+def test_going_up_follows_the_ladder() -> None:
+    # Sergio's ladder: 3x2, 4x2, 5x2, 3x3, ... 4x5, 5x5. One more rep per set with fewer sets is up.
+    assert goes_up([5, 5, 5], [4] * 5)  # 5x4 -> 3x5
+    assert goes_up([4] * 4, [4, 4, 4, 3])  # 3x4 + 1x3 -> 4x4
+    assert goes_up([5, 5, 5, 4], [4] * 4)  # three sets of 5 is 3x5, above 4x4
+    assert not goes_up([5, 4, 4, 4], [4] * 4)  # one set of 5 isn't a rung
+    assert not goes_up([4] * 4, [5, 5, 5])  # 4x4 is below 3x5, more reps or not
+    assert not goes_up([9, 8], [8, 8])
+    assert rung([5, 5, 5, 4], 3) == (5, 3)
+
+
+def test_three_by_five_after_five_by_four_is_the_new_target() -> None:
+    five_by_four = lift([(5, 4, 180)])
+    assert game(five_by_four, five_by_four, lift([(3, 5, 180)])) == ([5] * 3, 180, 1)
+
+
+def test_a_target_not_reached_in_two_months_gives_way() -> None:
+    # An old drop set read as straight sets (wide pull-ups): every session after it missed.
+    old = Entry(exerciseId="wide-pull-ups", sets=[{"reps": r} for r in (8, 10, 12, 7)])
+    now = Entry(exerciseId="wide-pull-ups", sets=[{"reps": 8}] * 3)  # the same rung, fewer reps
+    early = progression([("2026-01-01", old), ("2026-02-01", now)])
+    assert (early.scheme.sets, early.times) == ([8, 10, 12, 7], 0)
+    late = progression([("2026-01-01", old), ("2026-02-01", now), ("2026-03-15", now)])
+    assert (late.scheme.sets, late.times) == ([8, 8, 8], 1)
+    # Reached after a long break still counts.
+    back = progression([("2026-01-01", now), ("2026-01-08", now), ("2026-05-01", now)])
+    assert (back.scheme.sets, back.times) == ([8, 8, 8], 3)

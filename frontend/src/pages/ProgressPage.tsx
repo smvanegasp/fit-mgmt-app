@@ -1,4 +1,4 @@
-import { CaretDown, CaretRight, ChartLineUp, Check } from "@phosphor-icons/react";
+import { CaretDown, CaretRight, ChartLineUp, Check, ShieldCheck } from "@phosphor-icons/react";
 import { useLayoutEffect, useMemo, useRef, useState } from "react";
 
 import type { ProgressDay, Routine } from "../api";
@@ -15,7 +15,7 @@ import { WorkoutCard } from "../components/WorkoutCard";
 import { useDesktop, useExerciseHistory, useExercises, useProgress, useWorkouts } from "../hooks";
 import { climbing } from "../lib/kinds";
 import { topSeries } from "../lib/series";
-import { GOAL, OLD_GOAL, goalText, shortDate, streaks, weekCounts, weekMet, weekRows } from "../lib/progress";
+import { GOAL, OLD_GOAL, SHIELD_EVERY, goalText, shortDate, streaks, weekCounts, weekMet, weekRows } from "../lib/progress";
 import { localIso } from "../lib/time";
 import { longDate } from "../lib/weeks";
 
@@ -109,11 +109,12 @@ function YearConsistency({ days, today }: { days: ProgressDay[]; today: string }
         <div className="flex items-center gap-1 text-sm text-stone-500">
           week streak
           <InfoTip title="Streak">
-            Weeks in a row that reached the goal: {GOAL.strength} strength days (Push, Legs, Pull) and {GOAL.cardio} cardio day (a ride or run). Before the week of Oct 26, 2026, it was {OLD_GOAL} workouts of any kind. This week doesn't break the streak while it's still going.
+            Weeks in a row that reached the goal: {GOAL.strength} strength days (Push, Legs, Pull) and {GOAL.cardio} cardio day (a ride or run). Before the week of Oct 26, 2026, it was {OLD_GOAL} workouts of any kind. This week doesn't break the streak while it's still going. Every {SHIELD_EVERY} weeks of the streak earn a shield, which covers one missed week.
           </InfoTip>
         </div>
         <dl className="mt-5 space-y-3 text-sm">
           <div><dt className="text-stone-500">Longest</dt><dd className="font-semibold">{streak.longest} weeks</dd></div>
+          <div><dt className="text-stone-500">Shields</dt><dd className="flex items-center gap-1 font-semibold"><ShieldCheck size={14} weight="fill" className={streak.shields ? "text-sky-600" : "text-stone-300"} aria-hidden />{streak.shields} <span className="font-normal text-stone-500">· next in {streak.toShield} weeks</span></dd></div>
           <div><dt className="text-stone-500">This week</dt><dd className="font-semibold">{goalText(monday, counts.get(monday))}</dd></div>
           <div><dt className="text-stone-500">In {today.slice(0, 4)}</dt><dd className="font-semibold">{thisYear} workouts</dd></div>
         </dl>
@@ -244,11 +245,14 @@ function Consistency({ days, today }: { days: ProgressDay[]; today: string }) {
       <div className="flex items-start gap-2">
         <div className="min-w-0 flex-1">
           <div className="font-display text-3xl font-bold">{streak.current}-week streak</div>
-          <div className="text-sm text-stone-500">Longest {streak.longest} weeks</div>
+          <div className="flex items-center gap-1 text-sm text-stone-500">Longest {streak.longest} weeks ·{" "}
+            <ShieldCheck size={14} weight="fill" className={streak.shields ? "text-sky-600" : "text-stone-300"} aria-hidden />
+            {streak.shields} shield{streak.shields === 1 ? "" : "s"}
+          </div>
         </div>
         <InfoTip title="Streak">
           Weeks in a row that reached the goal: {GOAL.strength} strength days (Push, Legs, Pull) and {GOAL.cardio} cardio day (a ride or run). Before the week of Oct 26, 2026, it was {OLD_GOAL} workouts of any kind. This week doesn't break the streak while it's still going; it adds one as soon as it reaches the
-          goal. Tap a day to open that workout.
+          goal. Every {SHIELD_EVERY} weeks of the streak earn a shield, which covers one missed week (marked with a shield). Tap a day to open that workout.
         </InfoTip>
       </div>
       <div className="mt-3"><TypeLegend /></div>
@@ -261,6 +265,7 @@ function Consistency({ days, today }: { days: ProgressDay[]; today: string }) {
           const week = counts.get(row.monday);
           const n = week?.workouts ?? 0;
           const met = weekMet(row.monday, week);
+          const covered = streak.shielded.includes(row.monday);
           // Newest first: the month shows on its newest week (weeks go by their Monday).
           const month = r === 0 || row.monday.slice(0, 7) !== rows[r - 1].monday.slice(0, 7);
           return [
@@ -280,6 +285,7 @@ function Consistency({ days, today }: { days: ProgressDay[]; today: string }) {
             <span key={`${row.monday}-n`} title={goalText(row.monday, week)} className={`flex items-center justify-end gap-0.5 tabular-nums ${met ? "font-semibold text-stone-800" : "text-stone-400"}`}>
               {n > 0 && n}
               {met && <Check size={12} weight="bold" aria-label="goal reached" />}
+              {covered && <ShieldCheck size={12} weight="fill" className="text-sky-600" aria-label="covered by a shield" />}
             </span>,
           ];
         })}
