@@ -1,4 +1,4 @@
-﻿# Backlog
+# Backlog
 
 Open work for the gym tracker. Context, conventions and status are in [AGENTS.md](../AGENTS.md).
 Move an item to "Done" (with its PR) when it ships, and add new requests here as they come up.
@@ -37,7 +37,7 @@ Sergio: "I'm really interested in gamifying the experience with streak. But impl
 
 | Feedback | Done |
 |---|---|
-| Week progress showed 2 after one day (Nov 18); the streak "not complete" and "what do 4 bars signal"; do weeks start on Monday? | Weeks already ran Monday to Sunday. Both notes came from the milestone ladder (2 of 4 squares at a 10-week streak, 3 of 4 at 11) being read as this week's days, plus "2 strength days" meaning *still needed*. The card now shows **this week as four slots** (Push, Legs, Pull, Cardio; filled in the day type's color as they're trained), labeled "This week Monâ€“Sun" with the days left; the ladder below is labeled "Next: 12 weeks Â· 1 week to go"; a week that reaches a milestone keeps that band full until it ends. An InfoTip explains it all. |
+| Week progress showed 2 after one day (Nov 18); the streak "not complete" and "what do 4 bars signal"; do weeks start on Monday? | Weeks already ran Monday to Sunday. Both notes came from the milestone ladder (2 of 4 squares at a 10-week streak, 3 of 4 at 11) being read as this week's days, plus "2 strength days" meaning *still needed*. The card now shows **this week as four slots** (Push, Legs, Pull, Cardio; filled in the day type's color as they're trained), labeled "This week Mon–Sun" with the days left; the ladder below is labeled "Next: 12 weeks · 1 week to go"; a week that reaches a milestone keeps that band full until it ends. An InfoTip explains it all. |
 | Every ten weeks of streak, one week off: shields on the streak. | **Shields** (`lib/progress.ts` `streaks`, `SHIELD_EVERY = 10`): every 10 weeks of the run earn one; a missed week uses one up automatically when it ends (the run stays, without adding), and with none left the run and its shields end. No cap. Shown on the Train card (count, "n more weeks to a shield"), on Progress (phone and desktop), and covered weeks get a shield in the week rows. Earning one while the app is open gets its own congrats. Replayed over the history, so it's computed, never stored; Sergio's current run (11 weeks from Sep 7) doesn't change. |
 | 3x5 should be the progressive overload of 5x4 (one more rep); the ladder is 3x2, 4x2, 5x2, 3x3, ... 4x5, 5x5. | Going up follows the ladder (`rung` / `goes_up` in `app/history.py`, same in `lib/sets.ts`): the most reps reached by 3+ sets, then how many sets. A higher rung at the same weight is the new target; "more total reps" no longer is (4x4 after 3x5 is below it). Replayed on the real log: squat is now 3x5 @ 180 (Nov 20), bar dips and skull crushers keep their targets. Once a target is reached 3 times, the target line suggests the next rung ("try 3x5 @ 180 or more weight"). |
 | Going up said "4 in a row"; congratulate going up, not completing the sets once it's time to go up. | `congratsFor` in `lib/sets.ts`: a heavier working set or a higher rung gets **"Went up"** with the new target; reaching the target still gets "Target crushed", but not once it's time to go up. Each fires once per exercise. |
@@ -51,9 +51,9 @@ Not tested: the shield congrats and "Went up" in a browser (unit tests only), Se
 
 | Feedback | Done |
 |---|---|
-| The day's exercises came out wrong: make day plans (heavy and light push and pull, legs with squat or deadlift) in two alternating week types (push, legs, pull, cardio each week), inferred from the log and editable. | **Training plans** (`app/plans.py`, `GET/PUT /api/plans`, one `SETTINGS#plans` row once saved). Until saved they're read off the log: the last two weeks with strength days are the two week types; a weighted first lift names a day Heavy, the other Light; Legs by its first lift. On the real log: "Squat week" (Heavy push: dips...; Legs Â· Squat; Light pull: front lever...) and "Deadlift week" (Light push: bench, OHP; Legs Â· Deadlift; Heavy pull: chin-ups...). This week's type comes from the newest workout matching a plan, flipping weekly: Nov 23 is a Deadlift week. Train shows the week's days in order with done ones checked, the first not done as next up, the exercises it starts with, "<other> week instead", and **Edit plans** (rename, reorder, add, remove). Cardio is still one activity picked at the start. |
+| The day's exercises came out wrong: make day plans (heavy and light push and pull, legs with squat or deadlift) in two alternating week types (push, legs, pull, cardio each week), inferred from the log and editable. | **Training plans** (`app/plans.py`, `GET/PUT /api/plans`, one `SETTINGS#plans` row once saved). Until saved they're read off the log: the last two weeks with strength days are the two week types; a weighted first lift names a day Heavy, the other Light; Legs by its first lift. On the real log: "Squat week" (Heavy push: dips...; Legs · Squat; Light pull: front lever...) and "Deadlift week" (Light push: bench, OHP; Legs · Deadlift; Heavy pull: chin-ups...). This week's type comes from the newest workout matching a plan, flipping weekly: Nov 23 is a Deadlift week. Train shows the week's days in order with done ones checked, the first not done as next up, the exercises it starts with, "<other> week instead", and **Edit plans** (rename, reorder, add, remove). Cardio is still one activity picked at the start. |
 | Make the numbers between + and - bigger. | Stepper numbers a size up (6xl, 5xl for long weights like 112.5). |
-| 2.5 lb increments for some exercises. | Per exercise (`stepLb` on the exercise, `PATCH /exercises/{id}`): "Steps of 5 lb Â· use 2.5" under the weight stepper; kept for next time. Dumbbells still default to 2.5. |
+| 2.5 lb increments for some exercises. | Per exercise (`stepLb` on the exercise, `PATCH /exercises/{id}`): "Steps of 5 lb · use 2.5" under the weight stepper; kept for next time. Dumbbells still default to 2.5. |
 | Lap timer a bit bigger, total a bit smaller (total still more important). | Total 2.6rem (was 3rem), lap time in the display font at 1.5rem next to its label. |
 | Scroll memory when changing tabs. | Each tab comes back where it was left (`App.tsx`). |
 | Don't scroll past the top (the stopwatch) or the bottom. | `overscroll-behavior: none` on the page. Needs Sergio's phone to confirm (iOS rubber-band). |
@@ -122,7 +122,7 @@ the owner's feedback inbox (owner only; the demo has none), the iPhone itself.
 
 | Item | Done |
 |---|---|
-| "How can I add another type of week? Decide how to rotate weeks?" | **Week types** instead of A/B: any number (up to 8), each with its own name and days, repeating in their order one per calendar week. Each day: a name, a **kind** (Push, Legs, Pull, Upper, Lower, Full body or Cardio) and its exercises. The plan page has the week types as red tabs, "+ Week type", copy, delete, â† â†’ to change the rotation order, and **Make this week** (anchors the rotation: it counts on from this week). Days: add, remove, reorder, rename, pick the kind. A Cardio day with no exercises still asks for the ride or the treadmill. |
+| "How can I add another type of week? Decide how to rotate weeks?" | **Week types** instead of A/B: any number (up to 8), each with its own name and days, repeating in their order one per calendar week. Each day: a name, a **kind** (Push, Legs, Pull, Upper, Lower, Full body or Cardio) and its exercises. The plan page has the week types as red tabs, "+ Week type", copy, delete, ← → to change the rotation order, and **Make this week** (anchors the rotation: it counts on from this week). Days: add, remove, reorder, rename, pick the kind. A Cardio day with no exercises still asks for the ride or the treadmill. |
 | Mixed days in the log. | A workout started from an Upper, Lower or Full body day is labeled with that kind (its exercises would read as Push or Pull), counts as a strength day for the streak and the week's slots, gets the plum chart color (#a0459a light, #a855a2 dark; dataviz validator, all pairs: CVD worst 8.9 / 8.6, the only failure the known gray-amber pair) and a History filter once one exists. |
 | Sergio's saved plans. | Production already holds plans saved in the first shape; they're read as two week types ("Squat & heavy push week", "Deadlift & heavy pull week") and saved in the new shape on the next save. Nothing was written on AWS. |
 | The first load looked broken (half-drawn page, odd tabs). | A splash (the mark and a running bar over a blurred page, tabs included) until the first data and the fonts are in, then it fades out. |
@@ -213,7 +213,7 @@ components; the rest of the look is a token remap in its `styles.css`.
 |---|---|---|
 | 9a | `stage-9a-fixes` | **Bugs.** (1) The pull-up target showed the old scheme after Sergio went up in weight; find the cause by replaying the history and fix the target game. (2) Legs: squat and deadlift use different weights as the main lift and as the second lift, so the target breaks; keep one target per role (main = first lift of the day, second). (3) A workout left open ran 46 hours: auto-finish 2 hours after the start, ending at the last logged set; correct that workout on AWS (Sergio's OK, 2026-11-17). (4) Reps typed in the logger are lost when switching screens: keep the draft in the autosaved workout. (5) The phone in landscape looks broken. |
 | 9b | `stage-9b-train` | **Train flow.** Bigger numbers in the steppers; "Done" on an exercise folds it so the current one gets the room; the start screen shows the last two workouts and their day types; the exercise picker opens filtered to today's day type; today's usual exercises pre-filled in order, always starting with a timed warm-up; a short congrats when a target is reached (mainly the first, heavy lift). |
-| 9c | `stage-9c-history` | **History and progress.** Consistent workout names: day type plus the first exercise ("Legs Â· Squat"); a top-weight-over-time chart on each exercise page; log body weight (and add 159.4 lb on 2026-11-03). |
+| 9c | `stage-9c-history` | **History and progress.** Consistent workout names: day type plus the first exercise ("Legs · Squat"); a top-weight-over-time chart on each exercise page; log body weight (and add 159.4 lb on 2026-11-03). |
 | 9d | `stage-9d-peloton` | **Peloton** (cardio): the class summary screenshot from the Peloton app, attached to the entry. Sergio, 2026-11-17, after trying a typed form: no typing, just the photo, from the photo library. Then, after trying it: the stats are read from the screenshot after all (see 9d below). |
 
 ## Stage 9d: what's in it (2026-11-17)
@@ -269,7 +269,7 @@ components; the rest of the look is a token remap in its `styles.css`.
 - **Data first (Sergio's OK):** the 11-14 Pull workout's end on AWS corrected to its last set (15:25,
   so 1 h 15 min); a scan found no other outliers (the three imported days over 3 hours had two
   sessions and already show their training minutes). The 11-03 weigh-in (159.4 lb) added.
-- **Workout names:** "day type Â· first exercise" ("Legs Â· Deadlift", the warm-up aside), computed in
+- **Workout names:** "day type · first exercise" ("Legs · Deadlift", the warm-up aside), computed in
   the app from the stored label and entries, so nothing in the log changes. Cards put the name on
   its own line with the date and time under it; exercise pages list sessions by day type.
 - **Exercise page chart:** each session's top working weight as logged (plates for barbell lifts,
@@ -294,7 +294,7 @@ components; the rest of the look is a token remap in its `styles.css`.
   into a one-line summary (tap to reopen) and opens the next, scrolled to just under the stopwatch;
   the rest wait in "Up next" (tap to do one now). Editing a saved workout is unchanged.
 - **Last two:** the start screen lists the last two workouts of the chosen day type; in a workout,
-  "Push day Â· last two" folds out both.
+  "Push day · last two" folds out both.
 - **Exercise picker:** opens on "Usual on <day> days" even when those load after it opens (it fell
   back to Recent before).
 - **Bigger steppers:** numbers 48px (36px for long weights like 112.5, so they fit a phone), 56px
@@ -464,14 +464,14 @@ Sergio: "awesome, but too similar to the pantry"; same UX, own look.
 - **Exercise page:** a summary line (sessions, since, best set), the full ladder (current target on
   top with its count; past targets with dates, one dot per session that opens it, "3 of 3"), drop
   set, cues, photos, the last 5 sessions (show all).
-- **Elsewhere:** Train shows "This week: N of 3 Â· streak" (opens Progress) and only the last
+- **Elsewhere:** Train shows "This week: N of 3 · streak" (opens Progress) and only the last
   workout; the workout card's exercise name opens its page; its photos fold away; the target there
   uses the same set glyph and dots.
 - Plain SVG/HTML, no chart library.
 
 ## Stage 3: what's in it
 
-- History tab, **Workouts**: weeks ("This week", "Last week", "Oct 12 â€“ 18") with counts, cards with
+- History tab, **Workouts**: weeks ("This week", "Last week", "Oct 12 – 18") with counts, cards with
   the main sets; filters by day type (Push, Legs, Pull, Cardio) and by exercise.
 - **Workout detail** (read view): date, time, duration, each exercise (sets and drop set apart,
   boulders, distance), notes, photos, laps (folded); Edit opens the editor; tap an exercise to open
@@ -501,7 +501,7 @@ Sergio: "awesome, but too similar to the pantry"; same UX, own look.
 - Each exercise: **technique cues** (Sergio, 2026-10-29: the checklist of things that make the
   lift go better, shown when they start the exercise; top 3 by how often they were written, more
   on tap, add / edit / hide), "Last" session, **target streak** computed from history ("Target
-  5Ã—5 @ 170, done 2 times in a row": the last session's first group of working sets and how many
+  5×5 @ 170, done 2 times in a row": the last session's first group of working sets and how many
   sessions in a row reached it), set logger with big steppers pre-filled from the last set or
   last session, drop-set ladder (last time's weights and reps filled in), notes and photos.
 - Bouldering (grade, hold color, sent / tried, count) and treadmill (distance, minutes).
@@ -543,7 +543,7 @@ Sergio: "awesome, but too similar to the pantry"; same UX, own look.
 |---|---|
 | Laps in a toggle, to see how much they rested | Tap the running lap under the stopwatch: the lap list opens in place, newest first |
 | Remove the rest timer; they manage rest with laps | Removed |
-| "Last" doesn't separate the target sets from the drop set | "Last time" box: Sets and Drop set rows; ladders as weightÃ—reps chips |
+| "Last" doesn't separate the target sets from the drop set | "Last time" box: Sets and Drop set rows; ladders as weight×reps chips |
 | See the best drop set so far | Best drop (most total reps) on the card and in the drop-set sheet, with the running total and "new best" |
 
 ## Feedback round 3 on stage 2 (Sergio, 2026-10-30)
@@ -567,7 +567,7 @@ Sergio: "awesome, but too similar to the pantry"; same UX, own look.
 | What Sergio said | Done |
 |---|---|
 | Show the last two workouts on the first page | Train: "Last workouts" with the two newest |
-| When a workout starts, see the last one of the same type (a toggle) | "Push day Â· last one Oct 23" under the stopwatch opens the last workout of that day type |
+| When a workout starts, see the last one of the same type (a toggle) | "Push day · last one Oct 23" under the stopwatch opens the last workout of that day type |
 | Notes and photos too prominent; a toggle or buttons | One quiet row under the sets: Note, Photo, Setup photos (folded) |
 | History: toggle categories to scroll faster | Exercises: categories fold (with counts); searching opens them |
 | Keep in mind: subtler colors, at the bottom | Gray, at the bottom of each exercise card |
@@ -590,7 +590,7 @@ Sergio: "awesome, but too similar to the pantry"; same UX, own look.
 | One workout per day; exercises from the same day weren't merged | Import groups by day (177 workouts); in the app, a second session the same day joins the first; training time adds the sessions, not the hours between |
 | Bullets for the exercises on the cards | Done |
 | Date boxes grew with the card | Fixed size |
-| Unclear times; estimate better: ~20 min warm-up before any message, first message after the first exercise (~40 min, 5 min rests) | Each session starts ~60 min before its first message, ends at the last; shown as "~5:37 PM Â· ~1 h 28 min" with a one-line explanation |
+| Unclear times; estimate better: ~20 min warm-up before any message, first message after the first exercise (~40 min, 5 min rests) | Each session starts ~60 min before its first message, ends at the last; shown as "~5:37 PM · ~1 h 28 min" with a one-line explanation |
 | Still some Spanish | All imported text checked (0 left); three non-training messages that had joined a day dropped; Spanish originals no longer shown under cues; two Spanish UI examples replaced |
 | Wants plots | Belong in Progress (stage 4); proposal below |
 | Bullets not visible; pills cut on top; drop the exercise filter pill; "Hips & hamstrings" is legs | Bullets drawn inside the line; pill rows get room for their outline; filter removed; deadlift, RDL, leg curl, back extension are Legs |
