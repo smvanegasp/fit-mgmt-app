@@ -6,9 +6,12 @@ interface Props {
   title: string;
   onClose: () => void;
   children: ReactNode;
+  /** A fixed height, for sheets whose content changes size (the exercise search: Sergio,
+   * 2026-11-21, the sheet jumped as results filtered). */
+  tall?: boolean;
 }
 
-export function BottomSheet({ title, onClose, children }: Props) {
+export function BottomSheet({ title, onClose, children, tall = false }: Props) {
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => e.key === "Escape" && onClose();
     document.addEventListener("keydown", onKey);
@@ -27,7 +30,7 @@ export function BottomSheet({ title, onClose, children }: Props) {
         role="dialog"
         aria-modal="true"
         aria-label={title}
-        className="relative flex max-h-[92dvh] w-full max-w-lg flex-col rounded-t-2xl bg-white shadow-xl sm:rounded-2xl"
+        className={`relative flex ${tall ? "h-[85dvh]" : ""} max-h-[92dvh] w-full max-w-lg flex-col rounded-t-2xl bg-white shadow-xl sm:rounded-2xl`}
       >
         <div className="flex items-center justify-between border-b border-stone-200 px-4 py-3">
           <h2 className="text-lg font-semibold">{title}</h2>

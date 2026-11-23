@@ -1,7 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useCallback, useEffect, useRef, useState } from "react";
 
-import { api, type CueSection, type Group, type Note, type NotePatch, type Role, type SessionInfo, type WorkoutBody } from "./api";
+import { api, type CueSection, type DayPlan, type Group, type Note, type NotePatch, type Role, type SessionInfo, type WorkoutBody } from "./api";
 
 const SESSION = ["session"];
 
@@ -32,7 +32,16 @@ export function useRefreshSession() {
 export function useSendFeedback() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (v: { text: string; page: string }) => api.sendFeedback(v.text, v.page),
+    mutationFn: (v: { text: string; page: string; photos?: string[] }) => api.sendFeedback(v.text, v.page, v.photos),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["feedback"] }),
+  });
+}
+
+/** Fix the text of feedback already sent (its writer, or the owner). */
+export function useEditFeedback() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (v: { id: string; text: string }) => api.editFeedback(v.id, v.text),
     onSuccess: () => qc.invalidateQueries({ queryKey: ["feedback"] }),
   });
 }
@@ -88,7 +97,7 @@ function useExerciseChange<T>(fn: (vars: T) => Promise<unknown>) {
 }
 
 export function useUpdateExercise() {
-  return useExerciseChange((v: { id: string; patch: { name?: string; group?: Group } }) => api.updateExercise(v.id, v.patch));
+  return useExerciseChange((v: { id: string; patch: { name?: string; group?: Group; stepLb?: number } }) => api.updateExercise(v.id, v.patch));
 }
 
 export function useMergeExercise() {
@@ -101,6 +110,19 @@ export function useExerciseSummary(exerciseId: string, exclude?: string, role?: 
   return useQuery({
     queryKey: ["summary", exerciseId, exclude ?? null, role ?? null],
     queryFn: () => api.exerciseSummary(exerciseId, exclude, role),
+  });
+}
+
+/** The training plans and this week's type (`today`: the phone's date). */
+export function usePlans(today: string) {
+  return useQuery({ queryKey: ["plans", today], queryFn: () => api.plans(today) });
+}
+
+export function useSavePlans(today: string) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (plans: DayPlan[]) => api.savePlans(plans, today),
+    onSuccess: (data) => qc.setQueryData(["plans", today], data),
   });
 }
 

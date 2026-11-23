@@ -6,6 +6,8 @@ Run from the repo root:
   cd backend && uv run python ../scripts/feedback.py --all      # include feedback already handled
   cd backend && uv run python ../scripts/feedback.py --done <id> [<id> ...]   # mark handled
 
+Screenshots attached to feedback are saved to private/feedback/ (git-ignored) to look at.
+
 Feedback is private (guests may write anything): paraphrase it in commits, PRs and docs, never
 quote it. Nothing secret is printed.
 """
@@ -30,14 +32,15 @@ def main() -> None:
     sys.stdout.reconfigure(encoding="utf-8")
 
     if args.local:
-        os.environ.update(DYNAMODB_ENDPOINT="http://localhost:8010", AWS_ACCESS_KEY_ID="local",
-                          AWS_SECRET_ACCESS_KEY="local")
+        os.environ.update(DYNAMODB_ENDPOINT="http://localhost:8010", S3_ENDPOINT="http://localhost:9190",
+                          AWS_ACCESS_KEY_ID="local", AWS_SECRET_ACCESS_KEY="local", PHOTOS_BUCKET="fit-photos")
     else:
         os.environ["AWS_PROFILE"] = args.profile
+        os.environ.setdefault("PHOTOS_BUCKET", f"fit-photos-{_account(args.profile)}")
     os.environ.setdefault("AWS_REGION", "us-east-1")
     os.environ.setdefault("TABLE_NAME", "fit")
 
-    from app import db
+    from app import db, storage
     from app.sandbox import FEEDBACK_SPACE
 
     rows = db.keys(FEEDBACK_SPACE, "FEEDBACK#")
@@ -57,7 +60,30 @@ def main() -> None:
     print(f"{len(shown)} {'feedback items' if args.all else 'new feedback items'} ({where})\n")
     for row in shown:
         print(f"[{row['id']}] {row['createdAt'][:16]} · {row['role']} · {row.get('page') or 'no screen'} · {row.get('status')}")
-        print(f"  {row['text']}\n")
+        print(f"  {row['text']}")
+        for key in row.get("photos", []):
+            print(f"  screenshot: {save_photo(storage, key)}")
+        print()
+
+
+SAVED = Path(__file__).resolve().parent.parent / "private" / "feedback"
+
+
+def save_photo(storage, key: str) -> str:
+    """Download a feedback screenshot to private/feedback/ (git-ignored) and say where it is."""
+    found = storage.get(f"{key}.img")
+    if found is None:
+        return f"{key} (missing)"
+    SAVED.mkdir(parents=True, exist_ok=True)
+    path = SAVED / f"{key.split('/')[-1]}.jpg"
+    path.write_bytes(found[0])
+    return str(path)
+
+
+def _account(profile: str) -> str:
+    import boto3
+
+    return boto3.Session(profile_name=profile).client("sts").get_caller_identity()["Account"]
 
 
 if __name__ == "__main__":

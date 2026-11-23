@@ -120,7 +120,8 @@ A mobile-first web app where Sergio logs their gym workouts and sees their progr
 - **Feedback rounds:** Sergio reviews on their phone and sends lists of changes; small ones go on the
   open PR branch, logged in the backlog as "Feedback round N" tables.
 - **Start of every session: read the in-app feedback.** `cd backend && uv run python
-  ../scripts/feedback.py` lists new feedback left in the app (Settings or the guest banner) on AWS.
+  ../scripts/feedback.py` lists new feedback left in the app (Settings or the guest banner) on AWS,
+  saving attached screenshots to `private/feedback/` (look at them; never commit them).
   Summarize it for Sergio with a recommendation, log the agreed items in the backlog, and mark
   them handled with `--done <id>`. **Feedback text is private** (guests may write anything):
   paraphrase it in commits, PRs and docs, never quote it.
@@ -228,6 +229,7 @@ backend/
   app/storage.py            S3 photos (copied from the pantry)
   app/models.py             Pydantic shapes: SetData, Entry, Problem, Segment, WorkoutBody, Workout,
                             Exercise, Note, Scheme/Streak, ExerciseSummary, Progress/Lift/Step
+  app/plans.py              training plans: two alternating week types read off the log or saved, this week's type
   app/history.py            last session per exercise, main-set scheme, the target game (replay yields
                             each session's result), usage counts
   app/cue_check.py          the cue check: a note -> add / reword a cue (gpt-oss-120b on Groq)
@@ -258,7 +260,7 @@ frontend/
                             EntryCard (set logger, drop sets, climbing, run, warm-up, notes, Done), Celebration,
                             Cues (checklist + manage sheet), ExercisePicker, Stepper,
                             Photos, BottomSheet, InfoTip (both from the pantry), ComingSoon,
-                            Streak (StreakCard, StreakCelebration), Progression (SetGlyph, GameDots, ProgressionLadder, LiftCard, day-type
+                            Streak (StreakCard, StreakCelebration), PlanEditor, Progression (SetGlyph, GameDots, ProgressionLadder, LiftCard, day-type
                             colors), Nav (useGoTo: switch tabs from a page), DemoBanner, PasscodeSheet,
                             TutorialStrip (from the pantry), FeedbackSheet
   src/lib/                  pure logic + tests: sets (summaries, next set, ladder, volume, next up),
@@ -322,6 +324,8 @@ frontend/
   Sergio's own cues, kept in the corrections' `cueOrder`). Imported cues are the ones written in 2+
   sessions plus hand-picked ones; per-session comments stay on the workout entry. Re-importing keeps
   `hidden`, `section` and `rank` set in the app.
+- **`SETTINGS#plans`** `{plans: [{id, name, dayType, week, exercises}]}`: the training plans once saved
+  (stage 11b, `app/plans.py`; inferred from the log until then).
 - **`BODY#<date>`** `{date, weightLb, source}` (Progress, `/api/body`) · **`ROUTINE#<from>#<id>`** `{name, from, to, days[], notes,
   photos}` (the routine eras, for the evolution timeline) · later `ACTIVE` (workout in progress,
   server-side `startedAt`) and `SETTINGS`.
@@ -353,12 +357,13 @@ frontend/
 |---|---|
 | Health | `GET /health` (no session needed) |
 | Public | `GET /public/summary` (no session; the welcome page): training days `{date, type}` and the main lifts' current targets only |
-| Feedback | `POST /feedback {text, page}` (owner or guest; 10/hour per IP, 200/day) · `GET /feedback` · `PATCH /feedback/{id} {status}` (owner only). Stored in `SPACE#feedback`, outside every sandbox, no TTL |
+| Feedback | `POST /feedback {text, page, photos?}` (owner or guest; 10/hour per IP, 200/day; up to 3 screenshots, copied to `feedback/<id>-<n>`, readable by the owner only) · `GET /feedback` (owner) · `PATCH /feedback/{id} {status?, text?}` (status: owner; text: the owner or whoever wrote it). Stored in `SPACE#feedback`, outside every sandbox, no TTL |
 | Session | `GET /session` · `POST /session/guest` · `POST /session/guest/reset[?sample=true]` · `POST /session/owner {passcode}` · `DELETE /session`. Everything else needs a session (401). Demos: 20/hour per IP (1000 locally), 500/hour total; 3 wrong passcodes pause owner login on that network for an hour (10/hour globally); guests upload at most 40 photos a day; the cue check and Peloton reads: 20 a day per demo each, 300 a day across all demos (429 past that) |
 | Peloton | `POST /peloton/read {key}` (an uploaded photo -> `{discipline?, title?, instructor?, minutes?, outputKj?, distanceMi?, calories?, avgWatts?, avgCadence?, avgResistance?, avgSpeedMph?}`; capped in demos, 503 without `GROQ_API_KEY`, 502 + "Peloton read failed" log line when Groq fails) |
 | Progress | `GET /progress` (days with day type and `cardio`; the main lifts' progression ladders; routine eras newest first with their workouts) · `GET /exercises/{id}/progress` (one exercise's ladder: `steps` of `{scheme, sessions, times}`, oldest first) |
 | Day types | `GET /session-types` (label, usual exercises in order, last date, sessions) |
-| Exercise page | `GET /exercises/{id}/history` (sessions newest first, each with `role`: the day's first lift or `later`; all photos, best set) · `PATCH /exercises/{id} {name?, group?}` (old name stays an alias) · `POST /exercises/{id}/merge {into}` (sessions and cues move; the duplicate is hidden) |
+| Plans | `GET /plans?today=` (day plans `{id, name, dayType, week: A/B, exercises}`, this week's `weekType`, `saved`; read off the log until saved) · `PUT /plans?today= {plans}` |
+| Exercise page | `GET /exercises/{id}/history` (sessions newest first, each with `role`: the day's first lift or `later`; all photos, best set) · `PATCH /exercises/{id} {name?, group?, stepLb?}` (old name stays an alias; `stepLb` 2.5 or 5 is the weight stepper's step) · `POST /exercises/{id}/merge {into}` (sessions and cues move; the duplicate is hidden) |
 | Exercises | `GET /exercises` (catalog + custom, with `lastDone`, `timesDone`) · `POST /exercises` · `GET /exercises/{id}/summary[?exclude=workoutId&role=first|later]` (cues, last, streak = target game, photos, bestDrop; `role` = today's first lift or a later one) |
 | Cues | `POST /exercises/{id}/notes {text, date, section?}` · `PATCH /exercises/{id}/notes/{noteId} {text?, hidden?, section?, rank?}` · `DELETE` (same path) · `POST /exercises/{id}/cue-check {note}` (suggestion `{action: add|update|none, noteId?, text?, section?}`; 503 without `GROQ_API_KEY`) |
 | Workouts | `GET /workouts?limit=` (newest first) · `GET/PUT/DELETE /workouts/{id}` (PUT keeps id, date, source; label recomputed) |
@@ -449,6 +454,9 @@ cd backend && uv run python ../scripts/import_whatsapp.py load --local # stack m
   specific to that mode: ask for a screenshot, and have Sergio add the ngrok URL to the Home Screen to
   test a fix. In that mode iOS paints the status-bar strip from the topmost fixed layer at the top edge,
   so keep see-through fixed layers (like the grain, z-25) under the full-screen pages (z-30).
+- **Vitest from the agent's shell:** run it from an uppercase `C:` working directory (PowerShell
+  `Set-Location C:/Users/smvan/repos/fit-mgmt-app/frontend; npx vitest run`). From the harness's
+  lowercase `c:` it loads two copies of vitest and every suite fails with "reading 'config'".
 - **Shell gotchas (Windows, Git Bash):** `sed` breaks when the replacement contains `#`; use the
   edit tool. With `MSYS_NO_PATHCONV=1` (needed for AWS CLI paths like `/fit/`), native Windows
   tools need `C:/...` paths.

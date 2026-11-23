@@ -83,7 +83,7 @@ export function ExercisePicker({ onPick, onClose, inWorkout, plan, title = "Add 
   }
 
   return (
-    <BottomSheet title={title} onClose={onClose}>
+    <BottomSheet title={title} onClose={onClose} tall>
       <div className="relative">
         <MagnifyingGlass size={18} className="absolute top-1/2 left-3 -translate-y-1/2 text-stone-400" aria-hidden />
         <input

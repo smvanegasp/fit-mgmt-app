@@ -49,6 +49,13 @@
 
 html {
   -webkit-tap-highlight-color: transparent;
+  /* No rubber-band past the top or bottom (Sergio, 2026-11-20: Train scrolled up past the
+     stopwatch). Sheets and lists inside keep their own scrolling. */
+  overscroll-behavior: none;
+}
+
+body {
+  overscroll-behavior: none;
 }
 
 /* iPhones zoom the page when a field with text under 16px gets focus, and don't always zoom

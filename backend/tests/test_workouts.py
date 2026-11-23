@@ -202,3 +202,17 @@ def test_a_second_session_on_the_same_day_joins_the_first(client: TestClient) ->
     assert second["startedAt"] == "2026-10-31T09:00:00" and second["endedAt"] == "2026-10-31T18:20:00"
     assert second["durationMin"] == 80  # 60 + 20, not the 9 hours in between
     assert len([w for w in client.get("/api/workouts").json() if w["date"] == "2026-10-31"]) == 1
+
+
+def test_a_peloton_ride_logged_afterwards_lasts_its_class(client: TestClient) -> None:
+    ride = {"exerciseId": "peloton-ride", "minutes": 30, "peloton": {"minutes": 30, "outputKj": 161}}
+    client.post("/api/active", json={"startedAt": "2026-11-22T20:45:37", "plan": "Cardio"})
+    client.put("/api/active", json={"startedAt": "2026-11-22T20:45:37", "plan": "Cardio", "entries": [ride]})
+    workout = client.post("/api/active/finish", json={"endedAt": "2026-11-22T20:45:59"}).json()
+    assert workout["startedAt"] == "2026-11-22T20:15:59"
+    # Saving it again leaves it; a stopwatch that ran past the class stays as it was.
+    again = client.put(f"/api/workouts/{workout['id']}", json={**workout, "startedAt": "2026-11-22T19:00:00"}).json()
+    assert again["startedAt"] == "2026-11-22T19:00:00"
+    # An old one saved again from the editor gets fixed.
+    fixed = client.put(f"/api/workouts/{workout['id']}", json={**workout, "startedAt": "2026-11-22T20:45:37"}).json()
+    assert fixed["startedAt"] == "2026-11-22T20:15:59"

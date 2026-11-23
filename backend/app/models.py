@@ -169,11 +169,14 @@ class Exercise(BaseModel):
     # Merged into another exercise (its sessions and cues moved there): kept for old ids, not listed.
     hidden: bool = False
     mergedInto: str | None = None
+    # The weight stepper's step in lb (Sergio, 2026-11-19: 2.5 for some exercises); None = the default.
+    stepLb: float | None = None
 
 
 class ExerciseUpdate(BaseModel):
     name: str | None = Field(None, min_length=1, max_length=80)
     group: Group | None = None
+    stepLb: Literal[2.5, 5] | None = None
 
 
 class MergeBody(BaseModel):
@@ -384,6 +387,8 @@ class FeedbackCreate(BaseModel):
     text: str = Field(min_length=1, max_length=2000)
     # Where it was written about ("Train", "Exercise: Back squat"...).
     page: str = Field("", max_length=80)
+    # Screenshots (Sergio, 2026-11-21): keys of photos uploaded from this session.
+    photos: list[str] = Field(default_factory=list, max_length=3)
 
 
 class Feedback(BaseModel):
@@ -396,10 +401,17 @@ class Feedback(BaseModel):
     createdAt: str
     status: Literal["new", "done"] = "new"
     userAgent: str = ""
+    # Copies under feedback/ (they outlive the demo's photos), readable by the owner.
+    photos: list[str] = Field(default_factory=list)
+    editedAt: str | None = None
+    # Who wrote it (their data space), so they can fix a typo; never sent back.
+    space: str = Field("", exclude=True)
 
 
 class FeedbackUpdate(BaseModel):
-    status: Literal["new", "done"]
+    status: Literal["new", "done"] | None = None
+    # Fix what was sent (Sergio, 2026-11-21): the owner, or whoever wrote it.
+    text: str | None = Field(None, min_length=1, max_length=2000)
 
 
 class PublicDay(BaseModel):
@@ -423,3 +435,25 @@ class PublicSummary(BaseModel):
 
     days: list[PublicDay]
     lifts: list[PublicLift]
+
+
+class DayPlan(BaseModel):
+    """One day of the routine (app/plans.py): its day type, name, week type and exercises in order."""
+
+    id: str = Field(min_length=1, max_length=40)
+    name: str = Field(min_length=1, max_length=40)
+    dayType: Literal["Push", "Legs", "Pull"]
+    week: Literal["A", "B"]
+    exercises: list[str] = Field(default_factory=list, max_length=20)
+
+
+class TrainingPlans(BaseModel):
+    plans: list[DayPlan]
+    # This week's type, from the log.
+    weekType: Literal["A", "B"] = "A"
+    # False while the plans are read off the log (nothing saved yet).
+    saved: bool = False
+
+
+class PlansBody(BaseModel):
+    plans: list[DayPlan] = Field(max_length=12)

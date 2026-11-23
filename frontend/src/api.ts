@@ -19,6 +19,8 @@ export interface Exercise {
   timesDone: number;
   hidden?: boolean;
   mergedInto?: string;
+  /** The weight stepper's step (2.5 or 5 lb); unset = 2.5 for dumbbells, else 5. */
+  stepLb?: number | null;
 }
 
 export interface SetData {
@@ -250,6 +252,23 @@ export interface Progress {
   routines: Routine[];
 }
 
+/** One day of the routine (Sergio, 2026-11-21): "Heavy push", its week type and exercises in order. */
+export interface DayPlan {
+  id: string;
+  name: string;
+  dayType: "Push" | "Legs" | "Pull";
+  week: "A" | "B";
+  exercises: string[];
+}
+
+export interface TrainingPlans {
+  plans: DayPlan[];
+  /** This week's type, from the log. */
+  weekType: "A" | "B";
+  /** False while the plans are read off the log. */
+  saved: boolean;
+}
+
 /** Feedback left in the app; the owner reads it in Settings, the agent with scripts/feedback.py. */
 export interface Feedback {
   id: string;
@@ -258,6 +277,9 @@ export interface Feedback {
   role: "owner" | "guest";
   createdAt: string;
   status: "new" | "done";
+  /** Screenshots, readable by the owner. */
+  photos?: string[];
+  editedAt?: string;
 }
 
 /** The welcome page's live stats, public: training days and current targets only. */
@@ -315,14 +337,15 @@ export const api = {
   ownerLogin: (passcode: string) => request<SessionInfo>("/session/owner", json("POST", { passcode })),
   logout: () => request<SessionInfo>("/session", { method: "DELETE" }),
 
-  sendFeedback: (text: string, page: string) => request<Feedback>("/feedback", json("POST", { text, page })),
+  sendFeedback: (text: string, page: string, photos: string[] = []) => request<Feedback>("/feedback", json("POST", { text, page, photos })),
+  editFeedback: (id: string, text: string) => request<Feedback>(`/feedback/${id}`, json("PATCH", { text })),
   listFeedback: () => request<Feedback[]>("/feedback"),
   markFeedback: (id: string, status: Feedback["status"]) => request<Feedback>(`/feedback/${id}`, json("PATCH", { status })),
 
   listExercises: () => request<Exercise[]>("/exercises"),
   createExercise: (body: Pick<Exercise, "name" | "group" | "load" | "measure">) =>
     request<Exercise>("/exercises", json("POST", body)),
-  updateExercise: (id: string, patch: { name?: string; group?: Group }) =>
+  updateExercise: (id: string, patch: { name?: string; group?: Group; stepLb?: number }) =>
     request<Exercise>(`/exercises/${id}`, json("PATCH", patch)),
   mergeExercise: (id: string, into: string) => request<Exercise>(`/exercises/${id}/merge`, json("POST", { into })),
   exerciseHistory: (id: string) => request<ExerciseHistory>(`/exercises/${id}/history`),
@@ -340,6 +363,8 @@ export const api = {
     request<CueSuggestion>(`/exercises/${exerciseId}/cue-check`, json("POST", { note })),
 
   sessionTypes: () => request<SessionType[]>("/session-types"),
+  plans: (today: string) => request<TrainingPlans>(`/plans?today=${today}`),
+  savePlans: (plans: DayPlan[], today: string) => request<TrainingPlans>(`/plans?today=${today}`, json("PUT", { plans })),
 
   progress: () => request<Progress>("/progress"),
   bodyWeights: () => request<BodyWeight[]>("/body"),

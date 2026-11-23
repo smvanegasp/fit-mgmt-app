@@ -66,3 +66,24 @@ def test_feedback_outlives_demos_and_is_never_copied_into_one(client, anon):
     rows = db.get_table().scan()["Items"]
     assert not any(r["pk"] == sandbox and r["sk"].startswith("FEEDBACK#") for r in rows)
     assert all("ttl" not in r for r in rows if r["pk"] == "SPACE#feedback")
+
+
+def test_screenshots_are_kept_for_the_owner(client, guest):
+    jpeg = b"\xff\xd8\xff\xe0" + b"0" * 100
+    key = guest.post("/api/photos", files={"photo": ("p.jpg", jpeg), "thumb": ("t.jpg", jpeg)}).json()["key"]
+    sent = guest.post("/api/feedback", json={"text": "Look", "page": "Train", "photos": [key]}).json()
+    assert sent["photos"] == [f"feedback/{sent['id']}-0"] and "space" not in sent
+    assert client.get(f"/api/photos/{sent['photos'][0]}").status_code == 200
+    assert guest.get(f"/api/photos/{sent['photos'][0]}").status_code == 404
+    # Only photos from the sender's own space.
+    other = client.post("/api/photos", files={"photo": ("p.jpg", jpeg), "thumb": ("t.jpg", jpeg)}).json()["key"]
+    assert guest.post("/api/feedback", json={"text": "x", "photos": [other]}).status_code == 400
+
+
+def test_the_writer_or_the_owner_can_fix_the_text(client, guest, anon):
+    sent = guest.post("/api/feedback", json={"text": "Teh picker", "page": "Train"}).json()
+    fixed = guest.patch(f"/api/feedback/{sent['id']}", json={"text": "The picker"}).json()
+    assert fixed["text"] == "The picker" and fixed["editedAt"]
+    assert client.patch(f"/api/feedback/{sent['id']}", json={"text": "The picker jumps"}).status_code == 200
+    anon.post("/api/session/guest")
+    assert anon.patch(f"/api/feedback/{sent['id']}", json={"text": "hacked"}).status_code == 403

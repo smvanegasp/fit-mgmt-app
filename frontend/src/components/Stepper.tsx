@@ -35,8 +35,9 @@ export function Stepper({ label, value, onChange, step, min = 0, unit, decimals,
           const n = Number(e.target.value.replace(",", "."));
           if (!Number.isNaN(n)) onChange(Math.max(min, n));
         }}
-        // Big (Sergio, 2026-11-03); one size down for long weights like 112.5 so they fit a phone.
-        className={`w-full min-w-0 bg-transparent text-center font-display font-semibold tabular-nums outline-none ${String(value).length > 4 ? "text-4xl" : "text-5xl"}`}
+        // Big (Sergio, 2026-11-03, and bigger 11-19); one size down for long weights like 112.5 so
+        // they fit a phone.
+        className={`w-full min-w-0 bg-transparent text-center font-display font-semibold leading-none tabular-nums outline-none ${String(value).length > 4 ? "text-5xl" : "text-6xl"}`}
       />
       <button
         type="button"

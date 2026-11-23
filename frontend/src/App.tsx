@@ -1,5 +1,5 @@
 import { Barbell, ChartLineUp, ClockCounterClockwise, GearSix, type Icon } from "@phosphor-icons/react";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 
 import { SESSION_EXPIRED, type SessionInfo } from "./api";
 import { DemoBanner } from "./components/DemoBanner";
@@ -54,8 +54,26 @@ export function App() {
 
 function MainApp({ session }: { session: SessionInfo }) {
   // Phones open on Train (logging); computers on Progress (what visitors come to see).
-  const [tab, setTab] = useState<Tab>(() => (window.matchMedia(DESKTOP).matches ? "progress" : "train"));
+  const [tab, showTab] = useState<Tab>(() => (window.matchMedia(DESKTOP).matches ? "progress" : "train"));
   const current = TABS.find((t) => t.id === tab)!;
+  // Each tab comes back where it was left (Sergio, 2026-11-20: back on Train mid-workout, at the
+  // same exercise). The page re-renders from cached data, so the height may take a few frames.
+  const scrolls = useRef<Partial<Record<Tab, number>>>({});
+  const setTab = useCallback((next: Tab) => {
+    scrolls.current[tab] = window.scrollY;
+    showTab(next);
+  }, [tab]);
+  useLayoutEffect(() => {
+    const target = scrolls.current[tab] ?? 0;
+    let frames = 0;
+    let id = 0;
+    const restore = () => {
+      window.scrollTo(0, target);
+      if (Math.abs(window.scrollY - target) > 2 && frames++ < 30) id = requestAnimationFrame(restore);
+    };
+    restore();
+    return () => cancelAnimationFrame(id);
+  }, [tab]);
   const Page = PAGES[tab];
   // What feedback is about by default: the last tab other than Settings.
   useEffect(() => {

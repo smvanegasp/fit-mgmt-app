@@ -1,4 +1,4 @@
-import type { Entry, SessionType, Workout } from "../api";
+import type { DayPlan, Entry, SessionType, Workout } from "../api";
 import { heavyNext } from "./sets";
 
 export const WARM_UP = "warm-up";
@@ -55,4 +55,44 @@ export function isLogged(entry: Entry): boolean {
 /** The exercise being done now: the first one not marked done. */
 export function currentIndex(entries: Entry[]): number {
   return entries.findIndex((e) => !e.done);
+}
+
+/** "Squat week" / "Deadlift week" (from the week's Legs plan), else "Week A". */
+export function weekName(plans: Pick<DayPlan, "week" | "dayType" | "name">[], week: "A" | "B"): string {
+  const lift = (w: "A" | "B") => {
+    const legs = plans.find((p) => p.week === w && p.dayType === "Legs");
+    const short = legs?.name.replace(/^Legs\s*·\s*/, "");
+    return short && short !== legs?.name ? short : null;
+  };
+  const mine = lift(week);
+  // Both weeks on the same lift can't tell them apart.
+  return mine && mine !== lift(week === "A" ? "B" : "A") ? `${mine} week` : `Week ${week}`;
+}
+
+export interface DayOption {
+  key: string;
+  label: string;
+  /** The workout's day type ("Push"...). */
+  dayType: string;
+  /** The plan's exercises (none for Cardio: picked at the start). */
+  exercises?: string[];
+  /** Already trained this week. */
+  done: boolean;
+}
+
+/** The week's days in Sergio's order (Push, Legs, Pull, then Cardio), marked done when that day
+ * type was trained this week, and the first not done as next up. */
+export function weekOptions(plans: DayPlan[], week: "A" | "B", doneTypes: Set<string>): { options: DayOption[]; next: string | null } {
+  const order = ["Push", "Legs", "Pull"];
+  const options: DayOption[] = plans
+    .filter((p) => p.week === week)
+    .sort((a, b) => order.indexOf(a.dayType) - order.indexOf(b.dayType))
+    .map((p) => ({ key: p.id, label: p.name, dayType: p.dayType, exercises: p.exercises, done: doneTypes.has(p.dayType) }));
+  options.push({ key: "cardio", label: "Cardio", dayType: "Cardio", done: doneTypes.has("Cardio") });
+  return { options, next: options.find((o) => !o.done)?.key ?? null };
+}
+
+/** A planned day's starting entries: the warm-up, then the plan's exercises (the ones that exist). */
+export function planEntries(exercises: string[], known: Set<string>): Entry[] {
+  return [WARM_UP, ...exercises.filter((id) => id !== WARM_UP)].filter((id) => known.has(id)).map((exerciseId) => ({ exerciseId }));
 }
