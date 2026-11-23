@@ -36,7 +36,7 @@ def test_the_ladder_shows_more_reps_then_more_weight(client: TestClient) -> None
     day("2026-09-18", "Legs", [squat((4, 4, 135), (1, 3, 135))])  # missed
     day("2026-09-22", "Legs", [squat((5, 4, 140))])  # more weight
     lifts = {x["exerciseId"]: x for x in client.get("/api/progress").json()["lifts"]}
-    assert list(lifts) == ["squat", "deadlift", "bench-press", "dips", "chin-ups"]
+    assert list(lifts) == ["dips", "chin-ups", "deadlift", "squat", "pull-ups", "bench-press"]
     assert lifts["deadlift"]["steps"] == []
     squat_ladder = lifts["squat"]
     assert squat_ladder["barLb"] == 45

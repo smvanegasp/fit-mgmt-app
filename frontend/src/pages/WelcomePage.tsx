@@ -7,10 +7,12 @@ import { Heatmap } from "../components/Heatmap";
 import { Logo } from "../components/Logo";
 import { PasscodeSheet } from "../components/PasscodeSheet";
 import { GameDots, SetGlyph, TypeLegend, groupColor } from "../components/Progression";
+import { TierIcon } from "../components/Tiers";
 import { TutorialStrip, type Tutorial } from "../components/TutorialStrip";
 import { useDesktop, usePublicSummary, useSession, useStartGuest } from "../hooks";
 import { streaks } from "../lib/progress";
 import { schemeText } from "../lib/sets";
+import { STREAK_TIERS, WORKOUT_TIERS, tierAt, type Tier } from "../lib/tiers";
 import { localIso, yearsSince } from "../lib/time";
 
 /** When Sergio started training. */
@@ -35,8 +37,8 @@ const TUTORIALS: Tutorial[] = [
 ];
 
 const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
-// The lifts shown under "In training now", in this order.
-const SHOWN = ["squat", "deadlift", "dips"];
+// The lifts shown under "In training now", in this order: Sergio's four focus lifts (2026-11-23).
+const SHOWN = ["dips", "chin-ups", "deadlift", "squat"];
 
 /** The first screen without a session: the training log itself up front (live stats, the year of
  * training days, current targets), then who made it and how it works. Continue and I'm Sergio stay
@@ -122,18 +124,25 @@ export function WelcomePage() {
 function Stats({ data, today }: { data: PublicSummary; today: string }) {
   const streak = streaks(data.days, today);
   const first = data.days[0].date;
-  const stats: [string, string][] = [
-    [String(data.days.length), "workouts"],
-    [String(streak.current), "week streak"],
-    [`${MONTHS[Number(first.slice(5, 7)) - 1]} '${first.slice(2, 4)}`, "since"],
+  // The workouts and streak tiers next to their numbers (Sergio, 2026-11-23).
+  const stats: [string, string, Tier | null][] = [
+    [String(data.days.length), "workouts", tierAt(WORKOUT_TIERS, data.days.length)],
+    [String(streak.current), "week streak", tierAt(STREAK_TIERS, streak.current)],
+    [`${MONTHS[Number(first.slice(5, 7)) - 1]} '${first.slice(2, 4)}`, "since", null],
   ];
   return (
     <dl className="grid grid-cols-3 gap-2">
-      {stats.map(([value, label]) => (
+      {stats.map(([value, label, tier]) => (
         // Label first for screen readers, number on top on screen.
-        <div key={label} className="flex flex-col-reverse rounded-2xl border border-stone-200 bg-white px-2.5 py-3">
-          <dt className="mt-1 text-xs text-stone-500">{label}</dt>
-          <dd className="font-display text-[1.7rem] leading-none font-bold whitespace-nowrap lg:text-4xl">{value}</dd>
+        <div key={label} className="flex flex-col-reverse justify-end rounded-2xl border border-stone-200 bg-white px-2.5 py-3">
+          <dt className="mt-1 text-xs text-stone-500">
+            {label}
+            {tier && <span className="block font-semibold text-stone-700">{tier.name} tier</span>}
+          </dt>
+          <dd className="flex items-center gap-1.5 font-display text-[1.7rem] leading-none font-bold whitespace-nowrap lg:text-4xl">
+            {value}
+            {tier && <TierIcon tier={tier} size={22} className="shrink-0 lg:size-7" />}
+          </dd>
         </div>
       ))}
     </dl>

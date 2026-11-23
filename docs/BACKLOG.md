@@ -145,6 +145,25 @@ Checked: backend 121 and frontend 100 tests, build, the real log (read-only: no 
 goals and the streak unchanged), screenshots in a sample demo with an Upper/Lower plan saved in that
 sandbox (five named slots, the goal of 4 strength days). Not tested: Restore in a browser (API tests only), the iPhone.
 
+## Stage 13b: tiers on the welcome page, the focus lifts (`stage-13b-welcome-tiers`, Sergio 2026-11-23)
+
+| Item | Done |
+|---|---|
+| Visitors should see the tier icons next to the workouts count and the week streak. | The welcome stats show each tier's icon next to the number and "<name> tier" under the label (none before the first tier). |
+| Weighted chin-ups and pull-ups belong with the main lifts; the four focus lifts are, in order, weighted dips, weighted chin-ups, deadlift, back squat. | "In training now" on the welcome page shows those four in that order. Progress (`MAIN_LIFTS`) shows them first, then weighted pull-ups and bench press. |
+
+Checked: backend 121 and frontend 92 tests, the welcome page logged out at 390x844 (dark and light) and
+1440x900 on the local log (older than production: its streak reads 0 there). Not tested: the live numbers.
+
+### Open: carrying a week's unfinished days into the next (Sergio, 2026-11-23, asked for a recommendation)
+
+Week types are tied to calendar weeks, so a week that trained only light push and deadlift legs moves
+on to the next week type, while Sergio carries on with heavy pull and cardio. Proposal: treat the week
+types as one **cycle of days** (here 8: both weeks' days in order). Train shows the first day not yet
+done in the current pass ("Up next"), whatever the calendar week; when every day of the pass is done, the
+next pass starts. Picking another day still works, and counts as done for the pass. The streak doesn't
+change (it counts days per calendar week). Waiting for Sergio's go-ahead.
+
 ## Stage 13a: the streak counts training days, tiers (`stage-13a-streak-tiers`, Sergio 2026-11-23)
 
 Sergio's request: grow the streak with 4 training days a week, hold it with 2 or 3 (any kind), and use a
