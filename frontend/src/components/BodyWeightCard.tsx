@@ -54,7 +54,7 @@ function LogSheet({ last, onClose }: { last?: number; onClose: () => void }) {
   return (
     <BottomSheet title="Log body weight" onClose={onClose}>
       <div className="space-y-4">
-        <Stepper layout="row" label="Weight" unit="lb" value={weight} step={0.5} decimals onChange={setWeight} />
+        <Stepper layout="row" label="Weight" unit="lbs" value={weight} step={0.5} decimals onChange={setWeight} />
         <label className="flex items-center gap-3">
           <span className="w-20 text-xs font-medium tracking-wide text-stone-500 uppercase">Date</span>
           <input type="date" value={date} max={localIso().slice(0, 10)} onChange={(e) => setDate(e.target.value)}

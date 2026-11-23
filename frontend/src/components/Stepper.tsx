@@ -49,9 +49,9 @@ export function Stepper({ label, value, onChange, step, min = 0, unit, decimals,
           const n = Number(e.target.value.replace(",", "."));
           if (!Number.isNaN(n)) onChange(Math.max(min, n));
         }}
-        // Big (Sergio, 2026-11-03, bigger 11-19 and 11-23); one size down for long weights like 112.5 so
-        // they fit a phone.
-        className={`w-full min-w-0 bg-transparent text-center font-display font-semibold leading-none tabular-nums outline-none ${String(value).length > 4 ? "text-5xl" : String(value).length > 3 ? "text-6xl" : "text-7xl"}`}
+        // Big (Sergio, 2026-11-03, bigger 11-19 and 11-23): 72 px for every value now that the label sits
+        // above; the effect above shrinks it only if it still doesn't fit.
+        className={`w-full min-w-0 bg-transparent text-center font-display font-semibold leading-none tabular-nums outline-none text-7xl`}
       />
       <button
         type="button"
@@ -65,14 +65,16 @@ export function Stepper({ label, value, onChange, step, min = 0, unit, decimals,
   );
 
   if (layout === "row") {
+    // The label on its own line above, so the number has the full width between − and + and stays
+    // big even for 147.5 (Sergio, 2026-11-23: it shrank to fit next to a label column).
     return (
-      <div className="flex items-center gap-3">
-        <div className="w-20 shrink-0">
-          <div className="text-xs font-medium tracking-wide text-stone-500 uppercase">{label}</div>
-          {unit && <div className="text-xs leading-tight text-stone-500">{unit}</div>}
-          {extra}
+      <div>
+        <div className="flex min-h-7 items-center gap-2">
+          <span className="text-xs font-medium tracking-wide text-stone-500 uppercase">{label}</span>
+          {unit && <span className="min-w-0 truncate text-xs text-stone-500">{unit}</span>}
+          {extra && <div className="ml-auto shrink-0">{extra}</div>}
         </div>
-        {controls}
+        <div className="flex">{controls}</div>
       </div>
     );
   }

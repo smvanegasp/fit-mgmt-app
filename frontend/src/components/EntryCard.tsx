@@ -241,9 +241,9 @@ export function weightStep(exercise: Pick<Exercise, "load" | "stepLb">): number 
 function StepSwitch({ exercise, step, onStep }: { exercise: Exercise; step: number; onStep: (step: number) => void }) {
   const update = useUpdateExercise();
   return (
-    <div className="mt-1.5">
-      <div className="text-[0.65rem] font-medium tracking-wide text-stone-500 uppercase">Step</div>
-      <div role="radiogroup" aria-label="Weight step in lb" className="mt-0.5 flex rounded-md bg-stone-100 p-0.5">
+    <div className="flex items-center gap-1.5">
+      <span className="text-[0.65rem] font-medium tracking-wide text-stone-500 uppercase">Step</span>
+      <div role="radiogroup" aria-label="Weight step in lb" className="flex rounded-md bg-stone-100 p-0.5">
         {[2.5, 5].map((s) => (
           <button key={s} type="button" role="radio" aria-checked={step === s}
             onClick={() => {
@@ -251,7 +251,7 @@ function StepSwitch({ exercise, step, onStep }: { exercise: Exercise; step: numb
               onStep(s);
               update.mutate({ id: exercise.id, patch: { stepLb: s } });
             }}
-            className={`flex-1 rounded px-1 py-1 text-xs font-semibold tabular-nums ${step === s ? "bg-blue-600 text-[#f6f1e7]" : "text-stone-500"}`}>
+            className={`rounded px-2.5 py-1 text-sm font-semibold tabular-nums ${step === s ? "bg-blue-600 text-[#f6f1e7]" : "text-stone-500"}`}>
             {s}
           </button>
         ))}
