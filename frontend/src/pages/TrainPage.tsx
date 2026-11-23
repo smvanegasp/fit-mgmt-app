@@ -177,15 +177,36 @@ function Idle({ onOpen }: { onOpen: (w: Workout) => void }) {
   const cardioChoices = CARDIO.filter((id) => cardioIds.has(id));
   const [cardioPicked, setCardioPicked] = useState<string | null>(null);
   const cardio = cardioPicked ?? lastCardio(workouts.data ?? [], cardioChoices);
-  // The last two of the chosen day type (Sergio, 2026-11-03), else the last two of any.
-  const all = workouts.data ?? [];
-  const ofType = plan ? all.filter((w) => dayType(w.label) === plan) : [];
-  const last = (ofType.length > 0 ? ofType : all).slice(0, 2);
   const known = new Set(byId.keys());
 
   const entries = chosen?.exercises
     ? planEntries(chosen.exercises, known)
     : startingEntries(plan ?? undefined, types.data ?? [], workouts.data ?? [], known, cardio);
+
+  // The ride or the treadmill for a Cardio day, then Start.
+  const startBlock = (
+    <>
+      {plan === "Cardio" && !chosen?.exercises && cardioChoices.length > 0 && (
+        <div className="mb-3 flex flex-wrap gap-2" role="radiogroup" aria-label="Cardio">
+          {cardioChoices.map((id) => (
+            <button key={id} type="button" role="radio" aria-checked={cardio === id} onClick={() => setCardioPicked(id)}
+              className={`rounded-full px-3.5 py-1.5 text-sm font-medium ${cardio === id ? "bg-stone-900 text-white" : "bg-white text-stone-700 ring-1 ring-stone-200"}`}>
+              {byId.get(id)?.name ?? id}
+            </button>
+          ))}
+        </div>
+      )}
+      <button
+        type="button"
+        onClick={() => start.mutate({ startedAt: localIso(), plan: plan ?? undefined, entries, ...(planned && chosen ? { planDays: [chosen.key] } : {}) })}
+        disabled={start.isPending}
+        className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-blue-600 py-4 text-xl font-semibold text-white shadow-sm active:bg-blue-700"
+      >
+        <Play size={24} weight="fill" aria-hidden /> {chosen ? `Start ${chosen.label}` : "Start workout"}
+      </button>
+      {start.error && <p className="mt-2 text-sm text-red-600">{start.error.message}</p>}
+    </>
+  );
 
   return (
     // Every tab starts its first block at the same height (Sergio, 2026-11-23): no margin on top.
@@ -237,6 +258,8 @@ function Idle({ onOpen }: { onOpen: (w: Workout) => void }) {
                 );
               })}
             </div>
+            {/* Start inside the card, under the days it starts (Sergio, 2026-11-23: better use of the space). */}
+            <div className="border-t border-stone-200 p-3">{startBlock}</div>
             <div className="flex items-center border-t border-stone-200 px-2 py-1">
               <button type="button" onClick={() => setEditing(true)}
                 className="flex items-center gap-1.5 rounded-lg px-2 py-2 text-sm font-medium text-stone-600">
@@ -286,34 +309,8 @@ function Idle({ onOpen }: { onOpen: (w: Workout) => void }) {
             </InfoTip>
           </p>
         )}
-        {plan === "Cardio" && !chosen?.exercises && cardioChoices.length > 0 && (
-          <div className="mt-3 flex flex-wrap gap-2" role="radiogroup" aria-label="Cardio">
-            {cardioChoices.map((id) => (
-              <button key={id} type="button" role="radio" aria-checked={cardio === id} onClick={() => setCardioPicked(id)}
-                className={`rounded-full px-3.5 py-1.5 text-sm font-medium ${cardio === id ? "bg-stone-900 text-white" : "bg-white text-stone-700 ring-1 ring-stone-200"}`}>
-                {byId.get(id)?.name ?? id}
-              </button>
-            ))}
-          </div>
-        )}
-        <button
-          type="button"
-          onClick={() => start.mutate({ startedAt: localIso(), plan: plan ?? undefined, entries, ...(planned && chosen ? { planDays: [chosen.key] } : {}) })}
-          disabled={start.isPending}
-          className="mt-5 inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-blue-600 py-5 text-xl font-semibold text-white shadow-sm active:bg-blue-700"
-        >
-          <Play size={26} weight="fill" aria-hidden /> {chosen ? `Start ${chosen.label}` : "Start workout"}
-        </button>
-        <p className="mt-2 text-center text-sm text-stone-500">The stopwatch starts now and keeps running if you lock the phone.</p>
-        {start.error && <p className="mt-2 text-sm text-red-600">{start.error.message}</p>}
+        {!planned && <div className="mt-5">{startBlock}</div>}
       </section>
-
-      {last.length > 0 && (
-        <section className="mt-10 space-y-2">
-          <h2 className="pt-2 text-sm font-semibold tracking-wide text-stone-500 uppercase">{ofType.length > 0 ? `Last ${plan} workouts` : "Last workouts"}</h2>
-          {last.map((w) => <WorkoutCard key={w.id} workout={w} onClick={() => onOpen(w)} />)}
-        </section>
-      )}
       {editing && <PlanEditor plans={plans.data!} today={today} onClose={() => setEditing(false)} />}
     </div>
   );

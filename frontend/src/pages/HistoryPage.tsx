@@ -6,6 +6,7 @@ import { GROUP_NAMES } from "../components/ExercisePicker";
 import { useScreens } from "../components/Screens";
 import { WorkoutCard } from "../components/WorkoutCard";
 import { useExercises, useWorkouts } from "../hooks";
+import { WARM_UP } from "../lib/plan";
 import { fuzzyMatch } from "../lib/search";
 import { dayType } from "../lib/sets";
 import { friendlyDate, localIso } from "../lib/time";
@@ -117,14 +118,15 @@ function Exercises() {
   const exercises = useExercises();
   const screens = useScreens();
   const [query, setQuery] = useState("");
-  const [showAll, setShowAll] = useState(false);
   // Categories fold so the list is quick to scroll; searching opens them all.
   const [open, setOpen] = useState<Set<string>>(new Set());
   const toggle = (name: string) => setOpen((o) => new Set(o.has(name) ? [...o].filter((x) => x !== name) : [...o, name]));
 
+  // The exercises done (searching finds the rest of the catalog). Not the warm-up: it's a stage of
+  // every workout, not an exercise (Sergio, 2026-11-23).
   const groups = useMemo(() => {
     const list = (exercises.data ?? []).filter(
-      (e) => (showAll || e.timesDone > 0 || query) && fuzzyMatch(query, e.name, ...e.aliases),
+      (e) => e.id !== WARM_UP && (e.timesDone > 0 || query) && fuzzyMatch(query, e.name, ...e.aliases),
     );
     const byName = new Map<string, Exercise[]>();
     for (const g of ORDER) {
@@ -132,7 +134,7 @@ function Exercises() {
       if (items.length) byName.set(GROUP_NAMES[g], [...(byName.get(GROUP_NAMES[g]) ?? []), ...items]);
     }
     return [...byName.entries()];
-  }, [exercises.data, query, showAll]);
+  }, [exercises.data, query]);
 
   return (
     <>
@@ -174,11 +176,6 @@ function Exercises() {
           </section>
         ))}
       </div>
-      {!query && (
-        <button type="button" onClick={() => setShowAll(!showAll)} className="mt-4 w-full py-2 text-sm font-medium text-blue-700">
-          {showAll ? "Only exercises I've done" : "Show every exercise"}
-        </button>
-      )}
     </>
   );
 }

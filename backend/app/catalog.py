@@ -8,7 +8,7 @@ alias that appears wins, so "wide bar dips" beats "dips" and "close chin ups" be
 from dataclasses import dataclass, field
 from typing import Literal
 
-Group = Literal["push", "pull", "legs", "posterior", "core", "skill", "cardio", "climbing"]
+Group = Literal["push", "pull", "legs", "posterior", "core", "skill", "cardio", "climbing", "warmup"]
 # How a set's weight is read:
 #   barbell   - the logged number is plates; the bar (barLb) is added for totals
 #   dumbbell  - weight per hand when "each" is written
@@ -120,7 +120,8 @@ EXERCISES: tuple[CatalogExercise, ...] = (
     CatalogExercise("knee-raises", "Hanging knee raises", "core", "bodyweight",
                     aliases=("knee raises",)),
     # Every workout starts with it, timed (Sergio, 2026-11-05).
-    CatalogExercise("warm-up", "Warm-up", "cardio", "none", measure="time", aliases=("warmup",)),
+    # A stage of every workout, not cardio (Sergio, 2026-11-23).
+    CatalogExercise("warm-up", "Warm-up", "warmup", "none", measure="time", aliases=("warmup",)),
     # Cardio (once a week from 2026-10-30: a Peloton run or a walk)
     CatalogExercise("peloton-run", "Peloton run", "cardio", "none", measure="run",
                     aliases=("peloton", "peloton run", "run")),

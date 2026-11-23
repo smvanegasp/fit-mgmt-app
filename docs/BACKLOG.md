@@ -155,6 +155,20 @@ sandbox (five named slots, the goal of 4 strength days). Not tested: Restore in 
 Checked: backend 121 and frontend 92 tests, the welcome page logged out at 390x844 (dark and light) and
 1440x900 on the local log (older than production: its streak reads 0 there). Not tested: the live numbers.
 
+## Stage 14b: feedback after the cycle (`stage-14b-feedback`, Sergio 2026-11-23)
+
+| Feedback | Done |
+|---|---|
+| Put Start inside "Ready to train". | The Start button (and the ride/treadmill choice on a Cardio day) sits inside the plan card, under the days. Without a plan it stays under the day chips. |
+| Drop the "Last Push workouts" on Train: the plan card already shows the last two. | Removed. (The folded "last two" of the day type during a workout stays.) |
+| The plan page said "Your days, in order" but listed only the week types. | It lists the days, numbered through the whole cycle (1-8), grouped under each week type with Edit and the up/down arrows; each row shows how many exercises it has (or the kind). |
+| History's "Show every exercise" only added the Peloton run and the walk, which aren't exercises Sergio does; the warm-up isn't an exercise and isn't cardio. | The toggle is gone: the list shows the exercises done (search still finds the whole catalog). The warm-up has its own group (`warmup`, catalog; follows the code, no data change) and is left out of History's exercises and the picker. |
+| Remove the Routine section on Progress. | Removed (phone and computer; on a computer the last workouts now sit next to body weight). The API still sends the routines. |
+
+Checked: backend 122 and frontend 98 tests, a sample demo at 390x844 (the card with Start, the plan page,
+History's exercises: Cardio is only the ride, no toggle; Progress without Routine). Not tested: a
+two-week-type plan page in a browser (the sample has one), Sergio's phone.
+
 ## Stage 14a: the plan as a cycle of days (`stage-14a-day-cycle`, Sergio 2026-11-23)
 
 Week types were tied to calendar weeks, so a short week (light push and deadlift legs only) jumped to

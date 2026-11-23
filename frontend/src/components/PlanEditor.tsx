@@ -63,42 +63,55 @@ export function PlanEditor({ plans, today, onClose }: { plans: TrainingPlans; to
       }>
       <h2 className="flex items-center gap-1 text-sm font-semibold tracking-wide text-stone-500 uppercase">
         Your days, in order
-        <InfoTip title="Your days">The week types' days repeat in this order, then start over. Tap one to edit its days.</InfoTip>
+        <InfoTip title="Your days">You train them in this order, then start over. Each group is a week type: tap Edit to change its days.</InfoTip>
       </h2>
 
+      {/* The days themselves, numbered through the whole cycle and grouped by week type (Sergio,
+          2026-11-23: the list said "days" but showed only the week types). */}
       {weeks.length === 0 ? (
         <p className="mt-3 text-sm text-stone-500">No week types yet: add one to start.</p>
       ) : (
-        <ol className="mt-2 divide-y divide-stone-200 rounded-xl border border-stone-200 bg-white">
-          {weeks.map((w, i) => (
-            <li key={w.id} className="flex items-center gap-1 pr-1">
-              <button type="button" onClick={() => setOpen(w.id)} className="flex min-w-0 flex-1 items-center gap-3 py-3 pl-3 text-left">
-                <span className="w-5 shrink-0 text-center font-display text-xl leading-none text-stone-400 tabular-nums">{i + 1}</span>
-                <span className="min-w-0 flex-1">
-                  <span className="flex items-center gap-2">
-                    <span className="truncate font-semibold">{w.name || "Untitled"}</span>
-                  </span>
-                  <span className="block truncate text-sm text-stone-500">
-                    {w.days.length ? w.days.map((d) => d.name).join(", ") : "No days yet"}
-                  </span>
-                </span>
-                <CaretRight size={16} weight="bold" className="shrink-0 text-stone-400" aria-hidden />
-              </button>
-              {weeks.length > 1 && (
-                <span className="flex shrink-0 flex-col">
-                  <button type="button" disabled={i === 0} onClick={() => setWeeks(shift(weeks, i, -1))}
-                    aria-label={`Move ${w.name} earlier`} className="rounded p-1.5 text-stone-500 disabled:opacity-25">
-                    <ArrowUp size={16} weight="bold" aria-hidden />
+        <div className="mt-2 space-y-3">
+          {weeks.map((w, i) => {
+            const first = weeks.slice(0, i).reduce((n, x) => n + x.days.length, 0);
+            return (
+              <section key={w.id} className="overflow-hidden rounded-xl border border-stone-200 bg-white">
+                <div className="flex items-center gap-1 border-b border-stone-200 bg-stone-100 py-1 pr-1 pl-3">
+                  <span className="min-w-0 flex-1 truncate text-sm font-semibold text-stone-700">{w.name || "Untitled"}</span>
+                  {weeks.length > 1 && (
+                    <>
+                      <button type="button" disabled={i === 0} onClick={() => setWeeks(shift(weeks, i, -1))}
+                        aria-label={`Move ${w.name} earlier`} className={ICON}><ArrowUp size={16} weight="bold" aria-hidden /></button>
+                      <button type="button" disabled={i === weeks.length - 1} onClick={() => setWeeks(shift(weeks, i, 1))}
+                        aria-label={`Move ${w.name} later`} className={ICON}><ArrowDown size={16} weight="bold" aria-hidden /></button>
+                    </>
+                  )}
+                  <button type="button" onClick={() => setOpen(w.id)} aria-label={`Edit ${w.name}`}
+                    className="flex items-center gap-0.5 rounded-lg px-2 py-1.5 text-sm font-medium text-stone-700">
+                    Edit <CaretRight size={14} weight="bold" aria-hidden />
                   </button>
-                  <button type="button" disabled={i === weeks.length - 1} onClick={() => setWeeks(shift(weeks, i, 1))}
-                    aria-label={`Move ${w.name} later`} className="rounded p-1.5 text-stone-500 disabled:opacity-25">
-                    <ArrowDown size={16} weight="bold" aria-hidden />
-                  </button>
-                </span>
-              )}
-            </li>
-          ))}
-        </ol>
+                </div>
+                {w.days.length === 0 ? (
+                  <p className="px-3 py-3 text-sm text-stone-500">No days yet: tap Edit to add them.</p>
+                ) : (
+                  <ol className="divide-y divide-stone-100">
+                    {w.days.map((d, di) => (
+                      <li key={d.id}>
+                        <button type="button" onClick={() => setOpen(w.id)} className="flex w-full items-center gap-3 px-3 py-2.5 text-left">
+                          <span className="w-5 shrink-0 text-center text-sm text-stone-400 tabular-nums">{first + di + 1}</span>
+                          <span className="min-w-0 flex-1 truncate font-semibold">{d.name}</span>
+                          <span className="shrink-0 text-xs text-stone-500">
+                            {d.optional ? "optional · " : ""}{d.exercises.length ? `${d.exercises.length} exercise${d.exercises.length === 1 ? "" : "s"}` : d.kind}
+                          </span>
+                        </button>
+                      </li>
+                    ))}
+                  </ol>
+                )}
+              </section>
+            );
+          })}
+        </div>
       )}
       <button type="button" onClick={() => addWeek()}
         className="mt-3 flex w-full items-center justify-center gap-2 rounded-xl border border-dashed border-stone-300 py-3 font-semibold text-stone-700">
