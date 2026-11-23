@@ -15,7 +15,7 @@ import { WorkoutCard } from "../components/WorkoutCard";
 import { useDesktop, useExerciseHistory, useExercises, useProgress, useWorkouts } from "../hooks";
 import { climbing } from "../lib/kinds";
 import { topSeries } from "../lib/series";
-import { GOAL, OLD_GOAL, SHIELD_EVERY, goalText, shortDate, streaks, weekCounts, weekMet, weekRows } from "../lib/progress";
+import { GOAL, OLD_GOAL, SHIELD_EVERY, goalText, goalsByWeek, type Goals, shortDate, streaks, weekCounts, weekMet, weekRows } from "../lib/progress";
 import { localIso } from "../lib/time";
 import { longDate } from "../lib/weeks";
 
@@ -25,6 +25,7 @@ export function ProgressPage() {
   const screens = useScreens();
   const today = localIso().slice(0, 10);
   const days = progress.data?.days ?? [];
+  const goals = useMemo(() => goalsByWeek(progress.data?.goals), [progress.data]);
   const desktop = useDesktop();
 
   if (progress.isLoading) return <p className="py-10 text-center text-stone-500">Loading...</p>;
@@ -37,7 +38,7 @@ export function ProgressPage() {
     // Phones: one column. Computers: a dashboard (the year at a glance, lifts in a grid, the
     // routine next to the last workouts).
     <div className="mt-2 space-y-3 pb-28 lg:mt-0 lg:space-y-6 lg:pb-12">
-      {desktop ? <YearConsistency days={days} today={today} /> : <Consistency days={days} today={today} />}
+      {desktop ? <YearConsistency days={days} today={today} goals={goals} /> : <Consistency days={days} today={today} goals={goals} />}
 
       <section className="space-y-3 lg:space-y-0">
         <h2 className="flex items-center gap-1 px-1 pt-3 font-semibold lg:pt-0 lg:pb-3">
@@ -95,10 +96,10 @@ function LastWorkouts() {
 
 /** Computers: the streak next to a year of training days (weeks as columns, Monday on top), with a
  * mark under each week that reached the goal. Same data as the phone's weeks view, laid wide. */
-function YearConsistency({ days, today }: { days: ProgressDay[]; today: string }) {
+function YearConsistency({ days, today, goals }: { days: ProgressDay[]; today: string; goals: Goals }) {
   const screens = useScreens();
   const counts = useMemo(() => weekCounts(days), [days]);
-  const streak = useMemo(() => streaks(days, today), [days, today]);
+  const streak = useMemo(() => streaks(days, today, goals), [days, today, goals]);
   const monday = weekRows(today, 1)[0].monday;
   const thisYear = days.filter((d) => d.date.startsWith(today.slice(0, 4))).length;
 
@@ -115,7 +116,7 @@ function YearConsistency({ days, today }: { days: ProgressDay[]; today: string }
         <dl className="mt-5 space-y-3 text-sm">
           <div><dt className="text-stone-500">Longest</dt><dd className="font-semibold">{streak.longest} weeks</dd></div>
           <div><dt className="text-stone-500">Shields</dt><dd className="flex items-center gap-1 font-semibold"><ShieldCheck size={14} weight="fill" className={streak.shields ? "text-sky-600" : "text-stone-300"} aria-hidden />{streak.shields} <span className="font-normal text-stone-500">· next in {streak.toShield} weeks</span></dd></div>
-          <div><dt className="text-stone-500">This week</dt><dd className="font-semibold">{goalText(monday, counts.get(monday))}</dd></div>
+          <div><dt className="text-stone-500">This week</dt><dd className="font-semibold">{goalText(monday, counts.get(monday), goals.get(monday))}</dd></div>
           <div><dt className="text-stone-500">In {today.slice(0, 4)}</dt><dd className="font-semibold">{thisYear} workouts</dd></div>
         </dl>
       </div>
@@ -124,7 +125,7 @@ function YearConsistency({ days, today }: { days: ProgressDay[]; today: string }
           <h2 className="font-semibold">Consistency</h2>
           <TypeLegend />
         </div>
-        <div className="mt-4"><Heatmap days={days} today={today} onOpen={screens.openWorkout} /></div>
+        <div className="mt-4"><Heatmap days={days} today={today} onOpen={screens.openWorkout} goals={goals} /></div>
         <p className="mt-2 text-xs text-stone-500">The red marks under the weeks reached the goal. Click a day to open it.</p>
       </div>
     </section>
@@ -229,12 +230,12 @@ const WEEKDAYS = ["M", "T", "W", "T", "F", "S", "S"];
 
 /** The streak, and the last weeks as rows of 7 days (training days in their day type's color) with
  * each week's count: one view for the calendar, workouts per week and the streak. */
-function Consistency({ days, today }: { days: ProgressDay[]; today: string }) {
+function Consistency({ days, today, goals }: { days: ProgressDay[]; today: string; goals: Goals }) {
   const screens = useScreens();
   const [count, setCount] = useState(12);
   const byDate = useMemo(() => new Map(days.map((d) => [d.date, d])), [days]);
   const counts = useMemo(() => weekCounts(days), [days]);
-  const streak = useMemo(() => streaks(days, today), [days, today]);
+  const streak = useMemo(() => streaks(days, today, goals), [days, today, goals]);
   const first = days[0].date;
   // No empty weeks from before the first workout.
   const rows = weekRows(today, count).filter((row) => row.days[6] >= first);
@@ -264,7 +265,7 @@ function Consistency({ days, today }: { days: ProgressDay[]; today: string }) {
         {rows.map((row, r) => {
           const week = counts.get(row.monday);
           const n = week?.workouts ?? 0;
-          const met = weekMet(row.monday, week);
+          const met = weekMet(row.monday, week, goals.get(row.monday));
           const covered = streak.shielded.includes(row.monday);
           // Newest first: the month shows on its newest week (weeks go by their Monday).
           const month = r === 0 || row.monday.slice(0, 7) !== rows[r - 1].monday.slice(0, 7);
@@ -282,7 +283,7 @@ function Consistency({ days, today }: { days: ProgressDay[]; today: string }) {
               }
               return <span key={day} className={`h-6 rounded-md ${day > today || day < first ? "" : "bg-stone-100"} ${ring}`} />;
             }),
-            <span key={`${row.monday}-n`} title={goalText(row.monday, week)} className={`flex items-center justify-end gap-0.5 tabular-nums ${met ? "font-semibold text-stone-800" : "text-stone-400"}`}>
+            <span key={`${row.monday}-n`} title={goalText(row.monday, week, goals.get(row.monday))} className={`flex items-center justify-end gap-0.5 tabular-nums ${met ? "font-semibold text-stone-800" : "text-stone-400"}`}>
               {n > 0 && n}
               {met && <Check size={12} weight="bold" aria-label="goal reached" />}
               {covered && <ShieldCheck size={12} weight="fill" className="text-sky-600" aria-label="covered by a shield" />}

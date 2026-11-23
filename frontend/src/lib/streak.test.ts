@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { addDays, streaks } from "./progress";
+import { addDays, goalsByWeek, streaks, weekCounts, weekMet } from "./progress";
 import { weekStart } from "./weeks";
 import {
   daysLeftText,
@@ -157,5 +157,38 @@ describe("shields", () => {
   it("keeps a just-reached milestone's band full for the rest of the week", () => {
     expect(streakStatus(weeks(START, 4), addDays(START, 7 * 3 + 4)).onMilestone).toBe(true);
     expect(streakStatus(weeks(START, 4), addDays(START, 7 * 4 + 1)).onMilestone).toBe(false);
+  });
+});
+
+describe("the goal follows the plan", () => {
+  const day = (offset: number, type: string, cardio = false) => ({ date: addDays(MONDAY, offset), type, cardio });
+  const upperLower = {
+    week: "Upper/lower week", strength: 4, cardio: 1,
+    days: [{ name: "Upper 1", kind: "Upper" }, { name: "Lower 1", kind: "Lower" }, { name: "Upper 2", kind: "Upper" },
+      { name: "Lower 2", kind: "Lower" }, { name: "Ride", kind: "Cardio" }],
+  };
+  const goals = goalsByWeek([{ monday: MONDAY, ...upperLower }]);
+
+  it("judges the week by its plan", () => {
+    const three = [day(0, "Upper"), day(1, "Lower"), day(2, "Upper"), day(3, "Cardio")];
+    expect(weekMet(MONDAY, weekCounts(three).get(MONDAY), goals.get(MONDAY))).toBe(false);
+    const all = [...three, day(4, "Lower")];
+    expect(weekMet(MONDAY, weekCounts(all).get(MONDAY), goals.get(MONDAY))).toBe(true);
+    // Without a plan for the week, the fixed 3 + 1.
+    expect(weekMet(MONDAY, weekCounts(three).get(MONDAY))).toBe(true);
+  });
+
+  it("a planned week of only optional days is a rest week, met as it is", () => {
+    expect(weekMet(MONDAY, undefined, { strength: 0, cardio: 0 })).toBe(true);
+  });
+
+  it("shows the plan's days as the slots, filled by kind first", () => {
+    const slots = weekSlots([day(0, "Lower"), day(1, "Push", true)], SUNDAY, goals.get(MONDAY));
+    expect(slots.map((s) => [s.name, s.done])).toEqual([
+      ["Upper 1", true], ["Lower 1", true], ["Upper 2", false], ["Lower 2", false], ["Ride", true],
+    ]);
+    const status = streakStatus([day(0, "Lower")], SUNDAY, goals);
+    expect(status.weekName).toBe("Upper/lower week");
+    expect(status.week.text).toBe("3 strength days and 1 cardio day");
   });
 });

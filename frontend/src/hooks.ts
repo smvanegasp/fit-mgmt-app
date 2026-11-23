@@ -122,8 +122,18 @@ export function useSavePlans(today: string) {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: (v: { weeks: WeekPlan[]; current?: string }) => api.savePlans(v.weeks, v.current, today),
-    onSuccess: (data) => qc.setQueryData(["plans", today], data),
+    onSuccess: (data) => {
+      qc.setQueryData(["plans", today], data);
+      // The week's goal follows the plan, and the save is a new version in the history.
+      qc.invalidateQueries({ queryKey: ["progress"] });
+      qc.invalidateQueries({ queryKey: ["plan-history"] });
+    },
   });
+}
+
+/** Every saved version of the plans, newest first. */
+export function usePlanHistory(enabled: boolean) {
+  return useQuery({ queryKey: ["plan-history"], queryFn: api.planHistory, enabled });
 }
 
 export function useSessionTypes() {

@@ -66,6 +66,8 @@ export interface DayOption {
   exercises?: string[];
   /** Already trained this week. */
   done: boolean;
+  /** Doesn't count toward the week's goal. */
+  optional?: boolean;
 }
 
 /**
@@ -79,9 +81,10 @@ export function weekOptions(week: Pick<WeekPlan, "days">, done: string[]): { opt
   const options = week.days.map((d) => {
     const n = left.get(d.kind) ?? 0;
     if (n > 0) left.set(d.kind, n - 1);
-    return { key: d.id, label: d.name, dayType: d.kind, exercises: d.exercises.length ? d.exercises : undefined, done: n > 0 };
+    return { key: d.id, label: d.name, dayType: d.kind, exercises: d.exercises.length ? d.exercises : undefined, done: n > 0, optional: d.optional };
   });
-  return { options, next: options.find((o) => !o.done)?.key ?? null };
+  // Next up: the first day that counts and isn't done, else an optional one.
+  return { options, next: (options.find((o) => !o.done && !o.optional) ?? options.find((o) => !o.done))?.key ?? null };
 }
 
 /** The week type after this one in the rotation (they repeat in order). */

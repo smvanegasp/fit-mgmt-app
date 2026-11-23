@@ -5,7 +5,7 @@ from datetime import date
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 
 from app import plans
-from app.models import PlansBody, TrainingPlans
+from app.models import PlansBody, PlanVersion, TrainingPlans
 from app.routers.exercises import all_exercises
 from app.space import current_space
 
@@ -18,6 +18,12 @@ TODAY = Query(default_factory=lambda: date.today().isoformat(), pattern=r"^\d{4}
 def get_plans(today: str = TODAY, space: str = Depends(current_space)) -> TrainingPlans:
     """`today` is the phone's local date, which decides this week's type."""
     return plans.get_plans(space, all_exercises(space), today)
+
+
+@router.get("/history")
+def plan_history(space: str = Depends(current_space)) -> list[PlanVersion]:
+    """Every saved version of the plans, newest first."""
+    return plans.history(space)
 
 
 @router.put("")

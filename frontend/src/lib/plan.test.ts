@@ -74,3 +74,14 @@ describe("training plans", () => {
     expect(planEntries(["dips", "nope"], new Set(["warm-up", "dips"]))).toEqual([{ exerciseId: "warm-up" }, { exerciseId: "dips" }]);
   });
 });
+
+describe("optional days", () => {
+  it("aren't next up while a day that counts is left", () => {
+    const week = { days: [
+      { id: "ride", name: "Extra ride", kind: "Cardio" as const, exercises: [], optional: true },
+      { id: "push", name: "Push", kind: "Push" as const, exercises: [] },
+    ] };
+    expect(weekOptions(week, []).next).toBe("push");
+    expect(weekOptions(week, ["Push"]).next).toBe("ride");
+  });
+});

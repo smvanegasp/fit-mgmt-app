@@ -376,11 +376,29 @@ class Routine(BaseModel):
     sessions: int = 0
 
 
+class GoalDay(BaseModel):
+    name: str
+    kind: str
+
+
+class WeekGoal(BaseModel):
+    """A week's goal from the plan in force that week (app/plans.py): its week type's days that
+    count (not optional), as strength days (every kind but Cardio) and cardio days."""
+
+    monday: str
+    week: str
+    strength: int
+    cardio: int
+    days: list[GoalDay]
+
+
 class Progress(BaseModel):
     days: list[ProgressDay]
     lifts: list[Lift]
     # Newest first.
     routines: list[Routine] = Field(default_factory=list)
+    # From the first saved plan on, each week's goal (oldest first); weeks before keep the fixed goal.
+    goals: list[WeekGoal] = Field(default_factory=list)
 
 
 class FeedbackCreate(BaseModel):
@@ -448,6 +466,8 @@ class DayPlan(BaseModel):
     name: str = Field(min_length=1, max_length=40)
     kind: DayKind
     exercises: list[str] = Field(default_factory=list, max_length=20)
+    # In the plan but not part of the week's goal (Sergio, 2026-11-23: "a ride if I have time").
+    optional: bool = False
 
 
 class WeekPlan(BaseModel):
@@ -464,6 +484,14 @@ class TrainingPlans(BaseModel):
     current: str | None = None
     # False while the plans are read off the log (nothing saved yet).
     saved: bool = False
+
+
+class PlanVersion(BaseModel):
+    """A saved version of the plans (every save is kept): in force from the Monday of its week."""
+
+    savedAt: str
+    start: str
+    weeks: list[WeekPlan]
 
 
 class PlansBody(BaseModel):

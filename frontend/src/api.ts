@@ -1,3 +1,5 @@
+import { localIso } from "./lib/time";
+
 export type Group = "push" | "pull" | "legs" | "posterior" | "core" | "skill" | "cardio" | "climbing";
 /** How a set's weight reads: barbell = plates (bar added for totals), dumbbell = per hand with
  * `each`, added = on top of body weight, bodyweight / none = no weight. */
@@ -250,6 +252,24 @@ export interface Progress {
   lifts: Lift[];
   /** Newest first. */
   routines: Routine[];
+  /** Each week's goal from the plans, from the first saved one on (oldest first). */
+  goals?: WeekGoal[];
+}
+
+/** A week's goal from its week type (Sergio, 2026-11-23): the days that count, as strength and cardio days. */
+export interface WeekGoal {
+  monday: string;
+  week: string;
+  strength: number;
+  cardio: number;
+  days: { name: string; kind: string }[];
+}
+
+/** A saved version of the plans; it's in force from the Monday `start`. */
+export interface PlanVersion {
+  savedAt: string;
+  start: string;
+  weeks: WeekPlan[];
 }
 
 /** What a planned day is (Sergio, 2026-11-23: mixed days too, like an upper-body day). */
@@ -262,6 +282,8 @@ export interface DayPlan {
   name: string;
   kind: DayKind;
   exercises: string[];
+  /** In the plan but not part of the week's goal. */
+  optional?: boolean;
 }
 
 /** A week type ("Squat & heavy push week"); week types repeat in their order. */
@@ -378,7 +400,8 @@ export const api = {
   savePlans: (weeks: WeekPlan[], current: string | undefined, today: string) =>
     request<TrainingPlans>(`/plans?today=${today}`, json("PUT", { weeks, current })),
 
-  progress: () => request<Progress>("/progress"),
+  progress: () => request<Progress>(`/progress?today=${localIso().slice(0, 10)}`),
+  planHistory: () => request<PlanVersion[]>("/plans/history"),
   bodyWeights: () => request<BodyWeight[]>("/body"),
   logBodyWeight: (date: string, weightLb: number) => request<BodyWeight>(`/body/${date}`, json("PUT", { weightLb })),
   deleteBodyWeight: (date: string) => request<void>(`/body/${date}`, { method: "DELETE" }),

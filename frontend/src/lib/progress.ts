@@ -75,16 +75,35 @@ export function weekCounts(days: Day[]): Map<string, WeekCount> {
   return counts;
 }
 
-/** Whether a week reached its goal (the old one before GOAL_FROM). */
-export function weekMet(monday: string, c: WeekCount | undefined): boolean {
+/** A week's goal from the plans (from the first saved plan on); other weeks use the fixed goal. */
+export interface PlanGoal {
+  strength: number;
+  cardio: number;
+  week?: string;
+  days?: { name: string; kind: string }[];
+}
+
+/** Monday -> that week's goal from the plans. */
+export type Goals = Map<string, PlanGoal>;
+
+export function goalsByWeek(goals: ({ monday: string } & PlanGoal)[] | undefined): Goals {
+  return new Map((goals ?? []).map((g) => [g.monday, g]));
+}
+
+/** Whether a week reached its goal: its plan's (Sergio, 2026-11-23: the goal follows the plan; a
+ * planned week of only optional days is a rest week, met as it is), else the fixed one, or the old
+ * one before GOAL_FROM. */
+export function weekMet(monday: string, c: WeekCount | undefined, goal?: PlanGoal): boolean {
+  if (goal) return (c?.strength ?? 0) >= goal.strength && (c?.cardio ?? 0) >= goal.cardio;
   if (!c) return false;
   return monday < GOAL_FROM ? c.workouts >= OLD_GOAL : c.strength >= GOAL.strength && c.cardio >= GOAL.cardio;
 }
 
 /** "2 of 3 strength · 0 of 1 cardio" (or "2 of 3 workouts" for a week before GOAL_FROM). */
-export function goalText(monday: string, c: WeekCount | undefined): string {
-  if (monday < GOAL_FROM) return `${c?.workouts ?? 0} of ${OLD_GOAL} workouts`;
-  return `${c?.strength ?? 0} of ${GOAL.strength} strength · ${c?.cardio ?? 0} of ${GOAL.cardio} cardio`;
+export function goalText(monday: string, c: WeekCount | undefined, goal?: PlanGoal): string {
+  if (!goal && monday < GOAL_FROM) return `${c?.workouts ?? 0} of ${OLD_GOAL} workouts`;
+  const g = goal ?? GOAL;
+  return `${c?.strength ?? 0} of ${g.strength} strength · ${c?.cardio ?? 0} of ${g.cardio} cardio`;
 }
 
 /**
@@ -108,7 +127,7 @@ export interface StreakRun {
 
 /** Weeks in a row that reached the goal, with shields. This week only adds once it reaches the
  * goal, and doesn't break the streak (or use a shield) while it's still going. */
-export function streaks(days: Day[], today: string): StreakRun {
+export function streaks(days: Day[], today: string, goals?: Goals): StreakRun {
   if (days.length === 0) return { current: 0, longest: 0, shields: 0, toShield: SHIELD_EVERY, shielded: [] };
   const counts = weekCounts(days);
   const first = weekStart(days.reduce((min, d) => (d.date < min ? d.date : min), days[0].date));
@@ -119,7 +138,7 @@ export function streaks(days: Day[], today: string): StreakRun {
   let earning = 0; // weeks banked toward the next shield
   const shielded: string[] = [];
   for (let monday = first; monday <= thisWeek; monday = addDays(monday, 7)) {
-    if (weekMet(monday, counts.get(monday))) {
+    if (weekMet(monday, counts.get(monday), goals?.get(monday))) {
       run += 1;
       earning += 1;
       if (earning === SHIELD_EVERY) {
