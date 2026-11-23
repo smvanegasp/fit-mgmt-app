@@ -97,7 +97,7 @@ function useExerciseChange<T>(fn: (vars: T) => Promise<unknown>) {
 }
 
 export function useUpdateExercise() {
-  return useExerciseChange((v: { id: string; patch: { name?: string; group?: Group; stepLb?: number } }) => api.updateExercise(v.id, v.patch));
+  return useExerciseChange((v: { id: string; patch: { name?: string; group?: Group; stepLb?: number; progression?: "heavy" | "reps" | "auto" } }) => api.updateExercise(v.id, v.patch));
 }
 
 export function useMergeExercise() {

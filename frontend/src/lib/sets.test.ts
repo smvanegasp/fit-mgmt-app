@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { congratsFor, dayType, goesUp, heavyNext, ladderWeights, nextRung, nextSet, nextUp, reachesTarget, schemeText, summarizeSets, volume, weightText, workoutTitle } from "./sets";
+import { congratsFor, dayType, goesUp, heavyNext, ladderWeights, nextRung, nextSet, nextUp, reachesTarget, schemeText, summarizeSets, volume, weightText, workoutTitle, goUpText } from "./sets";
 
 const barbell = { load: "barbell" as const, measure: "reps" as const, barLb: 45 };
 const added = { load: "added" as const, measure: "reps" as const, barLb: 0 };
@@ -158,8 +158,20 @@ describe("going up", () => {
     expect(goesUp([5, 5, 5], [4, 4, 4, 4, 4])).toBe(true);
     expect(goesUp([5, 4, 4, 4], [4, 4, 4, 4])).toBe(false);
     expect(goesUp([4, 4, 4, 4], [5, 5, 5])).toBe(false);
-    expect(nextRung({ ...target, sets: [4, 4, 4] }).sets).toEqual([4, 4, 4, 4]);
-    expect(nextRung(target).sets).toEqual([5, 5, 5]);
+    expect(nextRung({ ...target, sets: [4, 4, 4] })?.sets).toEqual([4, 4, 4, 4]);
+    expect(nextRung(target)?.sets).toEqual([5, 5, 5]);
+    expect(nextRung({ ...target, sets: [5, 5, 5, 5, 5] })).toBeNull(); // 5x5: more weight
+  });
+
+  it("the reps ladder: one more rep at 3 sets, 3x6 to 3x10, then more weight", () => {
+    expect(goesUp([7, 7, 7], [6, 6, 6], "reps")).toBe(true);
+    expect(goesUp([6, 6, 6, 6], [6, 6, 6], "reps")).toBe(false); // an extra set isn't a step
+    expect(goesUp([8, 8, 8], [10, 10], "reps")).toBe(true); // reaching 3 sets is
+    expect(nextRung({ ...target, sets: [8, 8, 8] }, "reps")?.sets).toEqual([9, 9, 9]);
+    expect(nextRung({ ...target, sets: [10, 10, 10] }, "reps")).toBeNull();
+    expect(goUpText({ ...target, sets: [10, 10, 10] }, "reps", "machine")).toBe("go up: more weight, back to 3x6");
+    expect(congratsFor(reps(2, 7), reps(3, 7), { ...target, sets: [6, 6, 6] }, 1, 3, "reps")?.kind).toBe("up");
+    expect(congratsFor(reps(3, 6), reps(4, 6), { ...target, sets: [6, 6, 6] }, 3, 3, "reps")).toBeNull();
   });
 
   it("congratulates going up the moment it happens, once", () => {

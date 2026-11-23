@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from "react";
 
 import { api, type CueSection, type Entry, type Exercise, type Note, type Photo, type Problem, type Role, type Scheme, type SetData, type Streak } from "../api";
 import { useAddNote, useExerciseSummary, useUpdateExercise, useUpdateNote } from "../hooks";
-import { congratsFor, ladderWeights, nextRung, nextSet, reachesTarget, schemeText, summarizeSets, weightText, type Congrats } from "../lib/sets";
+import { congratsFor, goUpText, ladderWeights, nextSet, reachesTarget, schemeText, summarizeSets, weightText, type Congrats } from "../lib/sets";
 import { clearDraft, loadDraft, saveDraft } from "../lib/drafts";
 import { pelotonStats } from "../lib/kinds";
 import { formatDuration } from "../lib/duration";
@@ -88,7 +88,7 @@ export function EntryCard({ entry, exercise, excludeWorkoutId, role, draftKey, o
       ) : (
         <SetLog entry={entry} exercise={exercise} draftKey={draftKey} lastSets={last?.entry.sets} bestDrop={summary.data?.bestDrop} target={streak?.scheme}
           onChange={onChange} onSetLogged={onSetLogged}
-          onLogged={focus && streak ? (before, after) => setCelebrate(congratsFor(before, after, streak.scheme, streak.times, streak.goal)) : undefined} />
+          onLogged={focus && streak ? (before, after) => setCelebrate(congratsFor(before, after, streak.scheme, streak.times, streak.goal, streak.style)) : undefined} />
       )}
 
       <EntryNotes entry={entry} exercise={exercise} cues={summary.data?.cues ?? []} setupPhotos={summary.data?.photos ?? []} onChange={onChange} />
@@ -211,13 +211,15 @@ export function TargetGame({ streak, load, today }: { streak: Streak; load: Exer
       <div className="min-w-0 flex-1">
         <div className="font-display text-xl font-semibold">Target {schemeText(streak.scheme, load)}</div>
         <div className="text-xs">
-          {done ? `${streak.times} in a row: go up, try ${schemeText(nextRung(streak.scheme), load)} or more weight` : `${streak.times} of ${streak.goal} in a row`}
+          {done ? `${streak.times} in a row: ${goUpText(streak.scheme, streak.style ?? "heavy", load)}` : `${streak.times} of ${streak.goal} in a row`}
           {reachedToday && <span className="font-semibold"> · reached today</span>}
         </div>
       </div>
       <GameDots times={streak.times + (reachedToday && !done ? 1 : 0)} goal={streak.goal} />
       <InfoTip title="Target">
-        Hit these sets 3 sessions in a row, then go up: one more set, one more rep, or more weight. A miss takes one away.
+        {streak.style === "reps"
+          ? "Hit these sets 3 sessions in a row, then one more rep: 3x6 up to 3x10, then more weight. A miss takes one away."
+          : "Hit these sets 3 sessions in a row, then go up: 3x2, 4x2, 5x2, 3x3 ... up to 5x5, then more weight. A miss takes one away."}
       </InfoTip>
     </div>
   );

@@ -23,6 +23,8 @@ export interface Exercise {
   mergedInto?: string;
   /** The weight stepper's step (2.5 or 5 lb); unset = 2.5 for dumbbells, else 5. */
   stepLb?: number | null;
+  /** Set by Sergio; unset = inferred from the sessions. */
+  progression?: "heavy" | "reps" | null;
 }
 
 export interface SetData {
@@ -164,6 +166,8 @@ export interface Streak {
   /** +1 per session that reached it, -1 per miss; at `goal` it's time to go up. */
   times: number;
   goal: number;
+  /** The ladder it climbs: heavy (3x2 ... 5x5) or reps (3x6 ... 3x10). */
+  style?: "heavy" | "reps";
 }
 
 /** One weigh-in (one per day). */
@@ -230,6 +234,8 @@ export interface Lift {
   exerciseId: string;
   name: string;
   load: Load;
+  /** The ladder it climbs (set or inferred). */
+  style?: "heavy" | "reps";
   /** The bar for barbell lifts: weights are plates as written. */
   barLb: number;
   /** Oldest first; the last one is the current target. */
@@ -377,9 +383,9 @@ export const api = {
   markFeedback: (id: string, status: Feedback["status"]) => request<Feedback>(`/feedback/${id}`, json("PATCH", { status })),
 
   listExercises: () => request<Exercise[]>("/exercises"),
-  createExercise: (body: Pick<Exercise, "name" | "group" | "load" | "measure">) =>
+  createExercise: (body: Pick<Exercise, "name" | "group" | "load" | "measure" | "progression">) =>
     request<Exercise>("/exercises", json("POST", body)),
-  updateExercise: (id: string, patch: { name?: string; group?: Group; stepLb?: number }) =>
+  updateExercise: (id: string, patch: { name?: string; group?: Group; stepLb?: number; progression?: "heavy" | "reps" | "auto" }) =>
     request<Exercise>(`/exercises/${id}`, json("PATCH", patch)),
   mergeExercise: (id: string, into: string) => request<Exercise>(`/exercises/${id}/merge`, json("POST", { into })),
   exerciseHistory: (id: string) => request<ExerciseHistory>(`/exercises/${id}/history`),

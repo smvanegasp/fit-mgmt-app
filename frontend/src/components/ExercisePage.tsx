@@ -10,6 +10,7 @@ import { BottomSheet } from "./BottomSheet";
 import { CueManager } from "./Cues";
 import { Ladder, TargetGame } from "./EntryCard";
 import { ExercisePicker, GROUP_NAMES } from "./ExercisePicker";
+import { InfoTip } from "./InfoTip";
 import { PhotoStrip } from "./Photos";
 import { Climbing, DropSets, ProgressionLadder, groupColor } from "./Progression";
 import { Screen } from "./Screen";
@@ -70,6 +71,9 @@ export function ExercisePage({ exerciseId, onClose }: { exerciseId: string; onCl
               onOpenWorkout={screens.openWorkout} />
           ) : (
             summary.data?.streak && <TargetGame streak={summary.data.streak} load={exercise.load} today={[]} />
+          )}
+          {exercise.measure === "reps" && (
+            <ProgressionStyle exercise={exercise} style={lift.data?.style ?? summary.data?.streak?.style ?? "heavy"} />
           )}
           {series && series.points.length >= 2 && (
             <section className="rounded-2xl border border-stone-200 bg-white p-4">
@@ -148,6 +152,47 @@ function monthYear(day: string): string {
 
 
 const GROUPS: Group[] = ["push", "pull", "legs", "core", "cardio"];
+
+export const STYLES = [
+  { id: "heavy", label: "Heavy", ladder: "3x2 → 5x5" },
+  { id: "reps", label: "Reps", ladder: "3x6 → 3x10" },
+] as const;
+
+/**
+ * How the exercise moves up (Sergio, 2026-11-23): heavy (3x2, 4x2, 5x2, 3x3 ... 5x5, then weight) or
+ * reps (3x6 ... 3x10, then weight). Inferred from the sessions until Sergio picks one; "Automatic"
+ * goes back to the inferred one. The target and its messages follow it.
+ */
+function ProgressionStyle({ exercise, style }: { exercise: Exercise; style: "heavy" | "reps" }) {
+  const update = useUpdateExercise();
+  const set = (progression: "heavy" | "reps" | "auto") => update.mutate({ id: exercise.id, patch: { progression } });
+  return (
+    <section className="rounded-2xl border border-stone-200 bg-white p-4">
+      <h2 className="flex items-center gap-1 font-semibold">
+        Aiming for
+        <InfoTip title="Aiming for">How the target moves up. Heavy: more sets, then more reps, up to 5x5. Reps: one more rep up to 3x10. Then more weight.</InfoTip>
+        <span className="ml-auto text-xs font-normal text-stone-500">{exercise.progression ? "set by you" : "automatic"}</span>
+      </h2>
+      <div role="radiogroup" aria-label="Progression" className="mt-3 grid grid-cols-2 gap-1 rounded-xl bg-stone-100 p-1">
+        {STYLES.map((s) => (
+          <button key={s.id} type="button" role="radio" aria-checked={style === s.id} disabled={update.isPending}
+            onClick={() => style !== s.id && set(s.id)}
+            className={`rounded-lg px-2 py-2 text-center ${style === s.id ? "bg-white shadow-sm" : "text-stone-600"}`}>
+            <span className="block font-semibold">{s.label}</span>
+            <span className="block text-xs text-stone-500">{s.ladder}</span>
+          </button>
+        ))}
+      </div>
+      {exercise.progression && (
+        <button type="button" onClick={() => set("auto")} disabled={update.isPending}
+          className="mt-2 text-xs font-medium text-stone-500 underline">
+          Back to automatic
+        </button>
+      )}
+      {update.error && <p className="mt-2 text-sm text-red-600">{update.error.message}</p>}
+    </section>
+  );
+}
 
 /** Rename, change category, or merge a duplicate into another exercise. */
 function ManageSheet({ exercise, onClose, onMerged }: { exercise: Exercise; onClose: () => void; onMerged: () => void }) {

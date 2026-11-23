@@ -98,7 +98,7 @@ def test_summary_shows_last_time_and_streak(client: TestClient) -> None:
     assert summary["last"]["date"] == "2026-10-23"
     # 10-12 reached it (1), 10-16 missed a rep (back to 0), 10-20 and 10-23 reached it (2).
     assert summary["streak"] == {"scheme": {"sets": [5, 5, 5, 5, 5], "weightLb": 170, "each": False, "seconds": False},
-                                 "times": 2, "goal": 3}
+                                 "times": 2, "goal": 3, "style": "heavy"}
     assert [c["text"] for c in summary["cues"]] == ["Concentración total"]
     assert summary["photos"] == [{"key": "main/wa-1", "caption": "Rack at 7", "date": "2026-10-12"}]
     # While editing the 10-23 workout, "last time" is the one before it.

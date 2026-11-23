@@ -1,7 +1,7 @@
 """The target game: +1 for a session that reaches the target, -1 for a miss, 3 means go up."""
 
-from app.history import best_drop, goes_up, progression, rung, written_target
-from app.models import Entry
+from app.history import best_drop, goes_up, infer_style, progression, rung, written_target
+from app.models import Entry, Exercise
 
 
 def lift(sets: list[tuple[int, int, float]], targets: list[str] | None = None) -> Entry:
@@ -112,3 +112,27 @@ def test_a_target_not_reached_in_two_months_gives_way() -> None:
     # Reached after a long break still counts.
     back = progression([("2026-01-01", now), ("2026-01-08", now), ("2026-05-01", now)])
     assert (back.scheme.sets, back.times) == ([8, 8, 8], 3)
+
+
+def test_the_reps_ladder_counts_only_more_reps_at_three_sets() -> None:
+    assert goes_up([7, 7, 7], [6, 6, 6], "reps")
+    assert not goes_up([6, 6, 6, 6], [6, 6, 6], "reps")  # an extra set isn't a step
+    assert goes_up([6, 6, 6, 6], [6, 6, 6])  # it is on the heavy ladder
+    assert goes_up([8, 8, 8], [10, 10], "reps")  # reaching 3 sets is
+
+
+def test_the_style_is_inferred_from_the_sets_unless_sergio_set_it() -> None:
+    def day(reps: int) -> tuple[str, Entry]:
+        return ("2026-11-01", Entry(exerciseId="x", sets=[{"reps": reps, "weightLb": 100}] * 3))
+    lift = Exercise(id="x", name="X", group="push", load="machine")
+    assert infer_style([day(4), day(5)], lift) == "heavy"
+    assert infer_style([day(8), day(10)], lift) == "reps"
+    assert infer_style([day(8)], lift.model_copy(update={"progression": "heavy"})) == "heavy"
+    assert infer_style([], lift) == "heavy"
+
+
+def test_a_reps_target_reached_at_more_sets_keeps_counting() -> None:
+    sessions = [(f"2026-11-0{i}", Entry(exerciseId="x", sets=[{"reps": 8, "weightLb": 155}] * n))
+                for i, n in enumerate([4, 5, 4, 5], start=1)]
+    reps = progression(sessions, style="reps")
+    assert reps and reps.scheme.sets == [8, 8, 8, 8] and reps.times == 4 and reps.style == "reps"

@@ -72,21 +72,52 @@ export function rung(reps: number[], minSets: number): [number, number] {
   return best;
 }
 
-/** Whether reps at the target's weight are a higher rung than the target (5x4 -> 3x5 is up). */
-export function goesUp(done: number[], target: number[]): boolean {
+/**
+ * How an exercise moves up (Sergio, 2026-11-23): "heavy" climbs 3x2, 4x2, 5x2, 3x3 ... 5x5, then more
+ * weight; "reps" (accessories) climbs 3x6, 3x7 ... 3x10, then more weight.
+ */
+export type Progression = "heavy" | "reps";
+export const HEAVY_TOP = 5; // 5x5
+export const REPS_TOP = 10; // 3x10
+export const REPS_START = 6; // 3x6 at the new weight
+
+/** Whether reps at the target's weight are a higher rung than the target. Heavy: more sets of its
+ * reps, or more reps (5x4 -> 3x5). Reps: only more reps at 3 sets; below 3 sets, reaching 3 is the
+ * step. Same as the server's `goes_up`. */
+export function goesUp(done: number[], target: number[], style: Progression = "heavy"): boolean {
   if (target.length === 0) return false;
   const floor = Math.min(3, target.length);
+  if (style === "reps") {
+    const done3 = rung(done, 3)[0];
+    const target3 = rung(target, 3)[0];
+    if (target3 === 0) return done3 > 0 || rung(done, floor)[0] > rung(target, floor)[0];
+    return done3 > target3;
+  }
   const [r, n] = rung(done, floor);
   const [tr, tn] = rung(target, floor);
   return r > tr || (r === tr && n > tn);
 }
 
-/** The next rung after a target, to aim for once it's been reached 3 times: one more set, or
- * past 5 sets one more rep at 3 sets (5x4 -> 3x5). */
-export function nextRung(scheme: Scheme): Scheme {
+/** The next rung after a target, to aim for once it's been reached 3 times, or null when the next
+ * step is more weight (past 5x5 heavy, or 3x10 reps). Heavy: one more set, or past 5 sets one more
+ * rep at 3 sets (5x4 -> 3x5). Reps: one more rep at 3 sets. */
+export function nextRung(scheme: Scheme, style: Progression = "heavy"): Scheme | null {
   const [r, n] = rung(scheme.sets, Math.min(3, scheme.sets.length));
+  if (style === "reps") {
+    const at3 = rung(scheme.sets, 3)[0];
+    if (at3 >= REPS_TOP) return null;
+    return { ...scheme, sets: Array(3).fill(at3 ? at3 + 1 : Math.max(r, REPS_START)) };
+  }
+  if (r >= HEAVY_TOP && n >= 5) return null;
   const sets = n < 5 ? Array(n + 1).fill(r) : Array(3).fill(r + 1);
   return { ...scheme, sets };
+}
+
+/** "go up: try 4x3 @ 180 or more weight" / "go up: more weight, back to 3x6" / "go up: more weight". */
+export function goUpText(scheme: Scheme, style: Progression, load: Exercise["load"]): string {
+  const next = nextRung(scheme, style);
+  if (next) return `go up: try ${schemeText(next, load)} or more weight`;
+  return style === "reps" ? `go up: more weight, back to 3x${REPS_START}` : "go up: more weight";
 }
 
 export type Congrats = { kind: "reached" } | { kind: "up"; scheme: Scheme };
@@ -96,7 +127,7 @@ export type Congrats = { kind: "reached" } | { kind: "up"; scheme: Scheme };
  * or a higher rung at the target's weight) gets "Went up"; reaching the target gets "Target
  * crushed", except once it's time to go up (doing it again isn't the news then). Each fires once.
  */
-export function congratsFor(before: SetData[], after: SetData[], target: Scheme, times: number, goal: number): Congrats | null {
+export function congratsFor(before: SetData[], after: SetData[], target: Scheme, times: number, goal: number, style: Progression = "heavy"): Congrats | null {
   const work = (sets: SetData[]) => sets.filter((s) => !s.drop && !s.detail);
   const value = (s: SetData) => (target.seconds ? s.seconds : s.reps) ?? 0;
   const weight = target.weightLb ?? 0;
@@ -107,7 +138,7 @@ export function congratsFor(before: SetData[], after: SetData[], target: Scheme,
     return { kind: "up", scheme: { ...target, weightLb: heaviest, sets: at.map(value) } };
   }
   const atTarget = (sets: SetData[]) => work(sets).filter((s) => (s.weightLb ?? 0) === weight).map(value);
-  if (goesUp(atTarget(after), target.sets) && !goesUp(atTarget(before), target.sets)) {
+  if (goesUp(atTarget(after), target.sets, style) && !goesUp(atTarget(before), target.sets, style)) {
     return { kind: "up", scheme: { ...target, sets: atTarget(after) } };
   }
   if (times < goal && !reachesTarget(before, target) && reachesTarget(after, target)) return { kind: "reached" };

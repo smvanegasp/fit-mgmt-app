@@ -4,7 +4,7 @@ exercise's progression ladder (the targets Sergio worked through, built from the
 from typing import Any
 
 from app import db
-from app.history import merged_entry, replay, workouts
+from app.history import infer_style, merged_entry, replay, workouts
 from app.labels import day_type, did_cardio
 from app.models import Exercise, Lift, Progress, ProgressDay, Routine, Step, StepSession
 
@@ -21,7 +21,9 @@ def ladder(every: list[dict[str, Any]], exercise: Exercise) -> Lift:
     ids = {w["date"]: w["id"] for w, _ in done}
     steps: list[Step] = []
     weighted = exercise.load in ("barbell", "dumbbell", "machine", "added")
-    for game in replay([(w["date"], e) for w, e in done]):
+    sessions = [(w["date"], e) for w, e in done]
+    style = infer_style(sessions, exercise)
+    for game in replay(sessions, style):
         # A weighted lift done at body weight that day is a light day too.
         if game.track == "second" or (weighted and not game.target.weightLb):
             continue
@@ -32,7 +34,7 @@ def ladder(every: list[dict[str, Any]], exercise: Exercise) -> Lift:
             steps[-1].sessions.append(session)
             steps[-1].times = game.times
     bar = exercise.barLb if exercise.load == "barbell" else 0
-    return Lift(exerciseId=exercise.id, name=exercise.name, load=exercise.load, barLb=bar, steps=steps)
+    return Lift(exerciseId=exercise.id, name=exercise.name, load=exercise.load, barLb=bar, steps=steps, style=style)
 
 
 def progress(space: str, exercises: dict[str, Exercise]) -> Progress:

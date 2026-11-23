@@ -165,7 +165,8 @@ A mobile-first web app where Sergio logs their gym workouts and sees their progr
 | 14a | The plan as one cycle of days: next is the day after the last workout, whatever the calendar week; Train shows the last two workouts and the next four days; workouts store the plan days they were started from (`planDays`) | #53 (shipped with #52) |
 | 14b | Feedback: Start inside the plan card, no "Last workouts" on Train, the plan page lists the days (numbered through the cycle, grouped by week type), the warm-up is its own group (not cardio) and left out of exercise lists, History drops "Show every exercise", Progress drops the routine timeline | #54 |
 | 14c | Start inside the selected day's row; "View more days" numbered through the cycle; the plan page is one list of days (add, reorder, a page per day), saved as a single week type | #55 |
-| 14d | Progress lifts push, pull, legs (dips, bench, chin-ups, pull-ups, deadlift, squat); the Climbing card hidden (`SHOW_CLIMBING`) | (open) |
+| 14d | Progress lifts push, pull, legs (dips, bench, chin-ups, pull-ups, deadlift, squat); the Climbing card hidden (`SHOW_CLIMBING`) | #56 |
+| 15a | Two progression ladders per exercise (heavy 3x2 ... 5x5, reps 3x6 ... 3x10), inferred or set ("Aiming for" on the exercise page and when creating one), with tailored go-up hints and congrats; the plan page drops earlier versions | (open) |
 
 **Where things stand (2026-11-23):** PRs up to #48 are merged and live; stage 12c (the in-app feedback
 of 2026-11-23) is the open PR. The notes below on stage 10a are kept for context.
@@ -326,7 +327,11 @@ frontend/
     miss takes one away (not a reset); 3 means go up. More weight or a small deload starts a new
     target, and so does **a higher rung of Sergio's ladder** at the same weight (stage 11a: 3x2, 4x2,
     5x2, 3x3, ... 4x5, 5x5; a rung is the most reps 3+ sets reach, then how many sets; 5x4 -> 3x5 is
-    up, more total reps alone isn't). A target **not reached in 60 days** gives way to the session's
+    up, more total reps alone isn't). **Two ladders** (stage 15a, `progression` on the exercise, else
+    inferred from its last 6 sessions: a typical set of 5 reps or fewer is heavy): heavy as above, up to
+    5x5 then more weight; **reps** (accessories) 3x6, 3x7 ... 3x10 then more weight, where only more reps
+    at 3 sets is a step (below 3 sets, reaching 3 is). Set on the exercise page ("Aiming for") or when
+    creating one; the target line's "go up" hint and "Went up" follow it. A target **not reached in 60 days** gives way to the session's
     sets (an unmarked old drop set held wide pull-ups for a year). In the logger, a heavier set or a
     higher rung gets a "Went up" congrats; reaching the target gets one only before it's time to go up. A session >10% lighter than the
     main target plays a **second track** with the same rules (squat done second after deadlift,
