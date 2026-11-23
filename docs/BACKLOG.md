@@ -155,6 +155,18 @@ sandbox (five named slots, the goal of 4 strength days). Not tested: Restore in 
 Checked: backend 121 and frontend 92 tests, the welcome page logged out at 390x844 (dark and light) and
 1440x900 on the local log (older than production: its streak reads 0 there). Not tested: the live numbers.
 
+## Stage 15b: cues folded, a clearer weight step (`stage-15b-cues-step`, Sergio 2026-11-23)
+
+| Feedback | Done |
+|---|---|
+| "Keep in mind" during training should stay fully collapsed, to keep the workout focused. | One folded line ("Keep in mind · 3 cues") until tapped; open, every cue by section, Add cue and the edit pencil. The exercise page keeps its full list. |
+| The 5 / 2.5 lb step is great but not intuitive ("Steps of 5 lb · use 2.5" link). | A "Step 2.5 / 5" switch under the Weight label, next to the − and + it changes; it switches at once and is kept for the exercise. |
+| (Found on the way) Weights like 147.5, 22.5 or even 145 were cut off in the stepper. | The number shrinks only as much as it needs to fit (measured: 45 stays 72 px, 147.5 goes to 42 px); before, 145 and every 4-5 character weight overflowed the 94 px box at phone width. |
+
+Checked: frontend 99 tests and build; a demo workout (started and discarded): the cues folded then opened
+(3), the step switched to 2.5 and + went 145 → 147.5, weights from 45 to 147.5 measured fitting. Not tested:
+Sergio's phone.
+
 ## Stage 15a: two progression ladders (`stage-15a-progression`, Sergio 2026-11-23)
 
 Sergio: heavy exercises climb 3x2, 4x2, 5x2, 3x3, 4x3, 5x3 ... 5x5; secondary ones 3x6, 3x7 ... 3x10. Infer

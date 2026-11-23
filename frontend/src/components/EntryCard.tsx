@@ -233,18 +233,29 @@ export function weightStep(exercise: Pick<Exercise, "load" | "stepLb">): number 
   return exercise.stepLb ?? (exercise.load === "dumbbell" ? 2.5 : 5);
 }
 
-/** Switch an exercise between 5 and 2.5 lb steps (Sergio, 2026-11-19); kept for next time. */
-function StepToggle({ exercise }: { exercise: Exercise }) {
+/**
+ * The weight step, 2.5 or 5 lb, as a small switch under the Weight label, next to the − and + it
+ * changes (Sergio, 2026-11-19; clearer 11-23: the "use 2.5" link wasn't obvious). It changes at
+ * once and is kept for the exercise next time.
+ */
+function StepSwitch({ exercise, step, onStep }: { exercise: Exercise; step: number; onStep: (step: number) => void }) {
   const update = useUpdateExercise();
-  const step = weightStep(exercise);
-  const other = step === 5 ? 2.5 : 5;
   return (
-    <div className="flex justify-end">
-      <button type="button" disabled={update.isPending}
-        onClick={() => update.mutate({ id: exercise.id, patch: { stepLb: other } })}
-        className="-my-1 rounded px-1 py-1 text-xs font-medium text-stone-500">
-        Steps of {step} lb · <span className="text-blue-700">use {other}</span>
-      </button>
+    <div className="mt-1.5">
+      <div className="text-[0.65rem] font-medium tracking-wide text-stone-500 uppercase">Step</div>
+      <div role="radiogroup" aria-label="Weight step in lb" className="mt-0.5 flex rounded-md bg-stone-100 p-0.5">
+        {[2.5, 5].map((s) => (
+          <button key={s} type="button" role="radio" aria-checked={step === s}
+            onClick={() => {
+              if (step === s) return;
+              onStep(s);
+              update.mutate({ id: exercise.id, patch: { stepLb: s } });
+            }}
+            className={`flex-1 rounded px-1 py-1 text-xs font-semibold tabular-nums ${step === s ? "bg-white text-stone-900 shadow-sm" : "text-stone-500"}`}>
+            {s}
+          </button>
+        ))}
+      </div>
     </div>
   );
 }
@@ -263,6 +274,9 @@ function SetLog({ entry, exercise, draftKey, lastSets, bestDrop, target, onChang
   const [dropOpen, setDropOpen] = useState(false);
   const hasWeight = exercise.load !== "bodyweight" && exercise.load !== "none";
   const seconds = exercise.measure === "seconds";
+  // The step shown at once on a tap; the exercise's saved one otherwise.
+  const [stepPicked, setStep] = useState<number | null>(null);
+  const step = stepPicked ?? weightStep(exercise);
 
   // When "last time" arrives (or a set is logged), suggest the next set, unless Sergio already dialed one in.
   useEffect(() => {
@@ -341,12 +355,12 @@ function SetLog({ entry, exercise, draftKey, lastSets, bestDrop, target, onChang
               label="Weight"
               value={draft.weightLb ?? 0}
               onChange={(weightLb) => dial({ ...draft, weightLb })}
-              step={weightStep(exercise)}
+              step={step}
               unit={weightUnit}
               decimals
+              extra={<StepSwitch exercise={exercise} step={step} onStep={setStep} />}
             />
           )}
-          {hasWeight && <StepToggle exercise={exercise} />}
           <Stepper
             layout="row"
             label={seconds ? "Seconds" : "Reps"}

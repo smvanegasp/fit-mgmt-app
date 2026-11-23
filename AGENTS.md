@@ -40,7 +40,8 @@ A mobile-first web app where Sergio logs their gym workouts and sees their progr
   exercise's page; a workout can also have notes and photos. Notes and photos are part of what
   guests see. **The log's main job is a concise checklist shown when Sergio starts that exercise
   while training**: the things that, if they do them, make the lift go better. Keep it short
-  (one line per cue, newest wording only).
+  (one line per cue, newest wording only). While training it stays folded to one line ("Keep in mind ·
+  3 cues") until tapped (Sergio, 2026-11-23: a focused workout).
 - **Everything in English** (Sergio insists): imported notes go through `private/note_translations.json`
   and cues through `cueTranslations`; never show Spanish in the UI (originals are stored, not shown).
 - **Units:** pounds (lb). **Two AI features**, both on Groq, on for the owner and in demos (Sergio, 2026-11-17: visitors get the
@@ -166,7 +167,8 @@ A mobile-first web app where Sergio logs their gym workouts and sees their progr
 | 14b | Feedback: Start inside the plan card, no "Last workouts" on Train, the plan page lists the days (numbered through the cycle, grouped by week type), the warm-up is its own group (not cardio) and left out of exercise lists, History drops "Show every exercise", Progress drops the routine timeline | #54 |
 | 14c | Start inside the selected day's row; "View more days" numbered through the cycle; the plan page is one list of days (add, reorder, a page per day), saved as a single week type | #55 |
 | 14d | Progress lifts push, pull, legs (dips, bench, chin-ups, pull-ups, deadlift, squat); the Climbing card hidden (`SHOW_CLIMBING`) | #56 |
-| 15a | Two progression ladders per exercise (heavy 3x2 ... 5x5, reps 3x6 ... 3x10), inferred or set ("Aiming for" on the exercise page and when creating one), with tailored go-up hints and congrats; the plan page drops earlier versions | (open) |
+| 15a | Two progression ladders per exercise (heavy 3x2 ... 5x5, reps 3x6 ... 3x10), inferred or set ("Aiming for" on the exercise page and when creating one), with tailored go-up hints and congrats; the plan page drops earlier versions | #57 |
+| 15b | "Keep in mind" folded to one line while training; a Step 2.5 / 5 switch under the Weight label; the stepper number shrinks to fit (147.5 was cut off) | (open) |
 
 **Where things stand (2026-11-23):** PRs up to #48 are merged and live; stage 12c (the in-app feedback
 of 2026-11-23) is the open PR. The notes below on stage 10a are kept for context.
