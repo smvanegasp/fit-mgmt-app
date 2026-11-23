@@ -33,6 +33,25 @@ export function useScrollLock(): void {
 }
 
 /**
+ * While a full-screen page is open on a phone, the app underneath is hidden (Sergio, 2026-11-23:
+ * with the keyboard up in the Home Screen app, the page behind kept showing in a strip above the
+ * keyboard, however the page was sized; iOS changes the viewport sizes there). Nothing to show
+ * through then. Counted, so stacked pages unhide once all are closed.
+ */
+let covers = 0;
+
+export function useCoverApp(on: boolean): void {
+  useEffect(() => {
+    const root = document.getElementById("root");
+    if (!on || !root) return;
+    if (covers++ === 0) root.style.visibility = "hidden";
+    return () => {
+      if (--covers === 0) root.style.visibility = "";
+    };
+  }, [on]);
+}
+
+/**
  * The part of the screen actually visible: on the iPhone the keyboard covers the bottom and iOS
  * pans the page to keep a focused field in view, which carried the exercise search off the top
  * (Sergio, 2026-11-23). Sheets size and place themselves to this instead of the full screen.

@@ -2,11 +2,13 @@ import { CaretRight, Check, Fire, ShieldCheck } from "@phosphor-icons/react";
 import { useEffect, useRef } from "react";
 import { createPortal } from "react-dom";
 
-import { SHIELD_EVERY, type Goals } from "../lib/progress";
-import { daysLeftText, milestoneAt, milestoneBand, streakStatus, type WeekSlot } from "../lib/streak";
+import { SHIELD_EVERY } from "../lib/progress";
+import { daysLeftText, milestoneAt, milestoneBand, streakStatus, weekNeedText, type WeekSlot } from "../lib/streak";
+import { STREAK_TIERS, WORKOUT_TIERS, nextTier, tierAt } from "../lib/tiers";
 import { InfoTip } from "./InfoTip";
 import { useGoTo } from "./Nav";
 import { typeColor } from "./Progression";
+import { TierIcon } from "./Tiers";
 
 const SHOW_MS = 3600;
 
@@ -49,26 +51,32 @@ export function StreakLadder({ weeks, className = "", spread = false, label = tr
   );
 }
 
-/** This week's goal as slots: three strength days and the cardio day, filled as they're trained. */
-function WeekSlots({ slots }: { slots: WeekSlot[] }) {
+/** This week as four slots, one per day trained (any kind, in its day type's color): the second
+ * keeps the streak, the fourth grows it (Sergio, 2026-11-23). */
+function WeekSlots({ slots, extra }: { slots: WeekSlot[]; extra: number }) {
   return (
-    // Four slots for the usual week; a plan with more days wraps them (Sergio, 2026-11-23).
-    <ol className={`grid gap-1.5 ${slots.length === 4 ? "grid-cols-4" : "grid-cols-[repeat(auto-fit,minmax(4.5rem,1fr))]"}`} aria-label="This week's goal">
-      {slots.map((slot, i) => (
-        <li key={i}
-          aria-label={`${slot.name ?? slot.type}${slot.done ? ", done" : ", to do"}`}
-          style={slot.done ? { borderColor: typeColor(slot.type) } : undefined}
-          className={`relative flex h-12 flex-col items-center justify-center overflow-hidden rounded-[3px] border ${slot.done ? "bg-stone-100" : "border-dashed border-stone-300"}`}>
-          {slot.done && <span aria-hidden className="absolute inset-x-0 top-0 h-1" style={{ background: typeColor(slot.type) }} />}
-          {slot.done
-            ? <Check size={16} weight="bold" style={{ color: typeColor(slot.type) }} aria-hidden />
-            : <span aria-hidden className="h-4" />}
-          <span className={`max-w-full truncate px-1 text-[0.65rem] font-semibold tracking-[0.12em] uppercase ${slot.done ? "text-stone-800" : "text-stone-400"}`}>
-            {slot.name ?? slot.type}
-          </span>
-        </li>
-      ))}
-    </ol>
+    <>
+      <ol className="grid grid-cols-4 gap-1.5" aria-label="Days trained this week">
+        {slots.map((slot, i) => (
+          <li key={i}
+            aria-label={`Day ${i + 1}${slot.done ? `, ${slot.type || "trained"}` : ", to do"}`}
+            style={slot.done ? { borderColor: typeColor(slot.type) } : undefined}
+            className={`relative flex h-12 flex-col items-center justify-center overflow-hidden rounded-[3px] border ${slot.done ? "bg-stone-100" : "border-dashed border-stone-300"}`}>
+            {slot.done && <span aria-hidden className="absolute inset-x-0 top-0 h-1" style={{ background: typeColor(slot.type) }} />}
+            {slot.done
+              ? <Check size={16} weight="bold" style={{ color: typeColor(slot.type) }} aria-hidden />
+              : <span aria-hidden className="h-4" />}
+            <span className={`max-w-full truncate px-1 text-[0.65rem] font-semibold tracking-[0.12em] uppercase ${slot.done ? "text-stone-800" : "text-stone-400"}`}>
+              {slot.done ? slot.type || "Day" : `Day ${i + 1}`}
+            </span>
+          </li>
+        ))}
+      </ol>
+      {/* Under the second and fourth slots: what each one does. */}
+      <div className="mt-1 grid grid-cols-4 gap-1.5 text-center text-[0.65rem] font-semibold tracking-wide text-stone-500 uppercase">
+        <span /><span>keeps</span><span /><span>grows{extra > 0 ? ` +${extra}` : ""}</span>
+      </div>
+    </>
   );
 }
 
@@ -85,13 +93,16 @@ function Shields({ shields, toShield }: { shields: number; toShield: number }) {
 
 /**
  * The streak, up front on Train (Sergio, 2026-11-17: they open the app there, and seeing the run
- * going is what gets them started). The run and its shields, this week as the goal's slots (the
- * week runs Monday to Sunday), then the next milestone. Opens Progress, where every week is.
+ * going is what gets them started). The run, its tier and shields, this week as four day slots
+ * (Monday to Sunday), the next tier, and the workouts tier. Opens Progress, where every week is.
  */
-export function StreakCard({ days, today, goals }: { days: Day[]; today: string; goals?: Goals }) {
+export function StreakCard({ days, today }: { days: Day[]; today: string }) {
   const goTo = useGoTo();
-  const s = streakStatus(days, today, goals);
+  const s = streakStatus(days, today);
   const toGo = s.band.to - s.current;
+  const workouts = days.length;
+  const wTier = tierAt(WORKOUT_TIERS, workouts);
+  const wNext = nextTier(WORKOUT_TIERS, workouts);
   return (
     <section aria-label="Streak" className={`rounded-2xl border bg-white p-4 ${s.atRisk ? "border-amber-400" : "border-stone-200"}`}>
       <div className="flex items-center gap-3">
@@ -100,11 +111,13 @@ export function StreakCard({ days, today, goals }: { days: Day[]; today: string;
           <span className="flex items-center gap-1.5 text-sm font-semibold tracking-wide text-stone-700 uppercase">
             <Fire size={14} weight="fill" className="shrink-0 text-blue-600" aria-hidden /> week streak
             <InfoTip title="Streak">
-              Weeks in a row (Mon–Sun) where you trained every planned day. Every {SHIELD_EVERY} weeks earn a shield,
-              which saves the streak from one missed week.
+              4 training days in a week grow it, 2 keep it. Fewer uses a shield; you earn one every {SHIELD_EVERY} weeks it grows.
             </InfoTip>
           </span>
-          <span className="text-xs text-stone-500 tabular-nums">longest {s.longest} weeks</span>
+          <span className="flex items-center gap-1 text-xs text-stone-500 tabular-nums">
+            {s.tier && <><TierIcon tier={s.tier} size={14} /><span className="font-semibold text-stone-700">{s.tier.name}</span> ·</>}
+            longest {s.longest} weeks
+          </span>
         </span>
         {s.shields > 0 && (
           <span className="ml-auto flex shrink-0 items-center gap-1 rounded-[3px] border border-sky-600 px-2 py-1 text-sm font-semibold text-sky-700 tabular-nums"
@@ -116,30 +129,32 @@ export function StreakCard({ days, today, goals }: { days: Day[]; today: string;
 
       <div className="mt-4 border-t border-stone-200 pt-3">
         <div className="mb-2 flex items-baseline gap-2 text-xs font-semibold tracking-wide text-stone-500 uppercase">
-          This week <span className="font-normal tracking-normal normal-case">Mon–Sun</span>
+          This week <span className="font-normal tracking-normal normal-case">{weekNeedText(s.week)}</span>
           <span className={`ml-auto font-normal tracking-normal normal-case ${s.atRisk ? "text-amber-500" : ""}`}>
-            {s.week.met ? "goal reached" : daysLeftText(s.week.daysLeft)}
+            {s.week.state === "grow" ? "" : daysLeftText(s.week.daysLeft)}
           </span>
         </div>
-        <WeekSlots slots={s.slots} />
+        <WeekSlots slots={s.slots} extra={s.extra} />
       </div>
 
       <div className="mt-4 border-t border-stone-200 pt-3">
-        <div className="mb-2 flex items-baseline gap-2 text-xs font-semibold tracking-wide text-stone-500 uppercase">
-          {s.onMilestone ? `${s.current} weeks reached` : `Next: ${s.band.to} weeks`}
+        <div className="mb-2 flex items-center gap-2 text-xs font-semibold tracking-wide text-stone-500 uppercase">
+          {s.onMilestone ? `${s.current} weeks reached` : <>Next: <TierIcon tier={s.next} earned={false} size={14} /> {s.next.name} · {s.band.to} weeks</>}
           <span className="ml-auto font-normal tracking-normal normal-case tabular-nums">
             {s.onMilestone ? `next ${s.band.to}` : `${toGo} week${toGo === 1 ? "" : "s"} to go`}
           </span>
         </div>
         <StreakLadder weeks={s.current} complete={s.onMilestone} label={false} />
-        <div className="mt-3 flex items-center gap-2">
-          <Shields shields={s.shields} toShield={s.toShield} />
-          <button type="button" onClick={() => goTo("progress")}
-            className="-my-1 ml-auto flex shrink-0 items-center gap-0.5 rounded px-1 py-1 text-xs font-medium text-stone-500">
-            Every week <CaretRight size={12} aria-hidden />
-          </button>
-        </div>
+        <div className="mt-3"><Shields shields={s.shields} toShield={s.toShield} /></div>
       </div>
+
+      {/* Workouts ever logged and their tier (Sergio, 2026-11-23); the full ladder is on Progress. */}
+      <button type="button" onClick={() => goTo("progress")}
+        className="mt-3 flex w-full items-center gap-2 border-t border-stone-200 pt-3 text-left text-xs text-stone-500 tabular-nums">
+        {wTier ? <TierIcon tier={wTier} size={16} /> : <TierIcon tier={wNext} earned={false} size={16} />}
+        <span><span className="font-semibold text-stone-800">{workouts} workouts</span>{wTier ? ` · ${wTier.name}` : ""} · {wNext.at - workouts} to {wNext.name}</span>
+        <span className="ml-auto flex shrink-0 items-center gap-0.5 font-medium">Tiers <CaretRight size={12} aria-hidden /></span>
+      </button>
     </section>
   );
 }
@@ -158,6 +173,7 @@ export function StreakCelebration({ weeks, shield = false, onClose }: { weeks: n
   }, []);
 
   const next = milestoneBand(weeks).to;
+  const tier = tierAt(STREAK_TIERS, weeks);
 
   return createPortal(
     <div role="status" aria-live="polite" onClick={onClose}
@@ -170,16 +186,17 @@ export function StreakCelebration({ weeks, shield = false, onClose }: { weeks: n
             <ShieldCheck size={88} weight="fill" className="mx-auto mt-3 text-sky-600" aria-hidden />
             <p className="mt-2 font-display text-2xl font-bold">{weeks} weeks in a row</p>
             <p className="mt-3 text-sm text-stone-600">
-              A week that misses the goal will use it up instead of ending the streak.
+              A week under 2 days will use it up instead of ending the streak.
             </p>
           </>
         ) : (
           <>
-            <p className="text-xs font-semibold tracking-[0.2em] text-stone-500 uppercase">Streak milestone</p>
-            <p className="mt-3 font-display text-7xl leading-none font-bold text-blue-600 tabular-nums">{weeks}</p>
+            <p className="text-xs font-semibold tracking-[0.2em] text-stone-500 uppercase">New streak tier</p>
+            {tier && <TierIcon tier={tier} size={64} className="mx-auto mt-3" />}
+            <p className="mt-2 font-display text-3xl">{tier?.name}</p>
+            <p className="mt-1 font-display text-7xl leading-none font-bold text-blue-600 tabular-nums">{weeks}</p>
             <p className="mt-2 font-display text-2xl font-bold">weeks in a row</p>
-            <StreakLadder weeks={weeks} complete label={false} className="mt-4 justify-center" />
-            <p className="mt-3 text-sm text-stone-600">Goal met {weeks} weeks running. Next: {next}.</p>
+            <p className="mt-3 text-sm text-stone-600">Next: {nextTier(STREAK_TIERS, weeks).name} at {next} weeks.</p>
           </>
         )}
       </div>

@@ -3,7 +3,7 @@ import { useEffect, type ReactNode } from "react";
 import { createPortal } from "react-dom";
 
 import { DESKTOP } from "../hooks";
-import { useScrollLock, useVisibleArea } from "../lib/scrollLock";
+import { useCoverApp, useScrollLock, useVisibleArea } from "../lib/scrollLock";
 
 interface Props {
   title: string;
@@ -29,12 +29,16 @@ interface Props {
  */
 export function Screen({ title, subtitle, onBack, actions, footer, top, fitKeyboard = false, children }: Props) {
   useScrollLock();
+  const phone = !window.matchMedia(DESKTOP).matches;
+  useCoverApp(phone);
   const area = useVisibleArea();
   // With the keyboard open, the page follows iOS's pan (top) but always runs down behind the
   // keyboard, so nothing of the page below shows or scrolls in a gap (Sergio, 2026-11-23); the
   // list gets the keyboard's height as extra room at the bottom instead.
-  const keyboard = fitKeyboard && area ? Math.max(0, window.innerHeight - area.top - area.height) : 0;
-  const fit = fitKeyboard && area ? { top: area.top, height: window.innerHeight, bottom: "auto" } : undefined;
+  // The full height, even if iOS shrinks the window along with the keyboard.
+  const full = Math.max(window.innerHeight, window.screen?.height ?? 0);
+  const keyboard = phone && fitKeyboard && area ? Math.max(0, full - area.top - area.height) : 0;
+  const fit = phone && fitKeyboard && area ? { top: area.top, height: full, bottom: "auto" } : undefined;
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => e.key === "Escape" && onBack();
     document.addEventListener("keydown", onKey);

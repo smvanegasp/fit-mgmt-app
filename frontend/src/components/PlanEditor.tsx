@@ -235,7 +235,7 @@ function WeekEditor({ week, isCurrent, canDelete, onChange, onMakeCurrent, onDup
               <label className="flex flex-1 items-center gap-2 text-sm text-stone-600">
                 <input type="checkbox" checked={Boolean(day.optional)} onChange={(e) => setDay(day.id, { optional: e.target.checked })}
                   className="size-4 accent-[var(--color-stone-700)]" />
-                Optional (not in the goal)
+                Optional (never next up first)
               </label>
               <button type="button" disabled={di === 0} onClick={() => onChange({ days: shift(week.days, di, -1) })}
                 aria-label={`Move ${day.name} earlier`} className={ICON}><ArrowUp size={16} weight="bold" aria-hidden /></button>
