@@ -68,9 +68,10 @@ body {
 }
 
 /* iPhones zoom the page when a field with text under 16px gets focus, and don't always zoom
-   back out. Unlayered, so it wins over Tailwind's text-sm on touch screens only. */
+   back out. Unlayered, so it wins over Tailwind's text-sm on touch screens only. Not the stepper's
+   big number (way over 16 px, no zoom): this rule had kept it at 16 px on the phone (2026-11-23). */
 @media (pointer: coarse) {
-  input,
+  input:not(.stepper-number),
   select,
   textarea {
     font-size: 16px;
