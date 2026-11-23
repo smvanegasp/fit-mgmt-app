@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { dayType, heavyNext, ladderWeights, nextSet, nextUp, reachesTarget, schemeText, summarizeSets, volume, weightText, workoutTitle } from "./sets";
+import { congratsFor, dayType, goesUp, heavyNext, ladderWeights, nextRung, nextSet, nextUp, reachesTarget, schemeText, summarizeSets, volume, weightText, workoutTitle } from "./sets";
 
 const barbell = { load: "barbell" as const, measure: "reps" as const, barLb: 45 };
 const added = { load: "added" as const, measure: "reps" as const, barLb: 0 };
@@ -147,5 +147,31 @@ describe("workoutTitle", () => {
     expect(workoutTitle({ label: "Legs", entries: [{ exerciseId: "warm-up" }, { exerciseId: "deadlift" }] }, names)).toBe("Legs · Deadlift");
     expect(workoutTitle({ label: "Climb", entries: [{ exerciseId: "bouldering" }] }, names)).toBe("Pull · Bouldering");
     expect(workoutTitle({ label: "Push", entries: [] }, names)).toBe("Push");
+  });
+});
+
+describe("going up", () => {
+  const target = { sets: [4, 4, 4, 4, 4], weightLb: 180, each: false, seconds: false };
+  const reps = (n: number, r: number, w = 180) => Array.from({ length: n }, () => ({ reps: r, weightLb: w }));
+
+  it("follows Sergio's ladder", () => {
+    expect(goesUp([5, 5, 5], [4, 4, 4, 4, 4])).toBe(true);
+    expect(goesUp([5, 4, 4, 4], [4, 4, 4, 4])).toBe(false);
+    expect(goesUp([4, 4, 4, 4], [5, 5, 5])).toBe(false);
+    expect(nextRung({ ...target, sets: [4, 4, 4] }).sets).toEqual([4, 4, 4, 4]);
+    expect(nextRung(target).sets).toEqual([5, 5, 5]);
+  });
+
+  it("congratulates going up the moment it happens, once", () => {
+    expect(congratsFor(reps(2, 5), reps(3, 5), target, 3, 3)).toEqual({ kind: "up", scheme: { ...target, sets: [5, 5, 5] } });
+    expect(congratsFor(reps(3, 5), reps(4, 5), target, 3, 3)).toBeNull();
+    expect(congratsFor([], reps(1, 3, 185), target, 1, 3)).toEqual({ kind: "up", scheme: { ...target, weightLb: 185, sets: [3] } });
+  });
+
+  it("congratulates reaching the target, but not once it's time to go up", () => {
+    expect(congratsFor(reps(4, 4), reps(5, 4), target, 1, 3)).toEqual({ kind: "reached" });
+    expect(congratsFor(reps(4, 4), reps(5, 4), target, 3, 3)).toBeNull();
+    // A drop set after the heavy sets isn't going up.
+    expect(congratsFor(reps(5, 4), [...reps(5, 4), { reps: 8, weightLb: 135, drop: true }], target, 1, 3)).toBeNull();
   });
 });

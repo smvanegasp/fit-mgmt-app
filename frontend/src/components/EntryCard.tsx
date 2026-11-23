@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from "react";
 
 import { api, type CueSection, type Entry, type Exercise, type Note, type Photo, type Problem, type Role, type Scheme, type SetData, type Streak } from "../api";
 import { useAddNote, useExerciseSummary, useUpdateNote } from "../hooks";
-import { ladderWeights, nextSet, reachesTarget, schemeText, summarizeSets, weightText } from "../lib/sets";
+import { congratsFor, ladderWeights, nextRung, nextSet, reachesTarget, schemeText, summarizeSets, weightText, type Congrats } from "../lib/sets";
 import { clearDraft, loadDraft, saveDraft } from "../lib/drafts";
 import { pelotonStats } from "../lib/kinds";
 import { formatDuration } from "../lib/duration";
@@ -40,7 +40,7 @@ interface Props {
 export function EntryCard({ entry, exercise, excludeWorkoutId, role, draftKey, onChange, onRemove, onSetLogged, startedAt, focus }: Props) {
   const summary = useExerciseSummary(exercise.id, excludeWorkoutId, role);
   const [confirmRemove, setConfirmRemove] = useState(false);
-  const [celebrate, setCelebrate] = useState(false);
+  const [celebrate, setCelebrate] = useState<Congrats | null>(null);
   const screens = useScreens();
   const last = summary.data?.last;
   const streak = summary.data?.streak;
@@ -87,14 +87,17 @@ export function EntryCard({ entry, exercise, excludeWorkoutId, role, draftKey, o
         <RunLog entry={entry} exercise={exercise} onChange={onChange} />
       ) : (
         <SetLog entry={entry} exercise={exercise} draftKey={draftKey} lastSets={last?.entry.sets} bestDrop={summary.data?.bestDrop} target={streak?.scheme}
-          onChange={onChange} onSetLogged={onSetLogged} onReached={focus ? () => setCelebrate(true) : undefined} />
+          onChange={onChange} onSetLogged={onSetLogged}
+          onLogged={focus && streak ? (before, after) => setCelebrate(congratsFor(before, after, streak.scheme, streak.times, streak.goal)) : undefined} />
       )}
 
       <EntryNotes entry={entry} exercise={exercise} cues={summary.data?.cues ?? []} setupPhotos={summary.data?.photos ?? []} onChange={onChange} />
       {summary.data && <CueList exerciseId={exercise.id} exerciseName={exercise.name} cues={summary.data.cues} />}
       {focus && !entry.done && <DoneButton name={exercise.name} onDone={() => onChange({ ...entry, done: true })} />}
       {celebrate && streak && (
-        <Celebration scheme={streak.scheme} load={exercise.load} times={streak.times + 1} goal={streak.goal} onClose={() => setCelebrate(false)} />
+        celebrate.kind === "up"
+          ? <Celebration up scheme={celebrate.scheme} load={exercise.load} times={1} goal={streak.goal} onClose={() => setCelebrate(null)} />
+          : <Celebration scheme={streak.scheme} load={exercise.load} times={streak.times + 1} goal={streak.goal} onClose={() => setCelebrate(null)} />
       )}
     </article>
   );
@@ -208,14 +211,15 @@ export function TargetGame({ streak, load, today }: { streak: Streak; load: Exer
       <div className="min-w-0 flex-1">
         <div className="font-display text-xl font-semibold">Target {schemeText(streak.scheme, load)}</div>
         <div className="text-xs">
-          {done ? `${streak.times} in a row: time to go up` : `${streak.times} of ${streak.goal} in a row`}
+          {done ? `${streak.times} in a row: go up, try ${schemeText(nextRung(streak.scheme), load)} or more weight` : `${streak.times} of ${streak.goal} in a row`}
           {reachedToday && <span className="font-semibold"> · reached today</span>}
         </div>
       </div>
       <GameDots times={streak.times + (reachedToday && !done ? 1 : 0)} goal={streak.goal} />
       <InfoTip title="Target">
         Reach these sets 3 sessions in a row, then go up. A session that misses takes one away. Reaching it means the same
-        total reps at this weight or more.
+        total reps at this weight or more. Going up follows your ladder: 3, 4, then 5 sets of the same reps, then 3 sets
+        with one more rep (5x4, then 3x5), or more weight. A target not reached in two months gives way to what you do now.
       </InfoTip>
     </div>
   );
@@ -224,11 +228,11 @@ export function TargetGame({ streak, load, today }: { streak: Streak; load: Exer
 // ------------------------------------------------------------------ lifting
 
 
-function SetLog({ entry, exercise, draftKey, lastSets, bestDrop, target, onChange, onSetLogged, onReached }: {
+function SetLog({ entry, exercise, draftKey, lastSets, bestDrop, target, onChange, onSetLogged, onLogged }: {
   entry: Entry; exercise: Exercise; draftKey: string; lastSets?: SetData[]; bestDrop?: { date: string; sets: SetData[] }; target?: Scheme;
   onChange: (e: Entry) => void; onSetLogged: (label: string) => void;
-  /** This set reached today's target (the moment for a congrats). */
-  onReached?: () => void;
+  /** A set was saved: the sets before and after, to judge the congrats. */
+  onLogged?: (before: SetData[], after: SetData[]) => void;
 }) {
   const sets = entry.sets ?? [];
   const [editing, setEditing] = useState<number | null>(null);
@@ -263,7 +267,7 @@ function SetLog({ entry, exercise, draftKey, lastSets, bestDrop, target, onChang
     // Save the set first, then start the lap (the lap builds on the saved workout).
     onChange({ ...entry, sets: next });
     if (editing === null) onSetLogged(`Set ${next.length} · ${exercise.name}`);
-    if (target && !reachesTarget(sets, target) && reachesTarget(next, target)) onReached?.();
+    if (target && editing === null) onLogged?.(sets, next);
     setEditing(null);
   }
 

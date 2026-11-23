@@ -83,21 +83,58 @@ export function goalText(monday: string, c: WeekCount | undefined): string {
   return `${c?.strength ?? 0} of ${GOAL.strength} strength · ${c?.cardio ?? 0} of ${GOAL.cardio} cardio`;
 }
 
-/** Weeks in a row that reached the goal. This week only adds once it reaches the goal, and
- * doesn't break the streak while it's still going. */
-export function streaks(days: Day[], today: string): { current: number; longest: number } {
-  if (days.length === 0) return { current: 0, longest: 0 };
+/**
+ * Shields (Sergio, 2026-11-20): every SHIELD_EVERY weeks of the run earn one, and a shield covers
+ * one missed week (used up automatically when the week ends). A covered week keeps the streak
+ * alive without adding to it; a missed week with no shield left ends the run and its shields.
+ */
+export const SHIELD_EVERY = 10;
+
+export interface StreakRun {
+  /** Weeks in a row that reached the goal (shielded weeks keep it alive but don't add). */
+  current: number;
+  longest: number;
+  /** Shields in hand. */
+  shields: number;
+  /** Weeks of the run still needed to earn the next shield. */
+  toShield: number;
+  /** The Mondays of weeks a shield covered, in the current run and before. */
+  shielded: string[];
+}
+
+/** Weeks in a row that reached the goal, with shields. This week only adds once it reaches the
+ * goal, and doesn't break the streak (or use a shield) while it's still going. */
+export function streaks(days: Day[], today: string): StreakRun {
+  if (days.length === 0) return { current: 0, longest: 0, shields: 0, toShield: SHIELD_EVERY, shielded: [] };
   const counts = weekCounts(days);
   const first = weekStart(days.reduce((min, d) => (d.date < min ? d.date : min), days[0].date));
   const thisWeek = weekStart(today);
   let run = 0;
   let longest = 0;
+  let shields = 0;
+  let earning = 0; // weeks banked toward the next shield
+  const shielded: string[] = [];
   for (let monday = first; monday <= thisWeek; monday = addDays(monday, 7)) {
-    if (weekMet(monday, counts.get(monday))) run += 1;
-    else if (monday !== thisWeek) run = 0;
+    if (weekMet(monday, counts.get(monday))) {
+      run += 1;
+      earning += 1;
+      if (earning === SHIELD_EVERY) {
+        shields += 1;
+        earning = 0;
+      }
+    } else if (monday !== thisWeek) {
+      if (run > 0 && shields > 0) {
+        shields -= 1;
+        shielded.push(monday);
+      } else {
+        run = 0;
+        shields = 0;
+        earning = 0;
+      }
+    }
     longest = Math.max(longest, run);
   }
-  return { current: run, longest };
+  return { current: run, longest, shields, toShield: SHIELD_EVERY - earning, shielded };
 }
 
 /** "Sep 1 – 8", "Sep 29 – Oct 6", or one day. */

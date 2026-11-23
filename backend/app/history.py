@@ -139,11 +139,30 @@ def _played_roles(sessions: list[tuple[str, Entry]], roles: list[Role]) -> list[
     return [r for (_, entry), r in zip(sessions, roles) if scheme(entry) is not None]
 
 
+def rung(reps: list[float], min_sets: int) -> tuple[float, int]:
+    """Where sets sit on Sergio's ladder (3x2, 4x2, 5x2, 3x3, 4x3, 5x3, ... 4x5, 5x5): the most reps
+    reached by at least `min_sets` sets, then how many sets reach it (5,5,5,4 is 3x5)."""
+    best: tuple[float, int] = (0, 0)
+    for r in set(reps):
+        n = sum(1 for x in reps if x >= r)
+        if n >= min_sets:
+            best = max(best, (r, n))
+    return best
+
+
+def goes_up(done: list[float], target: list[float]) -> bool:
+    """Whether sets at the target's weight are a higher rung than the target: more sets of its reps,
+    or more reps per set (5x4 -> 3x5). A rung needs as many sets as the ladder's first (3), or as the
+    target when it has fewer."""
+    floor = min(3, len(target))
+    return bool(target) and rung(done, floor) > rung(target, floor)
+
+
 @dataclass
 class _Game:
     target: Scheme | None = None
     times: int = 0
-    since: str = ""  # the date the target was set or last played
+    since: str = ""  # the date the target was set or last reached
 
     def sync(self, written: Scheme, times: int, day: str) -> None:
         self.target, self.times, self.since = written, times, day
@@ -154,14 +173,19 @@ class _Game:
         if self.target is None or weight != (self.target.weightLb or 0):
             self.target, self.times, self.since = main, 1, day  # first session, more weight, or a deload
             return "new"
-        self.since = day
+        if goes_up(main.sets, self.target.sets):
+            # A step up the ladder (Sergio 2026-11-20: 5x4 then 3x5 is up): the new target.
+            self.target, self.times, self.since = main, 1, day
+            return "new"
         if not reached(entry, self.target):
+            if date.fromisoformat(day) - date.fromisoformat(self.since) > STALE:
+                # Not reached in two months (an old drop set read as straight sets held wide
+                # pull-ups for a year): what's done now is the target.
+                self.target, self.times, self.since = main, 1, day
+                return "new"
             self.times = max(0, self.times - 1)
             return "missed"
-        if main.total > self.target.total:
-            # More than the target (progressive overload, Sergio 2026-11-14): the new target.
-            self.target, self.times = main, 1
-            return "new"
+        self.since = day
         self.times += 1
         return "reached"
 

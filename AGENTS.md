@@ -98,11 +98,13 @@ A mobile-first web app where Sergio logs their gym workouts and sees their progr
   - **Welcome page** opens on a grayscale gym photo (`src/assets/hardcore-gym.jpg`, chosen by Sergio)
     under the mark, then the live log: stats, the training-days heatmap, current targets, the note
     and clips; Continue / I'm Sergio stay in a bottom bar on phones.
-- **The streak, up front on Train** (stage 10a): the week streak, longest, a ladder of squares to the
-  next milestone (4, 8, 12, 16, 24, 36, 52 weeks, then every 52) and what this week still needs; it
-  opens Progress. Crossing a milestone while the app is open (finishing the workout that meets the
-  week's goal) shows its own congrats. All in the frontend (`lib/streak.ts`, `components/Streak.tsx`)
-  from `/api/progress` days; nothing is stored.
+- **The streak, up front on Train** (stage 10a, reworked in 11a): the week streak, longest, shields,
+  **this week as four slots** (Push, Legs, Pull, Cardio; weeks run Monday to Sunday) and a labeled
+  ladder to the next milestone (4, 8, 12, 16, 24, 36, 52 weeks, then every 52); a link opens Progress.
+  **Shields** (Sergio, 2026-11-20): every 10 weeks of the run earn one, and a missed week uses one up
+  instead of ending the streak. Crossing a milestone or earning a shield while the app is open shows
+  its own congrats. All in the frontend (`lib/progress.ts` `streaks`, `lib/streak.ts`,
+  `components/Streak.tsx`) from `/api/progress` days, replayed over the history; nothing is stored.
 - **Python** with **uv** (`uv sync`, `uv run pytest`, `uv add`). **Node 22+** (Vite 8).
 - **Testing against the local stack:** it holds Sergio's real history, and they may be using it from their
   phone. Browser checks that write (start/finish/discard a workout, rename, merge) can collide with
@@ -301,8 +303,11 @@ frontend/
   - **The target game** (`app/history.py`, Sergio 2026-10-30): the target is the working sets at
     a session's top weight; a session that reaches it (same total reps at that weight) adds one, a
     miss takes one away (not a reset); 3 means go up. More weight or a small deload starts a new
-    target, and so does **more reps than the target at any count** (progressive overload, Sergio
-    2026-11-14: 4x4 after a 3x4+1x3 target is the new target). A session >10% lighter than the
+    target, and so does **a higher rung of Sergio's ladder** at the same weight (stage 11a: 3x2, 4x2,
+    5x2, 3x3, ... 4x5, 5x5; a rung is the most reps 3+ sets reach, then how many sets; 5x4 -> 3x5 is
+    up, more total reps alone isn't). A target **not reached in 60 days** gives way to the session's
+    sets (an unmarked old drop set held wide pull-ups for a year). In the logger, a heavier set or a
+    higher rung gets a "Went up" congrats; reaching the target gets one only before it's time to go up. A session >10% lighter than the
     main target plays a **second track** with the same rules (squat done second after deadlift,
     2026-11-11); after 60 days the lighter work becomes the main target. The summary takes the
     exercise's `role` in today's workout (`first` lift or `later`) and returns the target and "last

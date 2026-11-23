@@ -60,6 +60,61 @@ export function reachesTarget(sets: SetData[], scheme: Scheme): boolean {
 }
 
 /**
+ * Where sets sit on Sergio's ladder (3x2, 4x2, 5x2, 3x3, ... 4x5, 5x5): the most reps reached by at
+ * least `minSets` sets, then how many sets reach it. Same as the server's `rung`.
+ */
+export function rung(reps: number[], minSets: number): [number, number] {
+  let best: [number, number] = [0, 0];
+  for (const r of new Set(reps)) {
+    const n = reps.filter((x) => x >= r).length;
+    if (n >= minSets && (r > best[0] || (r === best[0] && n > best[1]))) best = [r, n];
+  }
+  return best;
+}
+
+/** Whether reps at the target's weight are a higher rung than the target (5x4 -> 3x5 is up). */
+export function goesUp(done: number[], target: number[]): boolean {
+  if (target.length === 0) return false;
+  const floor = Math.min(3, target.length);
+  const [r, n] = rung(done, floor);
+  const [tr, tn] = rung(target, floor);
+  return r > tr || (r === tr && n > tn);
+}
+
+/** The next rung after a target, to aim for once it's been reached 3 times: one more set, or
+ * past 5 sets one more rep at 3 sets (5x4 -> 3x5). */
+export function nextRung(scheme: Scheme): Scheme {
+  const [r, n] = rung(scheme.sets, Math.min(3, scheme.sets.length));
+  const sets = n < 5 ? Array(n + 1).fill(r) : Array(3).fill(r + 1);
+  return { ...scheme, sets };
+}
+
+export type Congrats = { kind: "reached" } | { kind: "up"; scheme: Scheme };
+
+/**
+ * The congrats a newly logged set earns (Sergio, 2026-11-19 and 11-21): going up (a heavier set,
+ * or a higher rung at the target's weight) gets "Went up"; reaching the target gets "Target
+ * crushed", except once it's time to go up (doing it again isn't the news then). Each fires once.
+ */
+export function congratsFor(before: SetData[], after: SetData[], target: Scheme, times: number, goal: number): Congrats | null {
+  const work = (sets: SetData[]) => sets.filter((s) => !s.drop && !s.detail);
+  const value = (s: SetData) => (target.seconds ? s.seconds : s.reps) ?? 0;
+  const weight = target.weightLb ?? 0;
+  const top = (sets: SetData[]) => Math.max(0, ...work(sets).map((s) => s.weightLb ?? 0));
+  if (top(after) > weight && top(before) <= weight) {
+    const heaviest = top(after);
+    const at = work(after).filter((s) => (s.weightLb ?? 0) === heaviest);
+    return { kind: "up", scheme: { ...target, weightLb: heaviest, sets: at.map(value) } };
+  }
+  const atTarget = (sets: SetData[]) => work(sets).filter((s) => (s.weightLb ?? 0) === weight).map(value);
+  if (goesUp(atTarget(after), target.sets) && !goesUp(atTarget(before), target.sets)) {
+    return { kind: "up", scheme: { ...target, sets: atTarget(after) } };
+  }
+  if (times < goal && !reachesTarget(before, target) && reachesTarget(after, target)) return { kind: "reached" };
+  return null;
+}
+
+/**
  * What the set logger starts with: the last set logged today, otherwise the set at the same
  * position last time (so the 4th set suggests last time's 4th), otherwise empty. When the target
  * is heavier than last time (last time was a light day), the first set starts from the target.
