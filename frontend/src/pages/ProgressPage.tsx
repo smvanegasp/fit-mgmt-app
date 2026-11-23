@@ -20,6 +20,10 @@ import { weekNeedText, weekProgress } from "../lib/streak";
 import { localIso } from "../lib/time";
 import { longDate } from "../lib/weeks";
 
+/** The climbing card on Progress, hidden for now (Sergio, 2026-11-23: not climbing lately, it was noise).
+ * The log and the bouldering page keep everything; set to true when climbing comes back. */
+const SHOW_CLIMBING = false;
+
 export function ProgressPage() {
   const progress = useProgress();
   const exercises = useExercises();
@@ -56,7 +60,7 @@ export function ProgressPage() {
                 onOpen={() => screens.openExercise(lift.exerciseId)} />
             );
           })}
-          <ClimbingCard />
+          {SHOW_CLIMBING && <ClimbingCard />}
           <PelotonCard />
         </div>
       </section>

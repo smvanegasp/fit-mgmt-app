@@ -8,9 +8,9 @@ from app.history import merged_entry, replay, workouts
 from app.labels import day_type, did_cardio
 from app.models import Exercise, Lift, Progress, ProgressDay, Routine, Step, StepSession
 
-# The lifts on Progress, in this order (Sergio, 2026-11-23): the four focus lifts (weighted dips, weighted
-# chin-ups, deadlift, back squat), then weighted pull-ups and bench press.
-MAIN_LIFTS = ["dips", "chin-ups", "deadlift", "squat", "pull-ups", "bench-press"]
+# The lifts on Progress, push then pull then legs (Sergio, 2026-11-23): weighted dips, bench press,
+# weighted chin-ups, weighted pull-ups, deadlift, back squat.
+MAIN_LIFTS = ["dips", "bench-press", "chin-ups", "pull-ups", "deadlift", "squat"]
 
 
 def ladder(every: list[dict[str, Any]], exercise: Exercise) -> Lift:
