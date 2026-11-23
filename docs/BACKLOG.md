@@ -145,6 +145,33 @@ Checked: backend 121 and frontend 100 tests, build, the real log (read-only: no 
 goals and the streak unchanged), screenshots in a sample demo with an Upper/Lower plan saved in that
 sandbox (five named slots, the goal of 4 strength days). Not tested: Restore in a browser (API tests only), the iPhone.
 
+## Stage 13b: tiers on the welcome page, the focus lifts (`stage-13b-welcome-tiers`, Sergio 2026-11-23)
+
+| Item | Done |
+|---|---|
+| Visitors should see the tier icons next to the workouts count and the week streak. | The welcome stats show each tier's icon next to the number and "<name> tier" under the label (none before the first tier). |
+| Weighted chin-ups and pull-ups belong with the main lifts; the four focus lifts are, in order, weighted dips, weighted chin-ups, deadlift, back squat. | "In training now" on the welcome page shows those four in that order. Progress (`MAIN_LIFTS`) shows them first, then weighted pull-ups and bench press. |
+
+Checked: backend 121 and frontend 92 tests, the welcome page logged out at 390x844 (dark and light) and
+1440x900 on the local log (older than production: its streak reads 0 there). Not tested: the live numbers.
+
+## Stage 14a: the plan as a cycle of days (`stage-14a-day-cycle`, Sergio 2026-11-23)
+
+Week types were tied to calendar weeks, so a short week (light push and deadlift legs only) jumped to
+the other week type on Monday while Sergio carries on with heavy pull and cardio. Agreed: the week
+types' days form **one cycle**, and the next day is the one after the last workout, whatever the week.
+Sergio: keep it simple, "always the next 4 trainings and the last two".
+
+| Item | Done |
+|---|---|
+| Where Sergio is | `cyclePlace` / `cycleView` in `lib/plan.ts`: workouts replayed oldest first; one started from a plan day is that day (new `planDays` on the workout, joined when a second session merges into the day); older ones match by day type, then the day's exercises they have, then the nearest such day after the last one (tells the two Cardio days apart). A ride after lifting also takes the Cardio day right after. On the real log (read-only) the last 8 workouts land on the right days; next is light push, deadlift legs, heavy pull, cardio. |
+| Train | "Your plan": the last two workouts (done, with the day they were and the date; tap opens it), then the next four days numbered, the first marked Next and preselected. Tap another to switch, again for none; "Other days" shows the rest of the cycle. Starting saves the day in `planDays`. |
+| Plan page | "Current week" and the "This week" tag are gone (the place comes from the workouts); the list is "Your days, in order". The server's anchor and `current` stay but aren't used by Train. |
+
+Checked: backend 122 and frontend 98 tests (the cycle: carry-over, wrap, two Cardio days, a ride after
+lifting), the real replay above, a sample demo at 390x844 and 1440x900 (dark and light), starting from a
+picked day (it saved `planDays`; the demo workout was discarded). Not tested: Sergio's phone.
+
 ## Stage 13a: the streak counts training days, tiers (`stage-13a-streak-tiers`, Sergio 2026-11-23)
 
 Sergio's request: grow the streak with 4 training days a week, hold it with 2 or 3 (any kind), and use a

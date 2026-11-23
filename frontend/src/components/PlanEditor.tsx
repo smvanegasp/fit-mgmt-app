@@ -30,7 +30,6 @@ const ICON = "rounded-lg p-2 text-stone-500 disabled:opacity-25";
 export function PlanEditor({ plans, today, onClose }: { plans: TrainingPlans; today: string; onClose: () => void }) {
   const save = useSavePlans(today);
   const [weeks, setWeeks] = useState<WeekPlan[]>(plans.weeks);
-  const [current, setCurrent] = useState(plans.current);
   const [openId, setOpen] = useState<string | null>(null);
   const [showHistory, setShowHistory] = useState(false);
   const history = usePlanHistory(showHistory);
@@ -40,7 +39,6 @@ export function PlanEditor({ plans, today, onClose }: { plans: TrainingPlans; to
     const id = newId();
     const days = from ? from.days.map((d) => ({ ...d, id: `${id}-${newId()}` })) : [];
     setWeeks([...weeks, { id, name: from ? `${from.name} (copy)` : `Week ${weeks.length + 1}`, days }]);
-    if (!current) setCurrent(id);
     setOpen(id);
   }
 
@@ -55,7 +53,6 @@ export function PlanEditor({ plans, today, onClose }: { plans: TrainingPlans; to
             onClick={async () => {
               await save.mutateAsync({
                 weeks: weeks.map((w) => ({ ...w, name: w.name.trim(), days: w.days.map((d) => ({ ...d, name: d.name.trim() })) })),
-                current: current !== plans.current ? current ?? undefined : undefined,
               });
               onClose();
             }}
@@ -65,8 +62,8 @@ export function PlanEditor({ plans, today, onClose }: { plans: TrainingPlans; to
         </>
       }>
       <h2 className="flex items-center gap-1 text-sm font-semibold tracking-wide text-stone-500 uppercase">
-        Your rotation
-        <InfoTip title="Rotation">One week type per week, in this order, then it starts over. Tap one to edit its days.</InfoTip>
+        Your days, in order
+        <InfoTip title="Your days">The week types' days repeat in this order, then start over. Tap one to edit its days.</InfoTip>
       </h2>
 
       {weeks.length === 0 ? (
@@ -80,11 +77,6 @@ export function PlanEditor({ plans, today, onClose }: { plans: TrainingPlans; to
                 <span className="min-w-0 flex-1">
                   <span className="flex items-center gap-2">
                     <span className="truncate font-semibold">{w.name || "Untitled"}</span>
-                    {w.id === current && (
-                      <span className="shrink-0 rounded-[3px] border border-stone-300 px-1.5 text-[0.65rem] font-semibold tracking-wide text-stone-600 uppercase">
-                        This week
-                      </span>
-                    )}
                   </span>
                   <span className="block truncate text-sm text-stone-500">
                     {w.days.length ? w.days.map((d) => d.name).join(", ") : "No days yet"}
@@ -147,15 +139,12 @@ export function PlanEditor({ plans, today, onClose }: { plans: TrainingPlans; to
       {open && (
         <WeekEditor
           week={open}
-          isCurrent={open.id === current}
           canDelete={weeks.length > 1}
           onChange={(next) => setWeeks(weeks.map((w) => (w.id === open.id ? { ...w, ...next } : w)))}
-          onMakeCurrent={() => setCurrent(open.id)}
           onDuplicate={() => addWeek(open)}
           onDelete={() => {
             const rest = weeks.filter((w) => w.id !== open.id);
             setWeeks(rest);
-            if (current === open.id) setCurrent(rest[0]?.id ?? null);
             setOpen(null);
           }}
           onClose={() => setOpen(null)}
@@ -166,9 +155,9 @@ export function PlanEditor({ plans, today, onClose }: { plans: TrainingPlans; to
 }
 
 /** One week type on its own page: its name, whether it's this week, and its days. */
-function WeekEditor({ week, isCurrent, canDelete, onChange, onMakeCurrent, onDuplicate, onDelete, onClose }: {
-  week: WeekPlan; isCurrent: boolean; canDelete: boolean;
-  onChange: (next: Partial<WeekPlan>) => void; onMakeCurrent: () => void;
+function WeekEditor({ week, canDelete, onChange, onDuplicate, onDelete, onClose }: {
+  week: WeekPlan; canDelete: boolean;
+  onChange: (next: Partial<WeekPlan>) => void;
   onDuplicate: () => void; onDelete: () => void; onClose: () => void;
 }) {
   const exercises = useExercises();
@@ -186,14 +175,6 @@ function WeekEditor({ week, isCurrent, canDelete, onChange, onMakeCurrent, onDup
         <span className="text-xs font-semibold tracking-wide text-stone-500 uppercase">Name</span>
         <input value={week.name} maxLength={60} onChange={(e) => onChange({ name: e.target.value })}
           className="mt-1 w-full rounded-lg border border-stone-200 bg-white px-3 py-2.5 font-semibold" />
-      </label>
-      <label className="mt-3 flex items-center gap-3 rounded-lg border border-stone-200 bg-white px-3 py-3">
-        <input type="checkbox" checked={isCurrent} disabled={isCurrent} onChange={onMakeCurrent}
-          className="size-5 accent-[var(--color-stone-700)]" />
-        <span className="text-sm">
-          <span className="font-medium">Current week</span>
-          <span className="block text-stone-500">The rotation counts on from this one.</span>
-        </span>
       </label>
 
       <h2 className="mt-6 text-xs font-semibold tracking-wide text-stone-500 uppercase">Days</h2>

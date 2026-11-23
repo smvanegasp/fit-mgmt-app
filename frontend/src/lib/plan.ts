@@ -1,5 +1,5 @@
-import type { Entry, SessionType, WeekPlan, Workout } from "../api";
-import { heavyNext } from "./sets";
+import type { DayPlan, Entry, SessionType, WeekPlan, Workout } from "../api";
+import { dayType, heavyNext } from "./sets";
 
 export const WARM_UP = "warm-up";
 
@@ -96,4 +96,75 @@ export function nextWeek<T extends { id: string }>(weeks: T[], id: string | null
 /** A planned day's starting entries: the warm-up, then the plan's exercises (the ones that exist). */
 export function planEntries(exercises: string[], known: Set<string>): Entry[] {
   return [WARM_UP, ...exercises.filter((id) => id !== WARM_UP)].filter((id) => known.has(id)).map((exerciseId) => ({ exerciseId }));
+}
+
+/**
+ * The cycle of days (Sergio, 2026-11-23): the week types' days in rotation order, one loop. Where
+ * Sergio is doesn't follow the calendar: the next day is the one after the last workout, so a short
+ * week carries on into the next one instead of jumping to the other week type.
+ */
+export interface CycleDay {
+  /** The day's id. */
+  key: string;
+  /** Its place in the cycle. */
+  index: number;
+  week: Pick<WeekPlan, "id" | "name">;
+  day: DayPlan;
+}
+
+export function cycleDays(weeks: WeekPlan[]): CycleDay[] {
+  return weeks.flatMap((w) => w.days.map((day) => ({ key: day.id, week: { id: w.id, name: w.name }, day }))).map((d, index) => ({ ...d, index }));
+}
+
+type CycleWorkout = Pick<Workout, "id" | "date" | "label" | "entries" | "planDays">;
+
+/**
+ * Replays the workouts (any order; sorted oldest first) along the cycle. A workout started from a
+ * plan day is that day; an older one is matched by its day type, then by how many of the day's
+ * exercises it has, then by being the nearest such day after the last one. A ride after lifting also
+ * takes the Cardio day right after. Returns the place after the last match, and each workout's days.
+ */
+export function cyclePlace(cycle: CycleDay[], workouts: CycleWorkout[], cardioIds: Set<string>): {
+  next: number; matched: Map<string, CycleDay[]>;
+} {
+  const matched = new Map<string, CycleDay[]>();
+  let next = 0;
+  const n = cycle.length;
+  if (n === 0) return { next, matched };
+  const byKey = new Map(cycle.map((d) => [d.key, d]));
+  const ahead = (i: number) => (i - next + n) % n; // how far past the current place
+  for (const w of [...workouts].sort((a, b) => a.date.localeCompare(b.date))) {
+    let days = (w.planDays ?? []).map((k) => byKey.get(k)).filter((d): d is CycleDay => d !== undefined);
+    if (days.length === 0) {
+      const kind = dayType(w.label || "");
+      const ids = new Set((w.entries ?? []).map((e) => e.exerciseId));
+      const overlap = (d: CycleDay) => d.day.exercises.filter((x) => ids.has(x)).length;
+      const best = cycle.filter((d) => d.day.kind === kind)
+        .sort((a, b) => overlap(b) - overlap(a) || ahead(a.index) - ahead(b.index))[0];
+      if (!best) continue;
+      days = [best];
+      const after = cycle[(best.index + 1) % n];
+      if (kind !== "Cardio" && after.day.kind === "Cardio" && [...ids].some((x) => cardioIds.has(x))) days.push(after);
+    }
+    matched.set(w.id, days);
+    next = (days.at(-1)!.index + 1) % n;
+  }
+  return { next, matched };
+}
+
+/**
+ * What Train shows (Sergio, 2026-11-23: "the next 4 trainings and the last two, always"): the last
+ * two workouts with the plan days they were, and the next four days of the cycle from where Sergio is.
+ */
+export function cycleView<W extends CycleWorkout>(weeks: WeekPlan[], workouts: W[], cardioIds: Set<string>, count = 4): {
+  last: { workout: W; days: CycleDay[] }[]; next: CycleDay[]; cycle: CycleDay[];
+} {
+  const cycle = cycleDays(weeks);
+  const { next, matched } = cyclePlace(cycle, workouts, cardioIds);
+  const newest = [...workouts].sort((a, b) => b.date.localeCompare(a.date)).slice(0, 2).reverse();
+  return {
+    last: newest.map((workout) => ({ workout, days: matched.get(workout.id) ?? [] })),
+    next: Array.from({ length: Math.min(count, cycle.length) }, (_, i) => cycle[(next + i) % cycle.length]),
+    cycle,
+  };
 }

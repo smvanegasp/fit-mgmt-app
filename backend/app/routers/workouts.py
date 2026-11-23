@@ -155,6 +155,7 @@ def finish_workout(body: FinishBody, space: str = Depends(current_space)) -> Wor
             "laps": first.laps + active.laps,
             "endedAt": max(first.endedAt or "", body.endedAt),
             "plan": first.plan or active.plan,
+            "planDays": first.planDays + [d for d in active.planDays if d not in first.planDays],
         })
         merged = merged.model_copy(update={"label": _label(space, merged, legs_day=first.source == "app")})
         db.put(space, _sk(merged.id), _clean(merged.model_dump()))
