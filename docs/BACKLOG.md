@@ -155,6 +155,25 @@ sandbox (five named slots, the goal of 4 strength days). Not tested: Restore in 
 Checked: backend 121 and frontend 92 tests, the welcome page logged out at 390x844 (dark and light) and
 1440x900 on the local log (older than production: its streak reads 0 there). Not tested: the live numbers.
 
+## Stage 15e: the stepper numbers big on the phone (`stage-15e-stepper-phone`, Sergio 2026-11-23, in-app feedback with a screenshot)
+
+Sergio didn't like 15c's label-on-top layout: on the iPhone the numbers between − and + were tiny, the − and
++ far apart, and the 2.5 / 5 switch overlapped its box. **Root cause, there since stage 0:** the touch-screen
+rule that keeps inputs at 16 px (so iOS doesn't zoom on focus) is unlayered and beat the stepper's
+`text-7xl`, so on the phone the number was always 16 px. The desktop test browser isn't a touch screen, so
+every check showed 72 px; that's why "bigger numbers" kept coming back (11b, 11 round 1, today).
+
+| Item | Done |
+|---|---|
+| The 16 px rule | Skips the stepper's number (`input:not(.stepper-number)`); everything else keeps it. |
+| Layout | Back to the label on the left (64 px column: label, unit, the Step switch stacked under it, picked one red) and − number + on the right, buttons 48 px. |
+| Fitting long weights | Fixed sizes by length instead of measuring in code (it misread on the iPhone): 72 px up to 3 characters, 60 px for 4, 52 px for 5. |
+
+Checked: frontend 99 tests and build; **a touch-screen phone emulation** (390x844, `pointer: coarse`, dark)
+in a demo workout (discarded): 45 and 145 at 72 px, 22.5 and 1000 at 60, 147.5 and 112.5 at 52, none
+clipped (122 px box); other inputs still 16 px. Not tested: the iPhone itself. **For the agent:** check
+input sizes in a context with `hasTouch: true, isMobile: true`; plain desktop emulation misses touch-only CSS.
+
 ## Stage 15c: lbs everywhere, a red step (`stage-15c-lbs`, Sergio 2026-11-23)
 
 | Feedback | Done |

@@ -1,5 +1,5 @@
 import { Minus, Plus } from "@phosphor-icons/react";
-import { useLayoutEffect, useRef, type ReactNode } from "react";
+import type { ReactNode } from "react";
 
 interface Props {
   label: string;
@@ -7,40 +7,40 @@ interface Props {
   onChange: (value: number) => void;
   step: number;
   min?: number;
-  /** Shown with the label, e.g. "lb each hand" or "lb plates + 45 bar". */
+  /** Shown with the label, e.g. "lbs each hand" or "lbs plates + 45 bar". */
   unit?: string;
   decimals?: boolean;
-  /** "row": label on the left and a wide number (weights like 112.5 fit at phone width). */
+  /** "row": label on the left and a wide number (weights like 147.5 fit at phone width). */
   layout?: "column" | "row";
   /** Under the label in the row layout (the weight step switch). */
   extra?: ReactNode;
 }
 
+/**
+ * The number's size by its length, so it fits between − and + at phone width (measured box ~118 px):
+ * 72 px up to 3 characters (145), 60 px for 4 (22.5, 1000), 52 px for 5 (147.5). Classes, not a
+ * measurement in code: that misread on the iPhone (Sergio, 2026-11-23). `stepper-number` exempts it
+ * from the 16 px rule for touch screens in index.css, which had kept it at 16 px on the phone.
+ */
+function numberSize(value: number): string {
+  const n = String(value).length;
+  return n <= 3 ? "text-7xl" : n === 4 ? "text-[3.75rem]" : "text-[3.25rem]";
+}
+
 /** Big − / number / + control for the gym: large targets, the number is also typeable. */
 export function Stepper({ label, value, onChange, step, min = 0, unit, decimals, layout = "column", extra }: Props) {
   const set = (v: number) => onChange(Math.max(min, Math.round(v * 4) / 4));
-  // The number shrinks only as much as it must to fit its box (Sergio, 2026-11-23: 147.5 was cut off).
-  const input = useRef<HTMLInputElement>(null);
-  useLayoutEffect(() => {
-    const el = input.current;
-    if (!el) return;
-    el.style.fontSize = "";
-    if (el.scrollWidth > el.clientWidth) {
-      el.style.fontSize = `${Math.floor(parseFloat(getComputedStyle(el).fontSize) * (el.clientWidth / el.scrollWidth) * 0.96)}px`;
-    }
-  }, [value]);
   const controls = (
     <div className="flex min-w-0 flex-1 items-center justify-between gap-1">
       <button
         type="button"
         onClick={() => set(value - step)}
-        className="flex size-13 shrink-0 items-center justify-center rounded-full bg-stone-100 text-stone-700 active:bg-stone-200"
+        className="flex size-12 shrink-0 items-center justify-center rounded-full bg-stone-100 text-stone-700 active:bg-stone-200"
         aria-label={`Less ${label.toLowerCase()}`}
       >
         <Minus size={24} weight="bold" aria-hidden />
       </button>
       <input
-        ref={input}
         aria-label={label}
         inputMode={decimals ? "decimal" : "numeric"}
         value={value}
@@ -49,14 +49,12 @@ export function Stepper({ label, value, onChange, step, min = 0, unit, decimals,
           const n = Number(e.target.value.replace(",", "."));
           if (!Number.isNaN(n)) onChange(Math.max(min, n));
         }}
-        // Big (Sergio, 2026-11-03, bigger 11-19 and 11-23): 72 px for every value now that the label sits
-        // above; the effect above shrinks it only if it still doesn't fit.
-        className={`w-full min-w-0 bg-transparent text-center font-display font-semibold leading-none tabular-nums outline-none text-7xl`}
+        className={`stepper-number w-full min-w-0 bg-transparent text-center font-display font-semibold leading-none tabular-nums outline-none ${numberSize(value)}`}
       />
       <button
         type="button"
         onClick={() => set(value + step)}
-        className="flex size-13 shrink-0 items-center justify-center rounded-full bg-stone-100 text-stone-700 active:bg-stone-200"
+        className="flex size-12 shrink-0 items-center justify-center rounded-full bg-stone-100 text-stone-700 active:bg-stone-200"
         aria-label={`More ${label.toLowerCase()}`}
       >
         <Plus size={24} weight="bold" aria-hidden />
@@ -65,16 +63,15 @@ export function Stepper({ label, value, onChange, step, min = 0, unit, decimals,
   );
 
   if (layout === "row") {
-    // The label on its own line above, so the number has the full width between − and + and stays
-    // big even for 147.5 (Sergio, 2026-11-23: it shrank to fit next to a label column).
+    // Label on the left, − number + on the right (Sergio, 2026-11-23: better than the label on top).
     return (
-      <div>
-        <div className="flex min-h-7 items-center gap-2">
-          <span className="text-xs font-medium tracking-wide text-stone-500 uppercase">{label}</span>
-          {unit && <span className="min-w-0 truncate text-xs text-stone-500">{unit}</span>}
-          {extra && <div className="ml-auto shrink-0">{extra}</div>}
+      <div className="flex items-center gap-2">
+        <div className="w-16 shrink-0">
+          <div className="text-xs font-medium tracking-wide text-stone-500 uppercase">{label}</div>
+          {unit && <div className="text-xs leading-tight text-stone-500">{unit}</div>}
+          {extra}
         </div>
-        <div className="flex">{controls}</div>
+        {controls}
       </div>
     );
   }

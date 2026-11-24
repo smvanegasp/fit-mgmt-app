@@ -169,7 +169,8 @@ A mobile-first web app where Sergio logs their gym workouts and sees their progr
 | 14d | Progress lifts push, pull, legs (dips, bench, chin-ups, pull-ups, deadlift, squat); the Climbing card hidden (`SHOW_CLIMBING`) | #56 |
 | 15a | Two progression ladders per exercise (heavy 3x2 ... 5x5, reps 3x6 ... 3x10), inferred or set ("Aiming for" on the exercise page and when creating one), with tailored go-up hints and congrats; the plan page drops earlier versions | #57 |
 | 15b | "Keep in mind" folded to one line while training; a Step 2.5 / 5 switch under the Weight label; the stepper number shrinks to fit (147.5 was cut off) | #58 |
-| 15c | "lbs" on every weight (targets, sets, welcome page); the picked weight step in red; stepper labels above, so numbers stay 72 px | (open) |
+| 15c | "lbs" on every weight (targets, sets, welcome page); the picked weight step in red; stepper labels above (undone in 15e) | #59 |
+| 15e | The stepper numbers big on the phone: the touch-screen 16 px input rule had always overridden them (now skips `.stepper-number`); label back on the left, sizes by length (72/60/52 px) | (open) |
 
 **Where things stand (2026-11-23):** PRs up to #48 are merged and live; stage 12c (the in-app feedback
 of 2026-11-23) is the open PR. The notes below on stage 10a are kept for context.
@@ -476,7 +477,10 @@ cd backend && uv run python ../scripts/import_whatsapp.py load --local # stack m
   phone layout. A phone turned sideways (`land:` variant in `index.css`: landscape, under 500px
   tall) gets the tabs as a slim left rail and a compact stopwatch bar. Same components and `src/lib/` logic for both; only classes and composition
   differ.
-- Inputs are 16px on touch screens (`index.css`) so iOS doesn't zoom. Big tap targets: this is
+- Inputs are 16px on touch screens (`index.css`, unlayered: it beats Tailwind text classes) so iOS doesn't
+  zoom; the stepper's big number opts out (`.stepper-number`; until 15e it was stuck at 16 px on the phone).
+  Check input sizes in a Playwright context with `hasTouch: true, isMobile: true`: desktop emulation
+  misses touch-only CSS. Big tap targets: this is
   used between sets with sweaty hands. Hover states are only extras (touch has none).
 - **Dark mode** mirrors the Tailwind palette with CSS variables in `index.css` (copied from the
   pantry); it applies before first paint (inline script in `index.html`, localStorage key
