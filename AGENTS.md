@@ -173,7 +173,8 @@ A mobile-first web app where Sergio logs their gym workouts and sees their progr
 | 15e | The stepper numbers big on the phone: the touch-screen 16 px input rule had always overridden them (now skips `.stepper-number`); label back on the left, sizes by length (72/60/52 px) | #60 |
 | 15f | One size (52 px) for every stepper number, so the weight doesn't jump between 145 and 147.5 | #61 |
 | 15g | The stepper numbers 25% smaller: 39 px | #62 |
-| 16a | Sheets go full screen while typing on a phone (the feedback sheet overlapped the clock and the tabs); links back to sergiovanegas.com/projects (welcome page, demo banner), new tab | (open) |
+| 16a | Sheets go full screen while typing on a phone (the feedback sheet overlapped the clock and the tabs); links back to sergiovanegas.com/projects (welcome page, demo banner), new tab | #63 |
+| 16b | The Weight label alone (no "lbs plates + 45 bar"); the ±2.5 / ±5 step pill under the weight, between − and + | (open) |
 
 **Where things stand (2026-11-23):** PRs up to #48 are merged and live; stage 12c (the in-app feedback
 of 2026-11-23) is the open PR. The notes below on stage 10a are kept for context.

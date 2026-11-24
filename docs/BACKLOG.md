@@ -155,6 +155,16 @@ sandbox (five named slots, the goal of 4 strength days). Not tested: Restore in 
 Checked: backend 121 and frontend 92 tests, the welcome page logged out at 390x844 (dark and light) and
 1440x900 on the local log (older than production: its streak reads 0 there). Not tested: the live numbers.
 
+## Stage 16b: a calmer weight row (`stage-16b-weight-step`, Sergio 2026-11-24)
+
+| Feedback | Done |
+|---|---|
+| "lbs plates + 45 bar", "0 = body weight" under Weight: not relevant, crowded. | The set logger's Weight label is just "WEIGHT" (time and distance keep their units). |
+| The 2.5 / 5 step's place still wasn't intuitive (options shown; Sergio picked "under the number"). | A small "±2.5 \| ±5" pill right under the weight, between the − and + it changes (picked one red); `Stepper` has a `below` slot (replaces `extra`). |
+
+Checked: frontend 99 tests and build; a touch-screen phone emulation in dark and light (demo workout,
+discarded): ±2.5 picked, + went 145 → 147.5. Not tested: Sergio's phone.
+
 ## Stage 16a: sheets while typing, a way back to sergiovanegas.com (`stage-16a-sheet-keyboard`, Sergio 2026-11-24)
 
 | Feedback | Done |
