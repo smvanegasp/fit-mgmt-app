@@ -12,8 +12,8 @@ interface Props {
   decimals?: boolean;
   /** "row": label on the left and a wide number (weights like 147.5 fit at phone width). */
   layout?: "column" | "row";
-  /** Under the label in the row layout (the weight step switch). */
-  extra?: ReactNode;
+  /** Under the number, between − and + (the weight step switch: Sergio, 2026-11-24, next to what it changes). */
+  below?: ReactNode;
 }
 
 /**
@@ -24,7 +24,7 @@ interface Props {
 const NUMBER_SIZE = "text-[39px]";
 
 /** Big − / number / + control for the gym: large targets, the number is also typeable. */
-export function Stepper({ label, value, onChange, step, min = 0, unit, decimals, layout = "column", extra }: Props) {
+export function Stepper({ label, value, onChange, step, min = 0, unit, decimals, layout = "column", below }: Props) {
   const set = (v: number) => onChange(Math.max(min, Math.round(v * 4) / 4));
   const controls = (
     <div className="flex min-w-0 flex-1 items-center justify-between gap-1">
@@ -36,6 +36,7 @@ export function Stepper({ label, value, onChange, step, min = 0, unit, decimals,
       >
         <Minus size={24} weight="bold" aria-hidden />
       </button>
+      <div className="flex min-w-0 flex-1 flex-col items-center">
       <input
         aria-label={label}
         inputMode={decimals ? "decimal" : "numeric"}
@@ -47,6 +48,8 @@ export function Stepper({ label, value, onChange, step, min = 0, unit, decimals,
         }}
         className={`stepper-number w-full min-w-0 bg-transparent text-center font-display font-semibold leading-none tabular-nums outline-none ${NUMBER_SIZE}`}
       />
+      {below}
+      </div>
       <button
         type="button"
         onClick={() => set(value + step)}
@@ -65,7 +68,6 @@ export function Stepper({ label, value, onChange, step, min = 0, unit, decimals,
         <div className="w-16 shrink-0">
           <div className="text-xs font-medium tracking-wide text-stone-500 uppercase">{label}</div>
           {unit && <div className="text-xs leading-tight text-stone-500">{unit}</div>}
-          {extra}
         </div>
         {controls}
       </div>

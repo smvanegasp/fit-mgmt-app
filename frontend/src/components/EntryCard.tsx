@@ -234,28 +234,25 @@ export function weightStep(exercise: Pick<Exercise, "load" | "stepLb">): number 
 }
 
 /**
- * The weight step, 2.5 or 5 lb, as a small switch under the Weight label, next to the − and + it
- * changes (Sergio, 2026-11-19; clearer 11-23: the "use 2.5" link wasn't obvious). It changes at
- * once and is kept for the exercise next time.
+ * The weight step, 2.5 or 5 lb: a small "±2.5 | ±5" switch right under the weight, between the − and
+ * + it changes (Sergio, 2026-11-19; clearer 11-23; under the number 11-24). It changes at once and is
+ * kept for the exercise next time.
  */
 function StepSwitch({ exercise, step, onStep }: { exercise: Exercise; step: number; onStep: (step: number) => void }) {
   const update = useUpdateExercise();
   return (
-    <div className="mt-1.5">
-      <div className="text-[0.65rem] font-medium tracking-wide text-stone-500 uppercase">Step</div>
-      <div role="radiogroup" aria-label="Weight step in lb" className="mt-0.5 grid grid-cols-2 rounded-md bg-stone-100 p-0.5">
-        {[2.5, 5].map((s) => (
-          <button key={s} type="button" role="radio" aria-checked={step === s}
-            onClick={() => {
-              if (step === s) return;
-              onStep(s);
-              update.mutate({ id: exercise.id, patch: { stepLb: s } });
-            }}
-            className={`rounded py-1 text-center text-xs font-semibold tabular-nums ${step === s ? "bg-blue-600 text-[#f6f1e7]" : "text-stone-500"}`}>
-            {s}
-          </button>
-        ))}
-      </div>
+    <div role="radiogroup" aria-label="Weight step in lb" className="mt-1 flex rounded-full bg-stone-100 p-0.5">
+      {[2.5, 5].map((s) => (
+        <button key={s} type="button" role="radio" aria-checked={step === s} aria-label={`Steps of ${s} lb`}
+          onClick={() => {
+            if (step === s) return;
+            onStep(s);
+            update.mutate({ id: exercise.id, patch: { stepLb: s } });
+          }}
+          className={`rounded-full px-2.5 py-0.5 text-xs font-semibold tabular-nums ${step === s ? "bg-blue-600 text-[#f6f1e7]" : "text-stone-500"}`}>
+          ±{s}
+        </button>
+      ))}
     </div>
   );
 }
@@ -311,10 +308,6 @@ function SetLog({ entry, exercise, draftKey, lastSets, bestDrop, target, onChang
     setEditing(null);
   }
 
-  const weightUnit =
-    exercise.load === "barbell" ? `lbs plates + ${exercise.barLb} bar`
-      : exercise.load === "added" ? "lb added (0 = body weight)"
-        : draft.each ? "lbs each hand" : "lbs";
 
   return (
     <div className="mt-3">
@@ -356,9 +349,8 @@ function SetLog({ entry, exercise, draftKey, lastSets, bestDrop, target, onChang
               value={draft.weightLb ?? 0}
               onChange={(weightLb) => dial({ ...draft, weightLb })}
               step={step}
-              unit={weightUnit}
               decimals
-              extra={<StepSwitch exercise={exercise} step={step} onStep={setStep} />}
+              below={<StepSwitch exercise={exercise} step={step} onStep={setStep} />}
             />
           )}
           <Stepper
