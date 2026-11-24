@@ -155,6 +155,18 @@ sandbox (five named slots, the goal of 4 strength days). Not tested: Restore in 
 Checked: backend 121 and frontend 92 tests, the welcome page logged out at 390x844 (dark and light) and
 1440x900 on the local log (older than production: its streak reads 0 there). Not tested: the live numbers.
 
+## Stage 16a: sheets while typing, a way back to sergiovanegas.com (`stage-16a-sheet-keyboard`, Sergio 2026-11-24)
+
+| Feedback | Done |
+|---|---|
+| (In-app, with a screenshot) The feedback sheet with the keyboard open: its header under the clock and the tabs showing above the keyboard. | Every sheet (`BottomSheet`) has a typing mode on phones: when the keyboard takes 150+ px, the sheet fills the visible area with its header below the clock, over an opaque layer that runs down behind the keyboard, and the app underneath is hidden (`useCoverApp`, as full-screen pages do since 13a). Keyboard closed: the usual sheet. |
+| A link to https://sergiovanegas.com/projects/ for visitors (they come from there), in a new tab. | The welcome page has "sergiovanegas.com ↗" at the top right of the photo; in the app, the demo banner has "Site ↗" (title and label say sergiovanegas.com projects; the banner's spacing tightened so "Demo · 24h" still fits at 375 px). `lib/site.ts` `SITE_URL`. |
+
+Checked: frontend 99 tests and build; a touch-screen phone emulation (dark): both links (href, new tab,
+noopener), the banner at 375 and 390 px with nothing cut, the feedback sheet with the keyboard simulated
+(the visible area shrunk to 420 px): full screen, the app hidden, back to normal when it "closes". Not
+tested: the real iPhone keyboard.
+
 ## Stage 15e: the stepper numbers big on the phone (`stage-15e-stepper-phone`, Sergio 2026-11-23, in-app feedback with a screenshot)
 
 Sergio didn't like 15c's label-on-top layout: on the iPhone the numbers between − and + were tiny, the − and
