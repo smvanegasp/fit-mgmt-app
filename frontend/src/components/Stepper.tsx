@@ -17,12 +17,11 @@ interface Props {
 }
 
 /**
- * One size for every number, 52 px: the largest at which a 5-character weight (147.5) fits between
- * − and + at phone width (box ~118 px). Sergio, 2026-11-23: sizes by length made the weight jump
- * when stepping between 145 and 147.5; they preferred the smaller one for all. `stepper-number`
- * exempts it from the 16 px rule for touch screens in index.css, which had kept it at 16 px on the phone.
+ * One size for every number, so the weight doesn't jump between 145 and 147.5 (Sergio, 2026-11-23):
+ * 39 px, 25% under the 52 px at which 147.5 just fits at phone width. `stepper-number` exempts it
+ * from the 16 px rule for touch screens in index.css, which had kept it at 16 px on the phone.
  */
-const NUMBER_SIZE = "text-[3.25rem]";
+const NUMBER_SIZE = "text-[39px]";
 
 /** Big − / number / + control for the gym: large targets, the number is also typeable. */
 export function Stepper({ label, value, onChange, step, min = 0, unit, decimals, layout = "column", extra }: Props) {
