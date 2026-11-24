@@ -170,7 +170,8 @@ A mobile-first web app where Sergio logs their gym workouts and sees their progr
 | 15a | Two progression ladders per exercise (heavy 3x2 ... 5x5, reps 3x6 ... 3x10), inferred or set ("Aiming for" on the exercise page and when creating one), with tailored go-up hints and congrats; the plan page drops earlier versions | #57 |
 | 15b | "Keep in mind" folded to one line while training; a Step 2.5 / 5 switch under the Weight label; the stepper number shrinks to fit (147.5 was cut off) | #58 |
 | 15c | "lbs" on every weight (targets, sets, welcome page); the picked weight step in red; stepper labels above (undone in 15e) | #59 |
-| 15e | The stepper numbers big on the phone: the touch-screen 16 px input rule had always overridden them (now skips `.stepper-number`); label back on the left, sizes by length (72/60/52 px) | (open) |
+| 15e | The stepper numbers big on the phone: the touch-screen 16 px input rule had always overridden them (now skips `.stepper-number`); label back on the left, sizes by length (72/60/52 px) | #60 |
+| 15f | One size (52 px) for every stepper number, so the weight doesn't jump between 145 and 147.5 | (open) |
 
 **Where things stand (2026-11-23):** PRs up to #48 are merged and live; stage 12c (the in-app feedback
 of 2026-11-23) is the open PR. The notes below on stage 10a are kept for context.

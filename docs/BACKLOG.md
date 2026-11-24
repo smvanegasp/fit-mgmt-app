@@ -167,7 +167,7 @@ every check showed 72 px; that's why "bigger numbers" kept coming back (11b, 11 
 |---|---|
 | The 16 px rule | Skips the stepper's number (`input:not(.stepper-number)`); everything else keeps it. |
 | Layout | Back to the label on the left (64 px column: label, unit, the Step switch stacked under it, picked one red) and − number + on the right, buttons 48 px. |
-| Fitting long weights | Fixed sizes by length instead of measuring in code (it misread on the iPhone): 72 px up to 3 characters, 60 px for 4, 52 px for 5. |
+| Fitting long weights | Fixed sizes by length instead of measuring in code (it misread on the iPhone): 72 px up to 3 characters, 60 px for 4, 52 px for 5. **15f** (Sergio: the weight jumped size stepping 145 → 147.5; keep the smaller): one size, 52 px, for every number (weight and reps); checked in the touch emulation, 145 → 147.5 → 150 all 52 px, 1000 and 147.5 fit. |
 
 Checked: frontend 99 tests and build; **a touch-screen phone emulation** (390x844, `pointer: coarse`, dark)
 in a demo workout (discarded): 45 and 145 at 72 px, 22.5 and 1000 at 60, 147.5 and 112.5 at 52, none

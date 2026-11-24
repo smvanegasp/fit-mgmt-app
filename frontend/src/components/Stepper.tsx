@@ -17,15 +17,12 @@ interface Props {
 }
 
 /**
- * The number's size by its length, so it fits between − and + at phone width (measured box ~118 px):
- * 72 px up to 3 characters (145), 60 px for 4 (22.5, 1000), 52 px for 5 (147.5). Classes, not a
- * measurement in code: that misread on the iPhone (Sergio, 2026-11-23). `stepper-number` exempts it
- * from the 16 px rule for touch screens in index.css, which had kept it at 16 px on the phone.
+ * One size for every number, 52 px: the largest at which a 5-character weight (147.5) fits between
+ * − and + at phone width (box ~118 px). Sergio, 2026-11-23: sizes by length made the weight jump
+ * when stepping between 145 and 147.5; they preferred the smaller one for all. `stepper-number`
+ * exempts it from the 16 px rule for touch screens in index.css, which had kept it at 16 px on the phone.
  */
-function numberSize(value: number): string {
-  const n = String(value).length;
-  return n <= 3 ? "text-7xl" : n === 4 ? "text-[3.75rem]" : "text-[3.25rem]";
-}
+const NUMBER_SIZE = "text-[3.25rem]";
 
 /** Big − / number / + control for the gym: large targets, the number is also typeable. */
 export function Stepper({ label, value, onChange, step, min = 0, unit, decimals, layout = "column", extra }: Props) {
@@ -49,7 +46,7 @@ export function Stepper({ label, value, onChange, step, min = 0, unit, decimals,
           const n = Number(e.target.value.replace(",", "."));
           if (!Number.isNaN(n)) onChange(Math.max(min, n));
         }}
-        className={`stepper-number w-full min-w-0 bg-transparent text-center font-display font-semibold leading-none tabular-nums outline-none ${numberSize(value)}`}
+        className={`stepper-number w-full min-w-0 bg-transparent text-center font-display font-semibold leading-none tabular-nums outline-none ${NUMBER_SIZE}`}
       />
       <button
         type="button"
