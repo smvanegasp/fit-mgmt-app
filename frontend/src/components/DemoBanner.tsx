@@ -1,7 +1,8 @@
-import { ArrowCounterClockwise, ChatCircleText, SignIn } from "@phosphor-icons/react";
+import { ArrowCounterClockwise, ArrowUpRight, ChatCircleText, SignIn } from "@phosphor-icons/react";
 import { useState } from "react";
 
 import { useResetGuest } from "../hooks";
+import { SITE_URL } from "../lib/site";
 import { FeedbackSheet } from "./FeedbackSheet";
 import { InfoTip } from "./InfoTip";
 import { PasscodeSheet } from "./PasscodeSheet";
@@ -24,7 +25,7 @@ export function DemoBanner({ expiresAt, ownerLoginEnabled }: { expiresAt: number
   return (
     <div
       data-demo-banner
-      className="mb-4 flex items-center gap-1 rounded-xl bg-sky-50 px-2.5 py-1.5 text-sm text-sky-900"
+      className="mb-4 flex items-center gap-0.5 rounded-xl bg-sky-50 px-2 py-1.5 text-sm text-sky-900"
     >
       <span className="flex min-w-0 flex-1 items-center gap-1">
         <span className="truncate">Demo · {timeLeft(expiresAt)}</span>
@@ -38,22 +39,27 @@ export function DemoBanner({ expiresAt, ownerLoginEnabled }: { expiresAt: number
         disabled={reset.isPending}
         aria-label="Reset the demo"
         title="Reset the demo"
-        className="inline-flex shrink-0 items-center rounded-lg p-1.5 text-sky-800 active:bg-sky-100"
+        className="inline-flex shrink-0 items-center rounded-lg p-1 text-sky-800 active:bg-sky-100"
       >
         <ArrowCounterClockwise size={16} weight="bold" aria-hidden />
       </button>
       <button
         type="button"
         onClick={() => setFeedback(true)}
-        className="inline-flex shrink-0 items-center gap-1 rounded-lg px-1.5 py-1 font-medium text-sky-800 active:bg-sky-100"
+        className="inline-flex shrink-0 items-center gap-1 rounded-lg px-1 py-1 font-medium text-sky-800 active:bg-sky-100"
       >
         <ChatCircleText size={14} weight="bold" aria-hidden /> Feedback
       </button>
+      {/* Back to Sergio's projects page, in a new tab (Sergio, 2026-11-24). */}
+      <a href={SITE_URL} target="_blank" rel="noopener noreferrer" title="sergiovanegas.com/projects" aria-label="sergiovanegas.com projects (new tab)"
+        className="inline-flex shrink-0 items-center gap-0.5 rounded-lg px-1 py-1 font-medium text-sky-800 active:bg-sky-100">
+        Site <ArrowUpRight size={12} weight="bold" aria-hidden />
+      </a>
       {ownerLoginEnabled && (
         <button
           type="button"
           onClick={() => setLoggingIn(true)}
-          className="inline-flex shrink-0 items-center gap-1 rounded-lg px-1.5 py-1 font-medium text-sky-800 active:bg-sky-100"
+          className="inline-flex shrink-0 items-center gap-1 rounded-lg px-1 py-1 font-medium text-sky-800 active:bg-sky-100"
         >
           <SignIn size={14} weight="bold" aria-hidden /> Log in
         </button>

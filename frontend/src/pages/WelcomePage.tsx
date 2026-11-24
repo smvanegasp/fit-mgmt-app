@@ -1,3 +1,4 @@
+import { ArrowUpRight } from "@phosphor-icons/react";
 import { useState } from "react";
 
 import gymPhoto from "../assets/hardcore-gym.jpg";
@@ -13,6 +14,7 @@ import { useDesktop, usePublicSummary, useSession, useStartGuest } from "../hook
 import { streaks } from "../lib/progress";
 import { schemeText } from "../lib/sets";
 import { STREAK_TIERS, WORKOUT_TIERS, tierAt, type Tier } from "../lib/tiers";
+import { SITE_URL } from "../lib/site";
 import { localIso, yearsSince } from "../lib/time";
 
 /** When Sergio started training. */
@@ -58,6 +60,11 @@ export function WelcomePage() {
       <div aria-hidden className="absolute inset-0 bg-gradient-to-t from-stone-50 via-transparent to-stone-50/40" />
       {/* A deeper pool along the bottom: the mark always has dark ground under it. */}
       <div aria-hidden className="absolute inset-x-0 bottom-0 h-2/3 bg-gradient-to-t from-stone-50 via-stone-50/45 to-transparent" />
+      {/* Back to Sergio's site, where visitors come from (Sergio, 2026-11-24): a new tab. */}
+      <a href={SITE_URL} target="_blank" rel="noopener noreferrer"
+        className="absolute top-[calc(env(safe-area-inset-top)+0.75rem)] right-4 z-10 flex items-center gap-1 rounded-lg bg-stone-50/80 px-2.5 py-1.5 text-xs font-semibold text-stone-800 backdrop-blur lg:top-3">
+        sergiovanegas.com <ArrowUpRight size={12} weight="bold" aria-hidden />
+      </a>
       <div className="rise-in relative flex h-36 items-end justify-start gap-3 lg:h-44">
         <Logo size={36} className="mark-lift h-9 w-9 lg:h-12 lg:w-12" />
         <h1 className="mark-lift font-display text-4xl uppercase leading-none tracking-[0.14em] text-stone-950 lg:text-5xl">Gym</h1>

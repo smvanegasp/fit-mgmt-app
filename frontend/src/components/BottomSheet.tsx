@@ -2,7 +2,8 @@ import { X } from "@phosphor-icons/react";
 import { useEffect, type ReactNode } from "react";
 import { createPortal } from "react-dom";
 
-import { useScrollLock, useVisibleArea } from "../lib/scrollLock";
+import { DESKTOP } from "../hooks";
+import { useCoverApp, useScrollLock, useVisibleArea } from "../lib/scrollLock";
 
 interface Props {
   title: string;
@@ -24,6 +25,13 @@ export function BottomSheet({ title, onClose, children, tall = false, top }: Pro
   // Fit the part of the screen above the keyboard, so the title and search never leave view.
   const area = useVisibleArea();
   const room = area ? area.height - 12 : null;
+  // Typing on a phone (the keyboard takes a good part of the screen): the sheet fills what's left,
+  // its header below the clock, over an opaque layer that runs down behind the keyboard, and the
+  // app underneath is hidden (Sergio, 2026-11-24: the feedback sheet overlapped the clock and the
+  // tabs showed above the keyboard). iOS changes the viewport sizes there, hence the screen height.
+  const full = Math.max(window.innerHeight, window.screen?.height ?? 0);
+  const typing = Boolean(area) && !window.matchMedia(DESKTOP).matches && full - area!.top - area!.height > 150;
+  useCoverApp(typing);
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => e.key === "Escape" && onClose();
     document.addEventListener("keydown", onKey);
@@ -32,15 +40,17 @@ export function BottomSheet({ title, onClose, children, tall = false, top }: Pro
 
   // Rendered at the end of <body> so sheets never inherit styles from where they're opened.
   return createPortal(
-    <div className="fixed inset-x-0 z-40 flex items-end justify-center sm:items-center"
-      style={area ? { top: area.top, height: area.height } : { top: 0, bottom: 0 }}>
-      <div className="absolute inset-0 bg-black/40" onClick={onClose} aria-hidden />
+    <div className={`fixed inset-x-0 z-40 flex justify-center ${typing ? "items-start bg-white" : "items-end sm:items-center"}`}
+      style={typing ? { top: area!.top, height: full } : area ? { top: area.top, height: area.height } : { top: 0, bottom: 0 }}>
+      {!typing && <div className="absolute inset-0 bg-black/40" onClick={onClose} aria-hidden />}
       <div
         role="dialog"
         aria-modal="true"
         aria-label={title}
-        className={`relative flex ${tall ? "h-[85dvh]" : ""} max-h-[92dvh] w-full max-w-lg flex-col rounded-t-2xl bg-white shadow-xl sm:rounded-2xl`}
-        style={room ? { maxHeight: room, ...(tall ? { height: Math.min(room, window.innerHeight * 0.85) } : {}) } : undefined}
+        className={typing
+          ? "relative flex w-full max-w-lg flex-col bg-white pt-[env(safe-area-inset-top)]"
+          : `relative flex ${tall ? "h-[85dvh]" : ""} max-h-[92dvh] w-full max-w-lg flex-col rounded-t-2xl bg-white shadow-xl sm:rounded-2xl`}
+        style={typing ? { height: area!.height } : room ? { maxHeight: room, ...(tall ? { height: Math.min(room, window.innerHeight * 0.85) } : {}) } : undefined}
       >
         <div className="flex shrink-0 items-center justify-between border-b border-stone-200 px-4 py-3">
           <h2 className="text-lg font-semibold">{title}</h2>
