@@ -14,34 +14,60 @@ const lb = (v: number) => `${v} lbs`;
  * first one, the line once there are two, and logging (one weight per day; logging a day again
  * replaces it).
  */
-export function BodyWeightCard() {
+export function BodyWeightCard({ headingOutside = false }: {
+  /** Computers' Progress: the title and Log above the card, like the last workouts next to it
+   * (2026-11-23 feedback: the two columns didn't line up). */
+  headingOutside?: boolean;
+}) {
   const weights = useBodyWeights();
   const [logging, setLogging] = useState(false);
   const points = (weights.data ?? []).map((w) => ({ date: w.date, value: w.weightLb }));
   const latest = points.at(-1);
   const change = latest && points.length > 1 ? Math.round((latest.value - points[0].value) * 10) / 10 : null;
 
+  const summary = latest ? (
+    <p className="text-sm text-stone-500">
+      <span className="font-display text-2xl font-semibold text-stone-900">{latest.value}</span> lb · {friendlyDate(latest.date)}
+      {change !== null && ` · ${change > 0 ? "+" : ""}${change} lbs since ${friendlyDate(points[0].date)}`}
+    </p>
+  ) : (
+    <p className="text-sm text-stone-500">Log a weigh-in to start the line.</p>
+  );
+  const chart = points.length >= 2 && <div className="mt-3"><LineChart points={points} format={lb} color="var(--color-blue-600)" label="Body weight" noun="weigh-ins" /></div>;
+  const sheet = logging && <LogSheet last={latest?.value} onClose={() => setLogging(false)} />;
+
+  if (headingOutside) {
+    return (
+      <section>
+        <h2 className="flex items-center px-1 pb-3 font-semibold">
+          Body weight
+          <button type="button" onClick={() => setLogging(true)} className="ml-auto flex items-center gap-1 text-sm font-medium text-blue-700">
+            <Plus size={14} weight="bold" aria-hidden /> Log
+          </button>
+        </h2>
+        <div className="rounded-2xl border border-stone-200 bg-white p-4">
+          {summary}
+          {chart}
+        </div>
+        {sheet}
+      </section>
+    );
+  }
+
   return (
     <section className="rounded-2xl border border-stone-200 bg-white p-4">
       <div className="flex items-start gap-3">
         <div className="min-w-0 flex-1">
           <h2 className="font-semibold">Body weight</h2>
-          {latest ? (
-            <p className="text-sm text-stone-500">
-              <span className="font-display text-2xl font-semibold text-stone-900">{latest.value}</span> lb · {friendlyDate(latest.date)}
-              {change !== null && ` · ${change > 0 ? "+" : ""}${change} lbs since ${friendlyDate(points[0].date)}`}
-            </p>
-          ) : (
-            <p className="text-sm text-stone-500">Log a weigh-in to start the line.</p>
-          )}
+          {summary}
         </div>
         <button type="button" onClick={() => setLogging(true)}
           className="flex shrink-0 items-center gap-1.5 rounded-xl border border-stone-300 px-3 py-2 text-sm font-semibold">
           <Plus size={16} weight="bold" aria-hidden /> Log
         </button>
       </div>
-      {points.length >= 2 && <div className="mt-3"><LineChart points={points} format={lb} color="var(--color-blue-600)" label="Body weight" noun="weigh-ins" /></div>}
-      {logging && <LogSheet last={latest?.value} onClose={() => setLogging(false)} />}
+      {chart}
+      {sheet}
     </section>
   );
 }

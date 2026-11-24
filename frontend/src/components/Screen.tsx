@@ -45,18 +45,18 @@ export function Screen({ title, subtitle, onBack, actions, footer, top, fitKeybo
     return () => document.removeEventListener("keydown", onKey);
   }, [onBack]);
 
-  // Phones: a full-screen page. Computers: a panel on the right over a dimmed page (click outside
-  // to close), so the dashboard or list stays in view.
+  // Phones: a full-screen page. Computers: a panel on the right over a dimmed, blurred page (click
+  // outside to close), so the dashboard or list stays in view but the panel has the focus.
   return createPortal(
     <div
-      className="fixed inset-0 z-30 flex bg-stone-50 lg:justify-end lg:bg-black/40"
+      className="fixed inset-0 z-30 flex bg-stone-50 lg:justify-end lg:bg-black/60 lg:backdrop-blur-md"
       role="dialog"
       aria-modal="true"
       aria-label={title}
       style={fit}
       onClick={(e) => e.target === e.currentTarget && window.matchMedia(DESKTOP).matches && onBack()}
     >
-      <div className="flex h-full w-full flex-col bg-stone-50 lg:w-[36rem] lg:shadow-2xl">
+      <div className="flex h-full w-full flex-col bg-stone-50 lg:w-[36rem] lg:border-l lg:border-stone-200 lg:shadow-2xl">
         <header className="shrink-0 border-b border-stone-200 bg-stone-50 pt-[calc(env(safe-area-inset-top)+0.75rem)] pb-3">
           <div className="mx-auto flex max-w-lg items-center gap-2 px-4 lg:max-w-none lg:px-6">
             <button type="button" onClick={onBack} className="rounded-full p-2 text-stone-700" aria-label="Back">

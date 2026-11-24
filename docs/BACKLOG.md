@@ -155,6 +155,16 @@ sandbox (five named slots, the goal of 4 strength days). Not tested: Restore in 
 Checked: backend 121 and frontend 92 tests, the welcome page logged out at 390x844 (dark and light) and
 1440x900 on the local log (older than production: its streak reads 0 there). Not tested: the live numbers.
 
+## Stage 16c: desktop feedback (`stage-16c-desktop-feedback`, in-app feedback from guests, 2026-11-24)
+
+| Feedback | Done |
+|---|---|
+| Computers: the right-side panels are good, but the page behind should blur so the panel has the focus. | From `lg:` the page behind a panel (and a sheet) is dimmed more and blurred; the panel has a thin left edge. Phones unchanged. |
+| Computers, Progress: "Last workouts" and "Body weight" didn't line up (one heading outside a card, one inside). | On computers Body weight's title and Log sit above its card, like "Last workouts", so both cards start at the same height. The phone card is unchanged. |
+
+Checked: frontend 99 tests and build; Progress and a workout panel at 1440x900 and 390x844 (touch), dark and
+light, in a sample demo. Not tested: Sergio's computer.
+
 ## Stage 16b: a calmer weight row (`stage-16b-weight-step`, Sergio 2026-11-24)
 
 | Feedback | Done |

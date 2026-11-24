@@ -70,7 +70,7 @@ export function ProgressPage() {
       {desktop ? (
         <div className="grid grid-cols-2 items-start gap-6">
           <LastWorkouts />
-          <BodyWeightCard />
+          <BodyWeightCard headingOutside />
         </div>
       ) : <BodyWeightCard />}
     </div>
@@ -90,7 +90,7 @@ function LastWorkouts() {
   const goTo = useGoTo();
   return (
     <section>
-      <h2 className="flex items-center px-1 pt-3 pb-2 font-semibold">
+      <h2 className="flex items-center px-1 pb-3 font-semibold">
         Last workouts
         <button type="button" onClick={() => goTo("history")} className="ml-auto text-sm font-medium text-blue-700">All in History</button>
       </h2>

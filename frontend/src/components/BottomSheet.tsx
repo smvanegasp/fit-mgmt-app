@@ -42,7 +42,7 @@ export function BottomSheet({ title, onClose, children, tall = false, top }: Pro
   return createPortal(
     <div className={`fixed inset-x-0 z-40 flex justify-center ${typing ? "items-start bg-white" : "items-end sm:items-center"}`}
       style={typing ? { top: area!.top, height: full } : area ? { top: area.top, height: area.height } : { top: 0, bottom: 0 }}>
-      {!typing && <div className="absolute inset-0 bg-black/40" onClick={onClose} aria-hidden />}
+      {!typing && <div className="absolute inset-0 bg-black/40 lg:bg-black/60 lg:backdrop-blur-md" onClick={onClose} aria-hidden />}
       <div
         role="dialog"
         aria-modal="true"
